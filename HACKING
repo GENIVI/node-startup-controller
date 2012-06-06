@@ -1,0 +1,8 @@
+Commit messages
+===============
+
+When writing commit messages it is required that people follow the best
+practises described on the following websites:
+
+  * http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
+  * https://live.gnome.org/Git/CommitMessages
