@@ -10,6 +10,7 @@ In the following, the most important requirements for writing consistent
 code for the GENIVI Boot Manager are explained.
 
 Table of Contents:
+  * Copyright and License Header
   * Line Width
   * Whitespace
   * Indentation and Braces
@@ -20,6 +21,22 @@ Table of Contents:
   * More on Conditions
   * Header Files
   * Loops and Loop Termination
+
+
+Copyright and License Header
+============================
+
+In all source files, add the following copyright and license header at
+as the first lines:
+
+/* vi:set et ai sw=2 sts=2 ts=2: */
+/* -
+ * Copyright (c) 2012 GENIVI.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 
 
 Line Width
