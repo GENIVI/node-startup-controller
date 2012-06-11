@@ -46,7 +46,6 @@ AM_PROG_AS()
 AC_PROG_CC()
 AM_PROG_CC_C_O()
 AC_PROG_INSTALL()
-AC_PROG_INTLTOOL([0.31], [no-xml])
 
 dnl ***********************
 dnl *** Prepare libtool ***
@@ -86,7 +85,7 @@ dnl *** Check for required packages ***
 dnl ***********************************
 PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.30.0])
 PKG_CHECK_MODULES([GIO], [gio-2.0 >= 2.30.0])
-PKG_CHECK_MODULES([SYSTEMD_DAEMON], [libsystemd-daemon >= 183])
+PKG_CHECK_MODULES([SYSTEMD_DAEMON], [libsystemd-daemon >= 37])
 
 AC_OUTPUT([
 Makefile
