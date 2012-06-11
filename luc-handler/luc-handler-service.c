@@ -98,6 +98,10 @@ luc_handler_service_init (LUCHandlerService *service)
   g_signal_connect (service->interface, "handle-register",
                     G_CALLBACK (luc_handler_service_handle_register),
                     service);
+
+  g_signal_connect (service->interface, "handle-deregister",
+                    G_CALLBACK (luc_handler_service_handle_deregister),
+                    service);
 }
 
 
@@ -172,7 +176,7 @@ luc_handler_service_handle_register (LUCHandler            *object,
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (LUC_HANDLER_IS_SERVICE (service), FALSE);
 
-  g_debug ("Deregister called");
+  g_debug ("Register called");
 
   /* TODO read the apps parameter and update the "content" property of
    * the skeleton */
@@ -193,7 +197,7 @@ luc_handler_service_handle_deregister (LUCHandler            *object,
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (LUC_HANDLER_IS_SERVICE (service), FALSE);
 
-  g_debug ("Register called");
+  g_debug ("Deregister called");
 
   /* TODO read the apps parameter and update the "content" property of
    * the skeleton */
