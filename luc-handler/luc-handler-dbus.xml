@@ -1,21 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <node name="/org/genivi/LUCHandler1">
+  <!--
+    org.genivi.LUCHandler1:
+    @short_description: Interface for managing the GENIVI LUC (Last User Context)
+  -->
   <interface name="org.genivi.LUCHandler1">
     <method name="Register">
+      <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
       <param name="apps" type="a{sas}" direction="in"/>
     </method>
-    
     <method name="Deregister">
+      <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
       <param name="apps" type="a{sas}" direction="in"/>
     </method>
-    
-    <method name="GetLUCContent">
-      <param name="apps" type="a{sas}" direction="out"/>
-    </method>
-    
-    <signal name="LUCChanged">
-      <param name="apps" type="a{sas}"/>
-    </signal>
-    
+    <property name="Content" type="a{sas}" access="read"/>
   </interface>
 </node>

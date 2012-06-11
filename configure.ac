@@ -57,7 +57,7 @@ dnl ***************************************
 dnl *** Check for standard header files ***
 dnl ***************************************
 AC_HEADER_STDC()
-AC_CHECK_HEADERS([])
+AC_CHECK_HEADERS([stdlib.h])
 
 dnl ************************************
 dnl *** Check for standard functions ***

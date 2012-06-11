@@ -14,6 +14,8 @@ luc_handler_built_sources =						\
 	$(luc_handler_built_headers)
 
 luc_handler_SOURCES =							\
+	luc-handler-service.c						\
+	luc-handler-service.h						\
 	main.c								\
 	$(luc_handler_built_sources)
 
@@ -62,8 +64,8 @@ BUILT_SOURCES =								\
 
 luc-handler-dbus.h: luc-handler-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
-	    --interface-prefix org.genivi.LUCHandler1			\
+	    --interface-prefix org.genivi				\
 	    --c-namespace ""						\
 	    --generate-c-code luc-handler-dbus				\
 	    --annotate org.genivi.LUCHandler1 org.gtk.GDBus.C.Name	\
-	      "LUCHandler" $<
+	      LUC_Handler $<
