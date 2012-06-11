@@ -6,9 +6,12 @@ luc_handlerdir =							\
 luc_handler_PROGRAMS =							\
 	luc-handler
 
+luc_handler_built_headers =						\
+	luc-handler-dbus.h
+
 luc_handler_built_sources =						\
 	luc-handler-dbus.c						\
-	luc-handler-dbus.h
+	$(luc_handler_built_headers)
 
 luc_handler_SOURCES =							\
 	main.c								\
@@ -18,6 +21,7 @@ luc_handler_CFLAGS =							\
 	-DG_LOG_DOMAIN=\"luc-handler\"					\
 	-I$(top_srcdir)							\
 	$(GIO_CFLAGS)							\
+	$(GIO_UNIX_CFLAGS)						\
 	$(GLIB_CFLAGS)							\
 	$(PLATFORM_CFLAGS)						\
 	$(PLATFORM_CPPFLAGS)						\
@@ -29,6 +33,7 @@ luc_handler_LDFLAGS =							\
 
 luc_handler_LDADD =							\
 	$(GIO_LIBS)							\
+	$(GIO_UNIX_LIBS)						\
 	$(GLIB_LIBS)							\
 	$(SYSTEMD_DAEMON_LIBS)
 
@@ -53,7 +58,7 @@ DISTCLEANFILES =							\
 	$(luc_handler_built_sources)
 
 BUILT_SOURCES =								\
-	$(luc_handler_built_sources)
+	$(luc_handler_built_headers)
 
 luc-handler-dbus.h: luc-handler-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\

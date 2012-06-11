@@ -85,6 +85,7 @@ dnl *** Check for required packages ***
 dnl ***********************************
 PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.30.0])
 PKG_CHECK_MODULES([GIO], [gio-2.0 >= 2.30.0])
+PKG_CHECK_MODULES([GIO_UNIX], [gio-unix-2.0 >= 2.30.0])
 PKG_CHECK_MODULES([SYSTEMD_DAEMON], [libsystemd-daemon >= 37])
 
 AC_OUTPUT([
