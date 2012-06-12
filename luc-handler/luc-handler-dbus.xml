@@ -7,11 +7,11 @@
   <interface name="org.genivi.LUCHandler1">
     <method name="Register">
       <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
-      <param name="apps" type="a{sas}" direction="in"/>
+      <arg name="apps" type="a{sas}" direction="in"/>
     </method>
     <method name="Deregister">
       <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
-      <param name="apps" type="a{sas}" direction="in"/>
+      <arg name="apps" type="a{sas}" direction="in"/>
     </method>
     <property name="Content" type="a{sas}" access="read"/>
   </interface>

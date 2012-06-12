@@ -39,9 +39,11 @@ static void     luc_handler_service_set_property      (GObject               *ob
                                                        GParamSpec            *pspec);
 static gboolean luc_handler_service_handle_register   (LUCHandler            *interface,
                                                        GDBusMethodInvocation *invocation,
+                                                       GVariant              *apps,
                                                        LUCHandlerService     *service);
 static gboolean luc_handler_service_handle_deregister (LUCHandler            *interface,
                                                        GDBusMethodInvocation *invocation,
+                                                       GVariant              *apps,
                                                        LUCHandlerService     *service);
 
 
@@ -170,16 +172,32 @@ static void luc_handler_service_set_property (GObject      *object,
 static gboolean
 luc_handler_service_handle_register (LUCHandler            *object,
                                      GDBusMethodInvocation *invocation,
+                                     GVariant              *apps,
                                      LUCHandlerService     *service)
 {
+  GVariant *foreground_apps;
+  gchar    *app_name;
+  guint     n;
+
   g_return_val_if_fail (IS_LUC_HANDLER (object), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (LUC_HANDLER_IS_SERVICE (service), FALSE);
 
-  g_debug ("Register called");
+  g_debug ("Register called:");
 
   /* TODO read the apps parameter and update the "content" property of
    * the skeleton */
+
+  foreground_apps = g_variant_lookup_value (apps, "foreground",
+                                            G_VARIANT_TYPE_STRING_ARRAY);
+  if (foreground_apps != NULL)
+    {
+      for (n = 0; n < g_variant_n_children (foreground_apps); n++)
+        {
+          g_variant_get_child (foreground_apps, n, "&s", &app_name);
+          g_debug ("  foreground: %s", app_name);
+        }
+    }
 
   g_dbus_method_invocation_return_value (invocation, NULL);
 
@@ -191,6 +209,7 @@ luc_handler_service_handle_register (LUCHandler            *object,
 static gboolean
 luc_handler_service_handle_deregister (LUCHandler            *object,
                                        GDBusMethodInvocation *invocation,
+                                       GVariant              *apps,
                                        LUCHandlerService     *service)
 {
   g_return_val_if_fail (IS_LUC_HANDLER (object), FALSE);
