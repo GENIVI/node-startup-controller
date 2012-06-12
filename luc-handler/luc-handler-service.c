@@ -59,6 +59,7 @@ struct _LUCHandlerService
 
   GDBusConnection *connection;
   LUCHandler      *interface;
+  GSettings       *settings;
 };
 
 
@@ -94,8 +95,13 @@ luc_handler_service_init (LUCHandlerService *service)
 {
   service->interface = luc_handler_skeleton_new ();
 
-  /* TODO read LastUserContext from disk and set the "last-user-context" property
-   * of the skeleton instance */
+  service->settings = g_settings_new ("org.genivi.LUCHandler1");
+  
+  /* bind the settings key to the D-Bus property so changes are automatically 
+   * synchronised */
+  g_settings_bind (service->settings, "last-user-context", 
+                   service->interface, "last-user-context", 
+                   G_SETTINGS_BIND_DEFAULT);
 
   g_signal_connect (service->interface, "handle-register",
                     G_CALLBACK (luc_handler_service_handle_register),
@@ -122,6 +128,9 @@ luc_handler_service_finalize (GObject *object)
                                         G_SIGNAL_MATCH_DATA,
                                         0, 0, NULL, NULL, service);
   g_object_unref (service->interface);
+  
+  /* release the settings object */
+  g_object_unref (service->settings);
 
   (*G_OBJECT_CLASS (luc_handler_service_parent_class)->finalize) (object);
 }
