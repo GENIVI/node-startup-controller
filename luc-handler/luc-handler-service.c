@@ -28,23 +28,29 @@ enum
 
 
 
-static void     luc_handler_service_finalize          (GObject               *object);
-static void     luc_handler_service_get_property      (GObject               *object,
-                                                       guint                  prop_id,
-                                                       GValue                *value,
-                                                       GParamSpec            *pspec);
-static void     luc_handler_service_set_property      (GObject               *object,
-                                                       guint                  prop_id,
-                                                       const GValue          *value,
-                                                       GParamSpec            *pspec);
-static gboolean luc_handler_service_handle_register   (LUCHandler            *interface,
-                                                       GDBusMethodInvocation *invocation,
-                                                       GVariant              *apps,
-                                                       LUCHandlerService     *service);
-static gboolean luc_handler_service_handle_deregister (LUCHandler            *interface,
-                                                       GDBusMethodInvocation *invocation,
-                                                       GVariant              *apps,
-                                                       LUCHandlerService     *service);
+static void      luc_handler_service_finalize              (GObject               *object);
+static void      luc_handler_service_get_property          (GObject               *object,
+                                                            guint                  prop_id,
+                                                            GValue                *value,
+                                                            GParamSpec            *pspec);
+static void      luc_handler_service_set_property          (GObject               *object,
+                                                            guint                  prop_id,
+                                                            const GValue          *value,
+                                                            GParamSpec            *pspec);
+static gboolean  luc_handler_service_handle_register       (LUCHandler            *interface,
+                                                            GDBusMethodInvocation *invocation,
+                                                            GVariant              *apps,
+                                                            LUCHandlerService     *service);
+static gboolean  luc_handler_service_handle_deregister     (LUCHandler            *interface,
+                                                            GDBusMethodInvocation *invocation,
+                                                            GVariant              *apps,
+                                                            LUCHandlerService     *service);
+static gboolean  luc_handler_service_get_last_user_context (GValue                *value,
+                                                            GVariant              *variant,
+                                                            gpointer               user_data);
+static GVariant *luc_handler_service_set_last_user_context (const GValue          *value,
+                                                            const GVariantType    *expected_type,
+                                                            gpointer               user_data);
 
 
 
@@ -95,18 +101,26 @@ luc_handler_service_init (LUCHandlerService *service)
 {
   service->interface = luc_handler_skeleton_new ();
 
+  /* create GSettings object for the LUC Handler schema */
   service->settings = g_settings_new ("org.genivi.LUCHandler1");
-  
-  /* bind the settings key to the D-Bus property so changes are automatically 
-   * synchronised */
-  g_settings_bind (service->settings, "last-user-context", 
-                   service->interface, "last-user-context", 
-                   G_SETTINGS_BIND_DEFAULT);
 
+  /* bind the settings key to the D-Bus property so changes are
+   * automatically synchronised; we need to use a custom binding
+   * here because g_settings_bind() alone does not work with dicts */
+  g_settings_bind_with_mapping (service->settings, "last-user-context",
+                                service->interface, "last-user-context",
+                                G_SETTINGS_BIND_DEFAULT,
+                                luc_handler_service_get_last_user_context,
+                                luc_handler_service_set_last_user_context,
+                                g_object_ref (service),
+                                (GDestroyNotify) g_object_unref);
+
+  /* implement the Register() handler */
   g_signal_connect (service->interface, "handle-register",
                     G_CALLBACK (luc_handler_service_handle_register),
                     service);
 
+  /* implement the Deregister() handler */
   g_signal_connect (service->interface, "handle-deregister",
                     G_CALLBACK (luc_handler_service_handle_deregister),
                     service);
@@ -128,7 +142,7 @@ luc_handler_service_finalize (GObject *object)
                                         G_SIGNAL_MATCH_DATA,
                                         0, 0, NULL, NULL, service);
   g_object_unref (service->interface);
-  
+
   /* release the settings object */
   g_object_unref (service->settings);
 
@@ -233,6 +247,33 @@ luc_handler_service_handle_deregister (LUCHandler            *object,
   g_dbus_method_invocation_return_value (invocation, NULL);
 
   return TRUE;
+}
+
+
+
+static gboolean
+luc_handler_service_get_last_user_context (GValue            *value,
+                                           GVariant          *variant,
+                                           gpointer           user_data)
+{
+  g_return_val_if_fail (G_IS_VALUE (value), FALSE);
+  g_return_val_if_fail (variant != NULL, FALSE);
+
+  g_value_set_variant (value, variant);
+  return TRUE;
+}
+
+
+
+static GVariant *
+luc_handler_service_set_last_user_context (const GValue       *value,
+                                           const GVariantType *expected_type,
+                                           gpointer           user_data)
+{
+  g_return_val_if_fail (G_IS_VALUE (value), FALSE);
+  g_return_val_if_fail (expected_type != G_VARIANT_TYPE_DICTIONARY, FALSE);
+
+  return g_value_dup_variant (value);
 }
 
 
