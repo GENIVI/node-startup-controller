@@ -1,15 +1,5 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
-luc_handler_gsettingsschema_in_files =					\
-	org.genivi.LUCHandler1.gschema.xml.in
-
-luc_handler_gsettings_SCHEMAS =						\
-	$(luc_handler_gsettingsschema_in_files:.xml.in=.xml)
-
-.PRECIOUS: $(luc_handler_gsettings_SCHEMAS)
-
-@GSETTINGS_RULES@
-
 luc_handlerdir =							\
 	$(libdir)/luc-handler-$(BOOT_MANAGER_VERSION_API)
 
@@ -50,7 +40,7 @@ luc_handler_LDADD =							\
 	$(SYSTEMD_DAEMON_LIBS)
 
 servicedir = $(datadir)/dbus-1/services
-service_in_files = 							\
+service_in_files =							\
 	org.genivi.LUCHandler1.service.in
 
 service_DATA = $(service_in_files:.service.in=.service)
@@ -59,17 +49,27 @@ service_DATA = $(service_in_files:.service.in=.service)
 	sed -e "s,\@libdir\@,$(libdir),g"				\
 	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
 
+gsettingsschema_in_files =						\
+	org.genivi.LUCHandler1.gschema.xml.in
+
+gsettings_SCHEMAS =							\
+	$(gsettingsschema_in_files:.xml.in=.xml)
+
+.PRECIOUS: $(gsettings_SCHEMAS)
+
+@GSETTINGS_RULES@
+
 CLEANFILES =								\
 	$(service_DATA)
 
 EXTRA_DIST =								\
 	$(service_in_files)						\
-	$(luc_handler_gsettingsschema_in_files)				\
+	$(gsettingsschema_in_files)					\
 	luc-handler-dbus.xml
 
 DISTCLEANFILES =							\
 	$(luc_handler_built_sources)					\
-	$(luc_handler_gsettings_SCHEMAS)
+	$(gsettings_SCHEMAS)
 
 BUILT_SOURCES =								\
 	$(luc_handler_built_headers)
