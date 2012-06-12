@@ -1,0 +1,12 @@
+<schemalist>
+  <schema id="org.genivi.LUCHandler@BOOT_MANAGER_VERSION_API@" path="/org/genivi/LUCHandler@BOOT_MANAGER_VERSION_API@/">
+    <key name="last-user-context" type="a{sas}">
+      <summary>A dictionary of the apps that are considered part of the Last User Context</summary>
+      <description>
+        The current Last User Context, that is, a dictionary that maps LUC types
+        to arrays of one or more applications registered for each of them.
+      </description>
+      <default>{}</default>
+    </key>
+  </schema>
+</schemalist>

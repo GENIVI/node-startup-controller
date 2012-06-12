@@ -1,5 +1,15 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
+luc_handler_gsettingsschema_in_files =					\
+	org.genivi.LUCHandler1.gschema.xml.in
+
+luc_handler_gsettings_SCHEMAS =						\
+	$(luc_handler_gsettingsschema_in_files:.xml.in=.xml)
+
+.PRECIOUS: $(luc_handler_gsettings_SCHEMAS)
+
+@GSETTINGS_RULES@
+
 luc_handlerdir =							\
 	$(libdir)/luc-handler-$(BOOT_MANAGER_VERSION_API)
 
@@ -54,10 +64,12 @@ CLEANFILES =								\
 
 EXTRA_DIST =								\
 	$(service_in_files)						\
+	$(luc_handler_gsettingsschema_in_files)				\
 	luc-handler-dbus.xml
 
 DISTCLEANFILES =							\
-	$(luc_handler_built_sources)
+	$(luc_handler_built_sources)					\
+	$(luc_handler_gsettings_SCHEMAS)
 
 BUILT_SOURCES =								\
 	$(luc_handler_built_headers)

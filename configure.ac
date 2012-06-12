@@ -88,7 +88,13 @@ PKG_CHECK_MODULES([GIO], [gio-2.0 >= 2.30.0])
 PKG_CHECK_MODULES([GIO_UNIX], [gio-unix-2.0 >= 2.30.0])
 PKG_CHECK_MODULES([SYSTEMD_DAEMON], [libsystemd-daemon >= 37])
 
+dnl *********************************************
+dnl *** Include GLib/GSettings specific stuff ***
+dnl *********************************************
+GLIB_GSETTINGS
+
 AC_OUTPUT([
 Makefile
 luc-handler/Makefile
+luc-handler/org.genivi.LUCHandler1.gschema.xml
 ])
