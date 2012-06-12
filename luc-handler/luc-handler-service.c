@@ -94,8 +94,8 @@ luc_handler_service_init (LUCHandlerService *service)
 {
   service->interface = luc_handler_skeleton_new ();
 
-  /* TODO read LUC content from disk and set the "content" property of the 
-   * skeleton instance */
+  /* TODO read LastUserContext from disk and set the "last-user-context" property
+   * of the skeleton instance */
 
   g_signal_connect (service->interface, "handle-register",
                     G_CALLBACK (luc_handler_service_handle_register),
@@ -185,8 +185,8 @@ luc_handler_service_handle_register (LUCHandler            *object,
 
   g_debug ("Register called:");
 
-  /* TODO read the apps parameter and update the "content" property of
-   * the skeleton */
+  /* TODO read the apps parameter and update the "last-user-context" property
+   * of the skeleton */
 
   foreground_apps = g_variant_lookup_value (apps, "foreground",
                                             G_VARIANT_TYPE_STRING_ARRAY);
@@ -218,8 +218,8 @@ luc_handler_service_handle_deregister (LUCHandler            *object,
 
   g_debug ("Deregister called");
 
-  /* TODO read the apps parameter and update the "content" property of
-   * the skeleton */
+  /* TODO read the apps parameter and update the "last-user-context" property
+   * of the skeleton */
 
   g_dbus_method_invocation_return_value (invocation, NULL);
 
