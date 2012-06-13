@@ -18,6 +18,8 @@
 #include <glib.h>
 #include <gio/gio.h>
 
+#include <common/watchdog-client.h>
+
 #include <luc-handler/luc-handler-service.h>
 
 
@@ -26,11 +28,12 @@ int
 main (int    argc,
       char **argv)
 {
-  LUCHandlerService     *service;
-  GDBusConnection       *connection;
-  GMainLoop             *main_loop;
-  GError                *error = NULL;
-  gint                   exit_status = EXIT_SUCCESS;
+  LUCHandlerService *service;
+  GDBusConnection   *connection;
+  WatchdogClient    *watchdog_client;
+  GMainLoop         *main_loop;
+  GError            *error = NULL;
+  gint               exit_status = EXIT_SUCCESS;
 
   /* initialize the GType type system */
   g_type_init ();
@@ -61,11 +64,15 @@ main (int    argc,
       return EXIT_FAILURE;
     }
 
+  /* update systemd's watchdog timestamp every 120 seconds */
+  watchdog_client = watchdog_client_new (120);
+
   /* create and run the application's main loop */
   main_loop = g_main_loop_new (NULL, FALSE);
   g_main_loop_run (main_loop);
 
   /* release allocated objects */
+  g_object_unref (watchdog_client);
   g_object_unref (service);
   g_object_unref (connection);
 
