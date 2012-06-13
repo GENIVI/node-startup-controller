@@ -1,0 +1,45 @@
+#!/bin/bash
+
+set -e
+
+# function to read the LastUserContext property
+get_luc()
+{
+  gdbus call -e \
+    -d org.genivi.LUCHandler1 \
+    -o /org/genivi/LUCHandler1 \
+    -m org.freedesktop.DBus.Properties.Get \
+    "org.genivi.LUCHandler1" \
+    "LastUserContext"
+}
+
+# function to make a registration call
+register()
+{
+  gdbus call -e \
+    -d org.genivi.LUCHandler1 \
+    -o /org/genivi/LUCHandler1 \
+    -m org.genivi.LUCHandler1.Register \
+    "$1" &> /dev/null
+}
+
+# function to fail with a reason
+fail()
+{
+  echo "ERROR: $1"
+  exit 1
+}
+
+# reset the LUC
+gsettings set org.genivi.LUCHandler1 last-user-context '{}'
+
+# assert that the LastUserContext property is empty now
+[[ "$(get_luc)" = "(<@a{sas} {}>,)" ]] \
+  || fail "LastUserContext out of sync with GSettings key after resetting"
+
+# register one app for foreground
+register '{ "foreground": [ "app1" ] }'
+
+# verify that the app was registered
+[[ "$(get_luc)" = "(<{'foreground': ['app1']}>,)" ]] \
+  || fail "Registration of a single foreground app was not applied"
