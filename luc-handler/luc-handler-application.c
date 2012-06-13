@@ -118,10 +118,10 @@ luc_handler_application_finalize (GObject *object)
 
 
 static void
-luc_handler_application_get_property (GObject      *object,
-                                      guint         prop_id,
-                                      GValue       *value,
-                                      GParamSpec   *pspec)
+luc_handler_application_get_property (GObject    *object,
+                                      guint       prop_id,
+                                      GValue     *value,
+                                      GParamSpec *pspec)
 {
   LUCHandlerApplication *application = LUC_HANDLER_APPLICATION (object);
 
@@ -138,10 +138,11 @@ luc_handler_application_get_property (GObject      *object,
 
 
 
-static void luc_handler_application_set_property (GObject      *object,
-                                                  guint         prop_id,
-                                                  const GValue *value,
-                                                  GParamSpec   *pspec)
+static void
+luc_handler_application_set_property (GObject      *object,
+                                      guint         prop_id,
+                                      const GValue *value,
+                                      GParamSpec   *pspec)
 {
   LUCHandlerApplication *application = LUC_HANDLER_APPLICATION (object);
 

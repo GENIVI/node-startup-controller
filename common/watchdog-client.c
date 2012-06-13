@@ -145,10 +145,11 @@ watchdog_client_get_property (GObject    *object,
 
 
 
-static void watchdog_client_set_property (GObject      *object,
-                                          guint         prop_id,
-                                          const GValue *value,
-                                          GParamSpec   *pspec)
+static void
+watchdog_client_set_property (GObject      *object,
+                              guint         prop_id,
+                              const GValue *value,
+                              GParamSpec   *pspec)
 {
   WatchdogClient *client = WATCHDOG_CLIENT (object);
 

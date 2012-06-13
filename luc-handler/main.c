@@ -30,7 +30,6 @@ main (int    argc,
   LUCHandlerApplication *application;
   LUCHandlerService     *service;
   GDBusConnection       *connection;
-  GMainLoop             *main_loop;
   GError                *error = NULL;
   gint                   exit_status = EXIT_SUCCESS;
 

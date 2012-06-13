@@ -80,7 +80,7 @@ luc_handler_service_class_init (LUCHandlerServiceClass *klass)
   GObjectClass *gobject_class;
 
   gobject_class = G_OBJECT_CLASS (klass);
-  gobject_class->finalize = luc_handler_service_finalize; 
+  gobject_class->finalize = luc_handler_service_finalize;
   gobject_class->get_property = luc_handler_service_get_property;
   gobject_class->set_property = luc_handler_service_set_property;
 
@@ -152,10 +152,10 @@ luc_handler_service_finalize (GObject *object)
 
 
 static void
-luc_handler_service_get_property (GObject      *object,
-                                      guint         prop_id,
-                                      GValue       *value,
-                                      GParamSpec   *pspec)
+luc_handler_service_get_property (GObject    *object,
+                                  guint       prop_id,
+                                  GValue     *value,
+                                  GParamSpec *pspec)
 {
   LUCHandlerService *service = LUC_HANDLER_SERVICE (object);
 
@@ -172,10 +172,11 @@ luc_handler_service_get_property (GObject      *object,
 
 
 
-static void luc_handler_service_set_property (GObject      *object,
-                                                  guint         prop_id,
-                                                  const GValue *value,
-                                                  GParamSpec   *pspec)
+static void
+luc_handler_service_set_property (GObject      *object,
+                                  guint         prop_id,
+                                  const GValue *value,
+                                  GParamSpec   *pspec)
 {
   LUCHandlerService *service = LUC_HANDLER_SERVICE (object);
 
