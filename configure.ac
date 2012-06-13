@@ -95,6 +95,7 @@ GLIB_GSETTINGS
 
 AC_OUTPUT([
 Makefile
+boot-manager/Makefile
 luc-handler/Makefile
 luc-handler/org.genivi.LUCHandler1.gschema.xml
 tests/Makefile
