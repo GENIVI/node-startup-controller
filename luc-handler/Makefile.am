@@ -16,6 +16,8 @@ luc_handler_built_sources =						\
 luc_handler_SOURCES =							\
 	../common/watchdog-client.c					\
 	../common/watchdog-client.h					\
+	luc-handler-application.c					\
+	luc-handler-application.h					\
 	luc-handler-service.c						\
 	luc-handler-service.h						\
 	main.c								\
