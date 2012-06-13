@@ -14,6 +14,8 @@ luc_handler_built_sources =						\
 	$(luc_handler_built_headers)
 
 luc_handler_SOURCES =							\
+	../common/glib-extensions.c					\
+	../common/glib-extensions.h					\
 	../common/watchdog-client.c					\
 	../common/watchdog-client.h					\
 	luc-handler-application.c					\

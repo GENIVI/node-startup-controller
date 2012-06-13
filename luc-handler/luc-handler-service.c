@@ -14,6 +14,8 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
+#include <common/glib-extensions.h>
+
 #include <luc-handler/luc-handler-dbus.h>
 #include <luc-handler/luc-handler-service.h>
 
@@ -199,32 +201,117 @@ luc_handler_service_handle_register (LUCHandler            *object,
                                      GVariant              *apps,
                                      LUCHandlerService     *service)
 {
-  GVariant *foreground_apps;
-  gchar    *app_name;
-  guint     n;
+  GVariantBuilder dict_builder;
+  GHashTableIter  hiter;
+  GVariantIter    viter;
+  GHashTable     *table;
+  GPtrArray      *apps_array;
+  GVariant       *current_context;
+  GVariant       *current_apps;
+  GVariant       *new_context;
+  GVariant       *new_apps;
+  GList          *lp;
+  GList          *luc_types;
+  gchar          *app;
+  gchar          *luc_type;
+  guint           n;
 
   g_return_val_if_fail (IS_LUC_HANDLER (object), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (LUC_HANDLER_IS_SERVICE (service), FALSE);
 
-  g_debug ("Register called:");
+  /* create a hash table to merge the current context and the newly registered apps */
+  table = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                 g_free, (GDestroyNotify) g_ptr_array_unref);
 
-  /* TODO read the apps parameter and update the "last-user-context" property
-   * of the skeleton */
+  /* obtain the current content of the last user context */
+  current_context = luc_handler_get_last_user_context (service->interface);
 
-  foreground_apps = g_variant_lookup_value (apps, "foreground",
-                                            G_VARIANT_TYPE_STRING_ARRAY);
-  if (foreground_apps != NULL)
+  /* prepare app lists for all LUC types present in the current context */
+  g_variant_iter_init (&viter, current_context);
+  while (g_variant_iter_loop (&viter, "{sas}", &luc_type, NULL))
     {
-      for (n = 0; n < g_variant_n_children (foreground_apps); n++)
-        {
-          g_variant_get_child (foreground_apps, n, "&s", &app_name);
-          g_debug ("  foreground: %s", app_name);
-        }
+      g_hash_table_insert (table, g_strdup (luc_type),
+                           g_ptr_array_new_with_free_func (g_free));
     }
 
-  g_dbus_method_invocation_return_value (invocation, NULL);
+  /* add app lists for LUC types that are needed for the newly registered apps */
+  g_variant_iter_init (&viter, apps);
+  while (g_variant_iter_loop (&viter, "{sas}", &luc_type, NULL))
+    {
+      g_hash_table_insert (table, g_strdup (luc_type),
+                           g_ptr_array_new_with_free_func (g_free));
+    }
 
+  /* we now have a hash table that has all LUC types involved in the
+   * current context and in the newly registered apps */
+
+  /* fill the app lists for each LUC type involved, make sure that newly registered
+   * apps are added at the end so that they are "prioritized" */
+  g_hash_table_iter_init (&hiter, table);
+  while (g_hash_table_iter_next (&hiter, (gpointer) &luc_type, (gpointer) &apps_array))
+    {
+      /* get apps currently registered for the LUC type */
+      current_apps = g_variant_lookup_value (current_context, luc_type,
+                                             G_VARIANT_TYPE_STRING_ARRAY);
+
+      /* get apps to be registered for the LUC type now */
+      new_apps = g_variant_lookup_value (apps, luc_type, G_VARIANT_TYPE_STRING_ARRAY);
+
+      /* add all currently registered apps unless they are to be registered now.
+       * this is because we want apps to be registered now to be moved to the end
+       * of the lists */
+      for (n = 0; current_apps != NULL && n < g_variant_n_children (current_apps); n++)
+        {
+          g_variant_get_child (current_apps, n, "&s", &app);
+          if (!g_variant_string_array_has_string (new_apps, app))
+            g_ptr_array_add (apps_array, g_strdup (app));
+        }
+
+      /* add all newly registered apps at the end now */
+      for (n = 0; new_apps != NULL && n < g_variant_n_children (new_apps); n++)
+        {
+          g_variant_get_child (new_apps, n, "&s", &app);
+          g_ptr_array_add (apps_array, g_strdup (app));
+        }
+
+      /* release app lists for this LUC type */
+      if (current_apps != NULL)
+        g_variant_unref (current_apps);
+      if (new_apps != NULL)
+        g_variant_unref (new_apps);
+    }
+
+  /* construct a new dictionary variant for the new LUC */
+  g_variant_builder_init (&dict_builder, G_VARIANT_TYPE ("a{sas}"));
+
+  /* copy LUC types and corresponding apps over to the new context. make
+   * sure the order (alphabetic) in which we add LUC types to the context
+   * dict is always the same. this is helpful for testing */
+  luc_types = g_hash_table_get_keys (table);
+  luc_types = g_list_sort (luc_types, (GCompareFunc) g_strcmp0);
+  for (lp = luc_types; lp != NULL; lp = lp->next)
+    {
+      /* get the apps list registered for this LUC type */
+      apps_array = g_hash_table_lookup (table, lp->data);
+
+      /* NULL-terminate the pointer so that we can treat it as a gchar ** */
+      g_ptr_array_add (apps_array, NULL);
+
+      /* add the LUC type and its apps to the new context */
+      g_variant_builder_add (&dict_builder, "{s^as}", lp->data, apps_array->pdata);
+    }
+
+  /* free the LUC types and our LUC type to apps mapping */
+  g_list_free (luc_types);
+  g_hash_table_unref (table);
+
+  /* apply the new last user context */
+  new_context = g_variant_builder_end (&dict_builder);
+  luc_handler_set_last_user_context (service->interface, new_context);
+
+  /* notify the caller that we have handled the register request */
+  g_dbus_method_invocation_return_value (invocation, NULL);
   return TRUE;
 }
 
