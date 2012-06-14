@@ -93,7 +93,8 @@ luc_handler_service_class_init (LUCHandlerServiceClass *klass)
                                                         "connection",
                                                         G_TYPE_DBUS_CONNECTION,
                                                         G_PARAM_READWRITE |
-                                                        G_PARAM_CONSTRUCT_ONLY));
+                                                        G_PARAM_CONSTRUCT_ONLY |
+                                                        G_PARAM_STATIC_STRINGS));
 }
 
 
@@ -323,26 +324,91 @@ luc_handler_service_handle_deregister (LUCHandler            *object,
                                        GVariant              *apps,
                                        LUCHandlerService     *service)
 {
+  GVariantBuilder apps_builder;
+  GVariantBuilder builder;
+  GVariantIter    viter;
+  GVariant       *current_context;
+  GVariant       *new_context;
+  GVariant       *current_apps;
+  GVariant       *apps_to_remove;
+  gchar          *app;
+  gchar          *luc_type;
+  guint           num_apps;
+  guint           n;
+
   g_return_val_if_fail (IS_LUC_HANDLER (object), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (LUC_HANDLER_IS_SERVICE (service), FALSE);
 
-  g_debug ("Deregister called");
+  /* obtain the current content of the last user context */
+  current_context = luc_handler_get_last_user_context (service->interface);
 
-  /* TODO read the apps parameter and update the "last-user-context" property
-   * of the skeleton */
+  /* initialise the builder for the new context */
+  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a{sas}"));
 
+  /* copy the current context into the new context, drop all apps that
+   * are supposed to be registered */
+  g_variant_iter_init (&viter, current_context);
+  while (g_variant_iter_loop (&viter, "{s@as}", &luc_type, &current_apps))
+    {
+      /* get a list of apps to be removed from this LUC type */
+      apps_to_remove = g_variant_lookup_value (apps, luc_type,
+                                               G_VARIANT_TYPE_STRING_ARRAY);
+
+      if (apps_to_remove == NULL)
+        {
+          /* there are no apps to be removed from this LUC type, just copy
+           * all currently registered apps over */
+          g_variant_builder_add (&builder, "{s@as}", luc_type, current_apps);
+        }
+      else
+        {
+          /* we need to remove some apps from the current LUC type, so let's
+           * build a new string array */
+          g_variant_builder_init (&apps_builder, G_VARIANT_TYPE ("as"));
+
+          /* add all apps currently registered for this LUC type to the string
+           * array unless they are to be removed */
+          for (n = 0, num_apps = 0;
+               current_apps != NULL && n < g_variant_n_children (current_apps);
+               n++)
+            {
+              g_variant_get_child (current_apps, n, "&s", &app);
+              if (!g_variant_string_array_has_string (apps_to_remove, app))
+                {
+                  g_variant_builder_add (&apps_builder, "s", app);
+                  num_apps++;
+                }
+            }
+
+          /* add the LUC type and its apps to the new context unless there are none */
+          if (num_apps > 0)
+            g_variant_builder_add (&builder, "{sas}", luc_type, &apps_builder);
+
+          /* free resources used for building the string array */
+          g_variant_builder_clear (&apps_builder);
+        }
+
+      /* release the apps to be removed for this LUC type */
+      if (apps_to_remove != NULL)
+        g_variant_unref (apps_to_remove);
+    }
+
+  /* apply the new last user context */
+  new_context = g_variant_builder_end (&builder);
+  luc_handler_set_last_user_context (service->interface, new_context);
+
+  /* notify the caller that we have handled the deregistration request */
   g_dbus_method_invocation_return_value (invocation, NULL);
-
   return TRUE;
 }
 
 
 
 static gboolean
-luc_handler_service_get_last_user_context (GValue            *value,
-                                           GVariant          *variant,
-                                           gpointer           user_data)
+luc_handler_service_get_last_user_context (GValue   *value,
+                                           GVariant *variant,
+                                           gpointer  user_data)
 {
   g_return_val_if_fail (G_IS_VALUE (value), FALSE);
   g_return_val_if_fail (variant != NULL, FALSE);

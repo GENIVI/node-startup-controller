@@ -80,7 +80,8 @@ watchdog_client_class_init (WatchdogClientClass *klass)
                                                       "timeout",
                                                       0, G_MAXUINT, 120,
                                                       G_PARAM_READWRITE |
-                                                      G_PARAM_CONSTRUCT_ONLY));
+                                                      G_PARAM_CONSTRUCT_ONLY |
+                                                      G_PARAM_STATIC_STRINGS));
 }
 
 

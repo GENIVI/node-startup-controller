@@ -88,7 +88,8 @@ luc_handler_application_class_init (LUCHandlerApplicationClass *klass)
                                                         "luc-handler-service",
                                                         LUC_HANDLER_TYPE_SERVICE,
                                                         G_PARAM_READWRITE |
-                                                        G_PARAM_CONSTRUCT_ONLY));
+                                                        G_PARAM_CONSTRUCT_ONLY |
+                                                        G_PARAM_STATIC_STRINGS));
 }
 
 
