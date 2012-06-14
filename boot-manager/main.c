@@ -20,6 +20,7 @@
 
 #include <boot-manager/boot-manager-application.h>
 #include <boot-manager/boot-manager-service.h>
+#include <boot-manager/systemd-manager-dbus.h>
 
 
 
@@ -30,6 +31,7 @@ main (int    argc,
   BootManagerApplication *application;
   BootManagerService     *service;
   GDBusConnection        *connection;
+  SystemdManager         *systemd_manager;
   GError                 *error = NULL;
   gint                    exit_status = EXIT_SUCCESS;
 
@@ -48,14 +50,45 @@ main (int    argc,
       return EXIT_FAILURE;
     }
 
+  /* attempt to connect to the systemd manager */
+  systemd_manager =
+    systemd_manager_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
+                                            G_DBUS_PROXY_FLAGS_NONE,
+                                            "org.freedesktop.systemd1",
+                                            "/org/freedesktop/systemd1",
+                                            NULL, &error);
+  if (systemd_manager == NULL)
+    {
+      g_warning ("Failed to connect to the systemd manager: %s", error->message);
+
+      /* clean up */
+      g_error_free (error);
+      g_object_unref (connection);
+
+      return EXIT_FAILURE;
+    }
+
+  /* subscribe to the systemd manager */
+  if (!systemd_manager_call_subscribe_sync (systemd_manager, NULL, &error))
+    {
+      g_warning ("Failed to subscribe to the systemd manager: %s", error->message);
+
+      /* clean up */
+      g_error_free (error);
+      g_object_unref (connection);
+
+      return EXIT_FAILURE;
+    }
+
   /* instantiate the BootManager service implementation */
-  service = boot_manager_service_new (connection);
-  if (!boot_manager_service_start (service, &error))
+  service = boot_manager_service_new (connection, systemd_manager);
+  if (!boot_manager_service_start_up (service, &error))
     {
       g_warning ("Failed to start the BootManager service: %s", error->message);
 
       /* clean up */
       g_error_free (error);
+      g_object_unref (systemd_manager);
       g_object_unref (service);
       g_object_unref (connection);
 
@@ -68,6 +101,7 @@ main (int    argc,
   g_object_unref (application);
 
   /* release allocated objects */
+  g_object_unref (systemd_manager);
   g_object_unref (service);
   g_object_unref (connection);
 

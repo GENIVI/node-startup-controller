@@ -19,28 +19,70 @@
 
 
 
+typedef struct _BootManagerServiceJob BootManagerServiceJob;
+
+
+
 /* property identifiers */
 enum
 {
   PROP_0,
   PROP_CONNECTION,
+  PROP_SYSTEMD_MANAGER,
 };
 
 
 
-static void     boot_manager_service_finalize     (GObject               *object);
-static void     boot_manager_service_get_property (GObject               *object,
-                                                   guint                  prop_id,
-                                                   GValue                *value,
-                                                   GParamSpec            *pspec);
-static void     boot_manager_service_set_property (GObject               *object,
-                                                   guint                  prop_id,
-                                                   const GValue          *value,
-                                                   GParamSpec            *pspec);
-static gboolean boot_manager_service_handle_start (BootManager           *interface,
-                                                   GDBusMethodInvocation *invocation,
-                                                   const gchar           *unit,
-                                                   BootManagerService    *service);
+static void                   boot_manager_service_finalize            (GObject                   *object);
+static void                   boot_manager_service_constructed         (GObject                   *object);
+static void                   boot_manager_service_get_property        (GObject                   *object,
+                                                                        guint                      prop_id,
+                                                                        GValue                    *value,
+                                                                        GParamSpec                *pspec);
+static void                   boot_manager_service_set_property        (GObject                   *object,
+                                                                        guint                      prop_id,
+                                                                        const GValue              *value,
+                                                                        GParamSpec                *pspec);
+static gboolean               boot_manager_service_handle_start        (BootManager               *interface,
+                                                                        GDBusMethodInvocation     *invocation,
+                                                                        const gchar               *unit,
+                                                                        BootManagerService        *service);
+static void                   boot_manager_service_handle_start_finish (BootManagerService        *service,
+                                                                        const gchar               *unit,
+                                                                        const gchar               *result,
+                                                                        GError                    *error,
+                                                                        gpointer                   user_data);
+static void                   boot_manager_service_start_unit_reply    (GObject                   *object,
+                                                                        GAsyncResult              *result,
+                                                                        gpointer                   user_data);
+static gboolean               boot_manager_service_handle_stop         (BootManager               *interface,
+                                                                        GDBusMethodInvocation     *invocation,
+                                                                        const gchar               *unit,
+                                                                        BootManagerService        *service);
+static void                   boot_manager_service_handle_stop_finish  (BootManagerService        *service,
+                                                                        const gchar               *unit,
+                                                                        const gchar               *result,
+                                                                        GError                    *error,
+                                                                        gpointer                   user_data);
+static void                   boot_manager_service_stop_unit_reply     (GObject                   *object,
+                                                                        GAsyncResult              *result,
+                                                                        gpointer                   user_data);
+static void                   boot_manager_service_job_removed         (SystemdManager            *manager,
+                                                                        guint                      id,
+                                                                        const gchar               *job_name,
+                                                                        const gchar               *result,
+                                                                        BootManagerService        *service);
+static BootManagerServiceJob *boot_manager_service_job_new             (BootManagerService        *service,
+                                                                        const gchar               *unit,
+                                                                        GCancellable              *cancellable,
+                                                                        BootManagerServiceCallback callback,
+                                                                        gpointer                   user_data);
+static void                   boot_manager_service_job_unref           (BootManagerServiceJob     *job);
+static void                   boot_manager_service_remember_job        (BootManagerService        *service,
+                                                                        const gchar               *job_name,
+                                                                        BootManagerServiceJob     *job);
+static void                   boot_manager_service_forget_job          (BootManagerService        *service,
+                                                                        const gchar               *job_name);
 
 
 
@@ -55,6 +97,19 @@ struct _BootManagerService
 
   GDBusConnection *connection;
   BootManager     *interface;
+  SystemdManager  *systemd_manager;
+
+  GHashTable      *jobs;
+};
+
+struct _BootManagerServiceJob
+{
+  BootManagerService        *service;
+  gchar                     *unit;
+  GCancellable              *cancellable;
+  BootManagerServiceCallback callback;
+  gpointer                   user_data;
+  gchar                     *name;
 };
 
 
@@ -70,6 +125,7 @@ boot_manager_service_class_init (BootManagerServiceClass *klass)
 
   gobject_class = G_OBJECT_CLASS (klass);
   gobject_class->finalize = boot_manager_service_finalize;
+  gobject_class->constructed = boot_manager_service_constructed;
   gobject_class->get_property = boot_manager_service_get_property;
   gobject_class->set_property = boot_manager_service_set_property;
 
@@ -80,7 +136,18 @@ boot_manager_service_class_init (BootManagerServiceClass *klass)
                                                         "connection",
                                                         G_TYPE_DBUS_CONNECTION,
                                                         G_PARAM_READWRITE |
-                                                        G_PARAM_CONSTRUCT_ONLY));
+                                                        G_PARAM_CONSTRUCT_ONLY |
+                                                        G_PARAM_STATIC_STRINGS));
+
+  g_object_class_install_property (gobject_class,
+                                   PROP_SYSTEMD_MANAGER,
+                                   g_param_spec_object ("systemd-manager",
+                                                        "systemd-manager",
+                                                        "systemd-manager",
+                                                        TYPE_SYSTEMD_MANAGER,
+                                                        G_PARAM_READWRITE |
+                                                        G_PARAM_CONSTRUCT_ONLY |
+                                                        G_PARAM_STATIC_STRINGS));
 }
 
 
@@ -88,11 +155,20 @@ boot_manager_service_class_init (BootManagerServiceClass *klass)
 static void
 boot_manager_service_init (BootManagerService *service)
 {
+  /* create a mapping of systemd job names to job objects; we will use this
+   * to remember jobs that we started */
+  service->jobs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
+                                         (GDestroyNotify) boot_manager_service_job_unref);
+
   service->interface = boot_manager_skeleton_new ();
 
-  /* implement the Start() handler */
+  /* implement the Start() method handler */
   g_signal_connect (service->interface, "handle-start",
                     G_CALLBACK (boot_manager_service_handle_start), service);
+
+  /* implement the Stop() method handler */
+  g_signal_connect (service->interface, "handle-stop",
+                    G_CALLBACK (boot_manager_service_handle_stop), service);
 }
 
 
@@ -102,9 +178,17 @@ boot_manager_service_finalize (GObject *object)
 {
   BootManagerService *service = BOOT_MANAGER_SERVICE (object);
 
+  /* release all the jobs we have remembered */
+  g_hash_table_unref (service->jobs);
+
   /* release the D-Bus connection object */
-  if (service->connection != NULL)
-    g_object_unref (service->connection);
+  g_object_unref (service->connection);
+
+  /* release the systemd manager */
+  g_signal_handlers_disconnect_matched (service->systemd_manager,
+                                        G_SIGNAL_MATCH_DATA,
+                                        0, 0, NULL, NULL, service);
+  g_object_unref (service->systemd_manager);
 
   /* release the interface skeleton */
   g_signal_handlers_disconnect_matched (service->interface,
@@ -113,6 +197,19 @@ boot_manager_service_finalize (GObject *object)
   g_object_unref (service->interface);
 
   (*G_OBJECT_CLASS (boot_manager_service_parent_class)->finalize) (object);
+}
+
+
+
+static void
+boot_manager_service_constructed (GObject *object)
+{
+  BootManagerService *service = BOOT_MANAGER_SERVICE (object);
+
+  /* connect to systemd's "JobRemoved" signal so that we are notified
+   * whenever a job is finished */
+  g_signal_connect (service->systemd_manager, "job-removed",
+                    G_CALLBACK (boot_manager_service_job_removed), service);
 }
 
 
@@ -129,6 +226,9 @@ boot_manager_service_get_property (GObject    *object,
     {
     case PROP_CONNECTION:
       g_value_set_object (value, service->connection);
+      break;
+    case PROP_SYSTEMD_MANAGER:
+      g_value_set_object (value, service->systemd_manager);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -151,6 +251,9 @@ boot_manager_service_set_property (GObject      *object,
     case PROP_CONNECTION:
       service->connection = g_value_dup_object (value);
       break;
+    case PROP_SYSTEMD_MANAGER:
+      service->systemd_manager = g_value_dup_object (value);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -165,32 +268,291 @@ boot_manager_service_handle_start (BootManager           *interface,
                                    const gchar           *unit,
                                    BootManagerService    *service)
 {
+  BootManagerServiceJob *job;
+
   g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (unit != NULL, FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
 
-  g_debug ("handle start of %s", unit);
-
-  boot_manager_complete_start (service->interface, invocation, "done");
+  /* ask systemd to start the unit for us, send a D-Bus reply in the finish callback */
+  boot_manager_service_start (service, unit, NULL,
+                              boot_manager_service_handle_start_finish, invocation);
 
   return TRUE;
 }
 
 
 
+static void
+boot_manager_service_handle_start_finish (BootManagerService *service,
+                                          const gchar        *unit,
+                                          const gchar        *result,
+                                          GError             *error,
+                                          gpointer            user_data)
+{
+  GDBusMethodInvocation *invocation = G_DBUS_METHOD_INVOCATION (user_data);
+
+  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+  g_return_if_fail (unit != NULL);
+  g_return_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation));
+
+  /* log any potential errors */
+  if (error != NULL)
+    g_warning ("there was an error: %s", error->message);
+
+  /* report the result back to the boot manager client */
+  boot_manager_complete_start (service->interface, invocation, result);
+}
+
+
+
+static void
+boot_manager_service_start_unit_reply (GObject      *object,
+                                       GAsyncResult *result,
+                                       gpointer      user_data)
+{
+  BootManagerServiceJob *job = user_data;
+  GError                *error = NULL;
+  gchar                 *job_name = NULL;
+
+  g_return_if_fail (IS_SYSTEMD_MANAGER (object));
+  g_return_if_fail (G_IS_ASYNC_RESULT (result));
+  g_return_if_fail (user_data != NULL);
+
+  /* finish the start unit call */
+  if (!systemd_manager_call_start_unit_finish (job->service->systemd_manager,
+                                               &job_name, result, &error))
+    {
+      /* there was an error; let the caller now */
+      job->callback (job->service, job->unit, "failed", error, job->user_data);
+      g_error_free (error);
+      g_free (job_name);
+
+      /* finish the job immediately */
+      boot_manager_service_job_unref (job);
+    }
+  else
+    {
+      /* remember the job so that we can finish it in the "job-removed" signal
+       * handler. the service takes ownership of the job so we don't need to
+       * unref it here */
+      boot_manager_service_remember_job (job->service, job_name, job);
+    }
+}
+
+
+
+static gboolean
+boot_manager_service_handle_stop (BootManager           *interface,
+                                  GDBusMethodInvocation *invocation,
+                                  const gchar           *unit,
+                                  BootManagerService    *service)
+{
+  BootManagerServiceJob *job;
+
+  g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
+  g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
+  g_return_val_if_fail (unit != NULL, FALSE);
+  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
+
+  /* ask systemd to stop the unit for us, send a D-Bus reply in the finish callback */
+  boot_manager_service_stop (service, unit, NULL,
+                             boot_manager_service_handle_stop_finish, invocation);
+
+  return TRUE;
+}
+
+
+
+static void
+boot_manager_service_handle_stop_finish (BootManagerService *service,
+                                         const gchar        *unit,
+                                         const gchar        *result,
+                                         GError             *error,
+                                         gpointer            user_data)
+{
+  GDBusMethodInvocation *invocation = G_DBUS_METHOD_INVOCATION (user_data);
+
+  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+  g_return_if_fail (unit != NULL);
+  g_return_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation));
+
+  /* log any potential errors */
+  if (error != NULL)
+    g_warning ("there was an error: %s", error->message);
+
+  /* report the result back to the boot manager client */
+  boot_manager_complete_stop (service->interface, invocation, result);
+}
+
+
+
+static void
+boot_manager_service_stop_unit_reply (GObject      *object,
+                                      GAsyncResult *result,
+                                      gpointer      user_data)
+{
+  BootManagerServiceJob *job = user_data;
+  GError                *error = NULL;
+  gchar                 *job_name = NULL;
+
+  g_return_if_fail (IS_SYSTEMD_MANAGER (object));
+  g_return_if_fail (G_IS_ASYNC_RESULT (result));
+  g_return_if_fail (user_data != NULL);
+
+  /* finish the stop unit call */
+  if (!systemd_manager_call_stop_unit_finish (job->service->systemd_manager,
+                                              &job_name, result, &error))
+    {
+      /* there was an error; let the caller know */
+      job->callback (job->service, job->unit, "failed", error, job->user_data);
+      g_error_free (error);
+      g_free (job_name);
+
+      /* finish the job immediately */
+      boot_manager_service_job_unref (job);
+    }
+  else
+    {
+      /* remember the job so that we can finish it in the "job-removed" signal
+       * handler. the service takes ownership of the job so we don't need to
+       * unref it here */
+      boot_manager_service_remember_job (job->service, job_name, job);
+    }
+}
+
+
+
+static void
+boot_manager_service_job_removed (SystemdManager     *manager,
+                                  guint               id,
+                                  const gchar        *job_name,
+                                  const gchar        *result,
+                                  BootManagerService *service)
+{
+  BootManagerServiceJob *job;
+
+  g_return_if_fail (IS_SYSTEMD_MANAGER (manager));
+  g_return_if_fail (job_name != NULL && *job_name != '\0');
+  g_return_if_fail (result != NULL && *result != '\0');
+  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+
+  /* lookup the rememebred job for this job name */
+  job = g_hash_table_lookup (service->jobs, job_name);
+
+  /* if there is no such job, just ignore this job-removed signal */
+  if (job == NULL)
+    return;
+
+  /* finish the job by notifying the caller */
+  job->callback (service, job->unit, result, NULL, job->user_data);
+
+  /* forget about this job; this will unref the job */
+  boot_manager_service_forget_job (service, job_name);
+}
+
+
+
+static BootManagerServiceJob *
+boot_manager_service_job_new (BootManagerService        *service,
+                              const gchar               *unit,
+                              GCancellable              *cancellable,
+                              BootManagerServiceCallback callback,
+                              gpointer                   user_data)
+{
+  BootManagerServiceJob *job;
+
+  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), NULL);
+  g_return_val_if_fail (unit != NULL, NULL);
+  g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
+
+  /* allocate a new job struct */
+  job = g_slice_new0 (BootManagerServiceJob);
+  job->service = g_object_ref (service);
+  job->unit = g_strdup (unit);
+  if (cancellable != NULL)
+    job->cancellable = g_object_ref (cancellable);
+  job->callback = callback;
+  job->user_data = user_data;
+
+  return job;
+}
+
+
+
+static void
+boot_manager_service_job_unref (BootManagerServiceJob *job)
+{
+  if (job == NULL)
+    return;
+
+  /* release all memory and references held by the job */
+  if (job->cancellable != NULL)
+    g_object_unref (job->cancellable);
+  g_free (job->unit);
+  g_object_unref (job->service);
+  g_slice_free (BootManagerServiceJob, job);
+}
+
+
+
+static void
+boot_manager_service_remember_job (BootManagerService    *service,
+                                   const gchar           *job_name,
+                                   BootManagerServiceJob *job)
+{
+  BootManagerServiceJob *existing_job;
+
+  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+  g_return_if_fail (job_name != NULL && *job_name != '\0');
+  g_return_if_fail (job != NULL);
+
+  /* if the job is already being remembered, then there is a programming
+   * mistake and we should make people aware of it */
+  existing_job = g_hash_table_lookup (service->jobs, job_name);
+  if (existing_job != NULL)
+    {
+      g_critical ("trying to remember the same job twice");
+      return;
+    }
+
+  /* associate the job name with the job */
+  g_hash_table_insert (service->jobs, g_strdup (job_name), job);
+}
+
+
+
+static void
+boot_manager_service_forget_job (BootManagerService *service,
+                                 const gchar        *job_name)
+{
+  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+  g_return_if_fail (job_name != NULL && *job_name != '\0');
+
+  g_hash_table_remove (service->jobs, job_name);
+}
+
+
+
 BootManagerService *
-boot_manager_service_new (GDBusConnection *connection)
+boot_manager_service_new (GDBusConnection *connection,
+                          SystemdManager  *systemd_manager)
 {
   g_return_val_if_fail (G_IS_DBUS_CONNECTION (connection), NULL);
-  return g_object_new (BOOT_MANAGER_TYPE_SERVICE, "connection", connection, NULL);
+  g_return_val_if_fail (IS_SYSTEMD_MANAGER (systemd_manager), NULL);
+
+  return g_object_new (BOOT_MANAGER_TYPE_SERVICE,
+                       "connection", connection,
+                       "systemd-manager", systemd_manager,
+                       NULL);
 }
 
 
 
 gboolean
-boot_manager_service_start (BootManagerService *service,
-                            GError             **error)
+boot_manager_service_start_up (BootManagerService *service,
+                               GError            **error)
 {
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
@@ -200,4 +562,52 @@ boot_manager_service_start (BootManagerService *service,
                                            service->connection,
                                            "/org/genivi/BootManager1",
                                            error);
+}
+
+
+
+void
+boot_manager_service_start (BootManagerService        *service,
+                            const gchar               *unit,
+                            GCancellable              *cancellable,
+                            BootManagerServiceCallback callback,
+                            gpointer                   user_data)
+{
+  BootManagerServiceJob *job;
+
+  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+  g_return_if_fail (unit != NULL);
+  g_return_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable));
+  g_return_if_fail (callback != NULL);
+
+  /* create a new job object */
+  job = boot_manager_service_job_new (service, unit, cancellable, callback, user_data);
+
+  /* ask systemd to start the unit asynchronously */
+  systemd_manager_call_start_unit (service->systemd_manager, unit, "fail", cancellable,
+                                   boot_manager_service_start_unit_reply, job);
+}
+
+
+
+void
+boot_manager_service_stop (BootManagerService        *service,
+                           const gchar               *unit,
+                           GCancellable              *cancellable,
+                           BootManagerServiceCallback callback,
+                           gpointer                   user_data)
+{
+  BootManagerServiceJob *job;
+
+  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+  g_return_if_fail (unit != NULL);
+  g_return_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable));
+  g_return_if_fail (callback != NULL);
+
+  /* create a new job object */
+  job = boot_manager_service_job_new (service, unit, cancellable, callback, user_data);
+
+  /* ask systemd to stop the unit asynchronously */
+  systemd_manager_call_stop_unit (service->systemd_manager, unit, "fail", cancellable,
+                                  boot_manager_service_stop_unit_reply, job);
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<node>
+<node name="/org/freedesktop/systemd1">
   <interface name="org.freedesktop.systemd1.Manager">
     <method name="StartUnit">
       <arg name="name" type="s" direction="in"/>
@@ -36,8 +36,7 @@
     <signal name="JobRemoved">
       <arg name="id" type="u"/>
       <arg name="job" type="o"/>
-      <arg name="unit" type="s"/>
       <arg name="result" type="s"/>
-    </signal>"
+    </signal>
   </interface>
 </node>
