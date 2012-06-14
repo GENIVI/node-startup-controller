@@ -28,15 +28,19 @@ enum
 
 
 
-static void boot_manager_service_finalize     (GObject      *object);
-static void boot_manager_service_get_property (GObject      *object,
-                                               guint         prop_id,
-                                               GValue       *value,
-                                               GParamSpec   *pspec);
-static void boot_manager_service_set_property (GObject      *object,
-                                               guint         prop_id,
-                                               const GValue *value,
-                                               GParamSpec   *pspec);
+static void     boot_manager_service_finalize     (GObject               *object);
+static void     boot_manager_service_get_property (GObject               *object,
+                                                   guint                  prop_id,
+                                                   GValue                *value,
+                                                   GParamSpec            *pspec);
+static void     boot_manager_service_set_property (GObject               *object,
+                                                   guint                  prop_id,
+                                                   const GValue          *value,
+                                                   GParamSpec            *pspec);
+static gboolean boot_manager_service_handle_start (BootManager           *interface,
+                                                   GDBusMethodInvocation *invocation,
+                                                   const gchar           *unit,
+                                                   BootManagerService    *service);
 
 
 
@@ -85,6 +89,10 @@ static void
 boot_manager_service_init (BootManagerService *service)
 {
   service->interface = boot_manager_skeleton_new ();
+
+  /* implement the Start() handler */
+  g_signal_connect (service->interface, "handle-start",
+                    G_CALLBACK (boot_manager_service_handle_start), service);
 }
 
 
@@ -147,6 +155,26 @@ boot_manager_service_set_property (GObject      *object,
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
     }
+}
+
+
+
+static gboolean
+boot_manager_service_handle_start (BootManager           *interface,
+                                   GDBusMethodInvocation *invocation,
+                                   const gchar           *unit,
+                                   BootManagerService    *service)
+{
+  g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
+  g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
+  g_return_val_if_fail (unit != NULL, FALSE);
+  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
+
+  g_debug ("handle start of %s", unit);
+
+  boot_manager_complete_start (service->interface, invocation, "done");
+
+  return TRUE;
 }
 
 
