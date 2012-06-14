@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 set -e
@@ -23,6 +24,16 @@ register()
     "$1" &> /dev/null
 }
 
+# function to make a registration call
+deregister()
+{
+  gdbus call -e \
+    -d org.genivi.LUCHandler1 \
+    -o /org/genivi/LUCHandler1 \
+    -m org.genivi.LUCHandler1.Deregister \
+    "$1" &> /dev/null
+}
+
 # function to fail with a reason
 fail()
 {
@@ -37,9 +48,71 @@ gsettings set org.genivi.LUCHandler1 last-user-context '{}'
 [[ "$(get_luc)" = "(<@a{sas} {}>,)" ]] \
   || fail "LastUserContext out of sync with GSettings key after resetting"
 
-# register one app for foreground
-register '{ "foreground": [ "app1" ] }'
+### REGISTRATION OF SINGLE APPS
 
-# verify that the app was registered
-[[ "$(get_luc)" = "(<{'foreground': ['app1']}>,)" ]] \
-  || fail "Registration of a single foreground app was not applied"
+## Registration of the first app
+register '{ "background": [ "app1" ] }'
+[[ "$(get_luc)" = "(<{'background': ['app1']}>,)" ]] \
+  || fail "Registration of a single background app was not applied"
+
+## Registration of another, different app
+register '{ "background" : [ "app2" ] }'
+[[ "$(get_luc)" = "(<{'background': ['app1', 'app2']}>,)" ]] \
+  || fail "Registration of a second background app was missing or out of order"
+
+## Registration of a pre-existing app moves it to the end
+register '{ "background" : [ "app1"] }'
+[[ "$(get_luc)" = "(<{'background': ['app2', 'app1']}>,)" ]] \
+  || fail "Registration of a pre-existing app failed to change its ordering"
+
+## Registration of another app in a different category
+register '{ "foreground" : [ "app3" ] }'
+[[ "$(get_luc)" = "(<{'background': ['app2', 'app1'], 'foreground': ['app3']}>,)" ]] \
+  || fail "Registration of an app in a different category was missing or out of order"
+
+### DEREGISTRATION OF SINGLE APPS
+## deregister an app from a list (not leaving it empty)
+deregister '{ "background" : [ "app2" ] }'
+[[ "$(get_luc)" = "(<{'background': ['app1'], 'foreground': ['app3']}>,)" ]] \
+  || fail "Deregistration of an app was not applied"
+
+## deregister an app from a list, leaving it empty
+deregister '{ "background" : [ "app1" ] }'
+[[ "$(get_luc)" = "(<{'foreground': ['app3']}>,)" ]] \
+  || fail "Deregistration of an app did not remove category"
+
+### REGISTRATION OF MULTIPLE APPS
+## register two apps into a new category
+register '{ "background" : [ "app1", "app2"] }'
+[[ "$(get_luc)" = "(<{'background': ['app1', 'app2'], 'foreground': ['app3']}>,)" ]] \
+  || fail "Registration of multiple apps was not applied"
+
+## register two apps into an existing category
+register '{ "background" : [ "app3", "app4"] }'
+[[ "$(get_luc)" = \
+  "(<{'background': ['app1', 'app2', 'app3', 'app4'], 'foreground': ['app3']}>,)" ]] \
+  || fail "Registration of multiple apps in existing category was not applied"
+
+## register two apps, reordering
+register '{ "background" : [ "app3", "app1"] }'
+[[ "$(get_luc)" = \
+  "(<{'background': ['app2', 'app4', 'app3', 'app1'], 'foreground': ['app3']}>,)" ]] \
+  || fail "Registration of multiple apps did not reorder"
+
+## register multiple apps, one in a new category
+register '{ "background" : [ "app5" ], "audible" : [ "app5" ] }'
+[[ "$(get_luc)" = \
+  "(<{'audible': ['app5'], 'background': ['app2', 'app4', 'app3', 'app1', 'app5'], 'foreground': ['app3']}>,)" ]] \
+  || fail "Registration of multiple apps did not create new category"
+
+### DEREGISTRATION OF MULTIPLE APPS
+## Deregister all the contents of one category
+deregister '{ "background" : [ "app1", "app2", "app3", "app4", "app5" ] }'
+[[ "$(get_luc)" = "(<{'audible': ['app5'], 'foreground': ['app3']}>,)" ]] \
+  || fail "Deregistration of apps did not remove category"
+
+## Deregister multiple categories at once
+deregister '{ "foreground" : [ "app3" ], "audible" : [ "app5" ] }'
+[[ "$(get_luc)" = "(<@a{sas} {}>,)" ]] \
+  || fail "Deregistration of apps did not remove multiple categories"
+
