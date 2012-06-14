@@ -96,6 +96,8 @@ boot_manager_application_class_init (BootManagerApplicationClass *klass)
 static void
 boot_manager_application_init (BootManagerApplication *application)
 {
+  /* update systemd's watchdog timestamp every 120 seconds */
+  application->watchdog_client = watchdog_client_new (120);
 }
 
 
@@ -163,9 +165,6 @@ static void
 boot_manager_application_startup (GApplication *app)
 {
   BootManagerApplication *application = BOOT_MANAGER_APPLICATION (app);
-
-  /* update systemd's watchdog timestamp every 120 seconds */
-  application->watchdog_client = watchdog_client_new (120);
 }
 
 
