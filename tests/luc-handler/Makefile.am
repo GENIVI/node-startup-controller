@@ -2,3 +2,6 @@
 
 TESTS =									\
 	test-luc-handler
+
+EXTRA_DIST =								\
+	test-luc-handler
