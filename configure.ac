@@ -124,6 +124,7 @@ fi
 AC_OUTPUT([
 Makefile
 boot-manager/Makefile
+legacy-app-handler/Makefile
 luc-handler/Makefile
 luc-handler/org.genivi.LUCHandler1.gschema.xml
 tests/Makefile

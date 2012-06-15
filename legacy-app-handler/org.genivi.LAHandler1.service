@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.genivi.LegacyAppHandler1
+Exec=/usr/local/lib/legacy-app-handler-1/legacy-app-handler

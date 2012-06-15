@@ -2,6 +2,7 @@
 
 SUBDIRS =								\
 	boot-manager							\
+	legacy-app-handler						\
 	luc-handler							\
 	tests
 
