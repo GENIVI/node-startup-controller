@@ -268,8 +268,6 @@ boot_manager_service_handle_start (BootManager           *interface,
                                    const gchar           *unit,
                                    BootManagerService    *service)
 {
-  BootManagerServiceJob *job;
-
   g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (unit != NULL, FALSE);
@@ -349,8 +347,6 @@ boot_manager_service_handle_stop (BootManager           *interface,
                                   const gchar           *unit,
                                   BootManagerService    *service)
 {
-  BootManagerServiceJob *job;
-
   g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (unit != NULL, FALSE);

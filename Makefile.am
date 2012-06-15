@@ -15,4 +15,5 @@ ChangeLog: Makefile
 dist-hook: ChangeLog
 
 DISTCHECK_CONFIGURE_FLAGS =						\
-	--enable-gtk-doc
+	--enable-gtk-doc						\
+	--enable-debug=no

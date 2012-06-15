@@ -170,10 +170,7 @@ watchdog_client_set_property (GObject      *object,
 static gboolean
 watchdog_client_timeout (gpointer user_data)
 {
-  WatchdogClient *client = WATCHDOG_CLIENT (user_data);
-
   sd_notify (0, "WATCHDOG=1");
-
   return TRUE;
 }
 
