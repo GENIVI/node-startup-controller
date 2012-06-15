@@ -121,6 +121,17 @@ else
   AC_MSG_RESULT([no])
 fi
 
+dnl ***************************************************
+dnl *** Configure option for prioritising LUC types ***
+dnl ***************************************************
+AC_ARG_WITH([prioritised-luc-types],
+	    [AS_HELP_STRING([--with-prioritised-luc-types=LIST],
+			    [Comma-separated list of LUC types to be prioritised during start-up])],
+	    [with_prioritised_luc_types=$withval], [with_prioritised_luc_types=])
+AC_DEFINE_UNQUOTED([PRIORITISED_LUC_TYPES],
+		   ["$with_prioritised_luc_types"],
+		   [Prioritised LUC types])
+
 AC_OUTPUT([
 Makefile
 boot-manager/Makefile
