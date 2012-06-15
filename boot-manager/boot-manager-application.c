@@ -19,6 +19,7 @@
 #include <boot-manager/boot-manager-dbus.h>
 #include <boot-manager/boot-manager-application.h>
 #include <boot-manager/boot-manager-service.h>
+#include <boot-manager/luc-starter.h>
 
 
 
@@ -26,12 +27,14 @@
 enum
 {
   PROP_0,
-  PROP_BOOT_MANAGER_SERVICE,
+  PROP_BOOT_MANAGER,
+  PROP_LUC_STARTER,
 };
 
 
 
 static void boot_manager_application_finalize     (GObject      *object);
+static void boot_manager_application_constructed  (GObject      *object);
 static void boot_manager_application_get_property (GObject      *object,
                                                    guint         prop_id,
                                                    GValue       *value,
@@ -57,8 +60,11 @@ struct _BootManagerApplication
    * the watchdog timestamp */
   WatchdogClient    *watchdog_client;
 
-  /* service object that implements the boot manager D-Bus interface */
-  BootManagerService *service;
+  /* implementation of the boot manager D-Bus interface */
+  BootManagerService *boot_manager;
+
+  /* LUC starter to restore the LUC */
+  LUCStarter         *luc_starter;
 };
 
 
@@ -75,6 +81,7 @@ boot_manager_application_class_init (BootManagerApplicationClass *klass)
 
   gobject_class = G_OBJECT_CLASS (klass);
   gobject_class->finalize = boot_manager_application_finalize;
+  gobject_class->constructed = boot_manager_application_constructed;
   gobject_class->get_property = boot_manager_application_get_property;
   gobject_class->set_property = boot_manager_application_set_property;
 
@@ -82,13 +89,23 @@ boot_manager_application_class_init (BootManagerApplicationClass *klass)
   gapplication_class->startup = boot_manager_application_startup;
 
   g_object_class_install_property (gobject_class,
-                                   PROP_BOOT_MANAGER_SERVICE,
-                                   g_param_spec_object ("boot-manager-service",
-                                                        "boot-manager-service",
-                                                        "boot-manager-service",
+                                   PROP_BOOT_MANAGER,
+                                   g_param_spec_object ("boot-manager",
+                                                        "boot-manager",
+                                                        "boot-manager",
                                                         BOOT_MANAGER_TYPE_SERVICE,
                                                         G_PARAM_READWRITE |
-                                                        G_PARAM_CONSTRUCT_ONLY));
+                                                        G_PARAM_CONSTRUCT_ONLY |
+                                                        G_PARAM_STATIC_STRINGS));
+
+  g_object_class_install_property (gobject_class,
+                                   PROP_LUC_STARTER,
+                                   g_param_spec_object ("luc-starter",
+                                                        "luc-starter",
+                                                        "luc-starter",
+                                                        TYPE_LUC_STARTER,
+                                                        G_PARAM_READABLE |
+                                                        G_PARAM_STATIC_STRINGS));
 }
 
 
@@ -110,11 +127,22 @@ boot_manager_application_finalize (GObject *object)
   /* release the watchdog client */
   g_object_unref (application->watchdog_client);
 
-  /* release the boot manager service implementation */
-  if (application->service != NULL)
-    g_object_unref (application->service);
+  /* release the boot manager implementation */
+  if (application->boot_manager != NULL)
+    g_object_unref (application->boot_manager);
 
   (*G_OBJECT_CLASS (boot_manager_application_parent_class)->finalize) (object);
+}
+
+
+
+static void
+boot_manager_application_constructed (GObject *object)
+{
+  BootManagerApplication *application = BOOT_MANAGER_APPLICATION (object);
+
+  /* create the LUC starter */
+  application->luc_starter = luc_starter_new (application->boot_manager);
 }
 
 
@@ -129,8 +157,11 @@ boot_manager_application_get_property (GObject    *object,
 
   switch (prop_id)
     {
-    case PROP_BOOT_MANAGER_SERVICE:
-      g_value_set_object (value, application->service);
+    case PROP_BOOT_MANAGER:
+      g_value_set_object (value, application->boot_manager);
+      break;
+    case PROP_LUC_STARTER:
+      g_value_set_object (value, application->luc_starter);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -150,8 +181,8 @@ boot_manager_application_set_property (GObject      *object,
 
   switch (prop_id)
     {
-    case PROP_BOOT_MANAGER_SERVICE:
-      application->service = g_value_dup_object (value);
+    case PROP_BOOT_MANAGER:
+      application->boot_manager = g_value_dup_object (value);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -164,17 +195,25 @@ boot_manager_application_set_property (GObject      *object,
 static void
 boot_manager_application_startup (GApplication *app)
 {
+  BootManagerApplication *application = BOOT_MANAGER_APPLICATION (app);
+
+  /* chain up to the parent class */
   (*G_APPLICATION_CLASS (boot_manager_application_parent_class)->startup) (app);
+
+  /* restore the LUC if desired */
+  luc_starter_start_groups (application->luc_starter);
 }
 
 
 
 BootManagerApplication *
-boot_manager_application_new (BootManagerService *service)
+boot_manager_application_new (BootManagerService *boot_manager)
 {
+  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (boot_manager), NULL);
+
   return g_object_new (BOOT_MANAGER_TYPE_APPLICATION,
                        "application-id", "org.genivi.BootManager1",
                        "flags", G_APPLICATION_IS_SERVICE,
-                       "boot-manager-service", service,
+                       "boot-manager", boot_manager,
                        NULL);
 }

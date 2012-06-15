@@ -125,12 +125,40 @@ dnl ***************************************************
 dnl *** Configure option for prioritising LUC types ***
 dnl ***************************************************
 AC_ARG_WITH([prioritised-luc-types],
-	    [AS_HELP_STRING([--with-prioritised-luc-types=LIST],
-			    [Comma-separated list of LUC types to be prioritised during start-up])],
-	    [with_prioritised_luc_types=$withval], [with_prioritised_luc_types=])
+            [AS_HELP_STRING([--with-prioritised-luc-types=LIST],
+                            [Comma-separated list of LUC types to be prioritised during start-up])],
+            [with_prioritised_luc_types=$withval], [with_prioritised_luc_types=])
 AC_DEFINE_UNQUOTED([PRIORITISED_LUC_TYPES],
-		   ["$with_prioritised_luc_types"],
-		   [Prioritised LUC types])
+                   ["$with_prioritised_luc_types"],
+                   [Prioritised LUC types])
+
+dnl ***********************************
+dnl *** Check for debugging support ***
+dnl ***********************************
+AC_ARG_ENABLE([debug],
+              AC_HELP_STRING([--enable-debug@:@=no|yes@:>@],
+                             [Build with debugging support @<:@default=m4_default([$1], [no])@:>@]),
+              [enable_debug=$enableval], [enable_debug=m4_default([$1], [no])])
+AC_MSG_CHECKING([whether to build with debugging support])
+if test x"$enable_debug" = x"yes"; then
+  AC_DEFINE([DEBUG], [1], [Define for debugging support])
+  
+  CPPFLAGS="$CPPFLAGS -D_FORTIFY_SOURCE=2"
+  CFLAGS="$CFLAGS -Werror -Wall -Wextra \
+            -Wno-missing-field-initializers \
+            -Wno-unused-parameter -Wold-style-definition \
+            -Wdeclaration-after-statement \
+            -Wmissing-declarations \
+            -Wmissing-noreturn -Wshadow -Wpointer-arith \
+            -Wcast-align -Wformat-security \
+            -Winit-self -Wmissing-include-dirs -Wundef \
+            -Wmissing-format-attribute -Wnested-externs \
+            -fstack-protector"
+  
+  AC_MSG_RESULT([yes])
+else
+  AC_MSG_RESULT([no])
+fi
 
 AC_OUTPUT([
 Makefile
