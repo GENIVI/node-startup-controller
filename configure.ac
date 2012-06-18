@@ -110,7 +110,7 @@ if test x"$enable_debug" = x"yes"; then
             -Wno-unused-parameter -Wold-style-definition \
             -Wdeclaration-after-statement \
             -Wmissing-declarations \
-            -Wmissing-noreturn -Wshadow -Wpointer-arith \
+            -Wmissing-noreturn -Wpointer-arith \
             -Wcast-align -Wformat-security \
             -Winit-self -Wmissing-include-dirs -Wundef \
             -Wmissing-format-attribute -Wnested-externs \
