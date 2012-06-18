@@ -24,7 +24,7 @@ G_BEGIN_DECLS
 typedef struct _LAHandlerApplicationClass LAHandlerApplicationClass;
 typedef struct _LAHandlerApplication      LAHandlerApplication;
 
-GType		       la_handler_application_get_type (void) G_GNUC_CONST;
+GType		              la_handler_application_get_type (void) G_GNUC_CONST;
 
 LAHandlerApplication *la_handler_application_new      (LAHandlerService *service) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
 

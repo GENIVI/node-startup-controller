@@ -24,11 +24,11 @@ G_BEGIN_DECLS
 typedef struct _LAHandlerServiceClass LAHandlerServiceClass;
 typedef struct _LAHandlerService      LAHandlerService;
 
-GType              la_handler_service_get_type (void) G_GNUC_CONST;
+GType             la_handler_service_get_type (void) G_GNUC_CONST;
 
-LAHandlerService *la_handler_service_new      (GDBusConnection   *connection) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
-gboolean           la_handler_service_start    (LAHandlerService *service,
-                                                 GError           **error);
+LAHandlerService *la_handler_service_new      (GDBusConnection  *connection) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
+gboolean          la_handler_service_start    (LAHandlerService *service,
+                                               GError          **error);
 
 G_END_DECLS
 

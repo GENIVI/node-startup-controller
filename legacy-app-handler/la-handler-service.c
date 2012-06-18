@@ -30,23 +30,23 @@ enum
 
 
 
-static void      la_handler_service_finalize              (GObject               *object);
-static void      la_handler_service_get_property          (GObject               *object,
-                                                            guint                  prop_id,
-                                                            GValue                *value,
-                                                            GParamSpec            *pspec);
-static void      la_handler_service_set_property          (GObject               *object,
-                                                           guint                  prop_id,
-                                                           const GValue          *value,
-                                                           GParamSpec            *pspec);
-static gboolean  la_handler_service_handle_register       (LAHandler            *interface,
-                                                           GDBusMethodInvocation *invocation,
-                                                           GVariant              *apps,
-                                                           LAHandlerService     *service);
-static gboolean  la_handler_service_handle_deregister     (LAHandler            *interface,
-                                                           GDBusMethodInvocation *invocation,
-                                                           GVariant              *apps,
-                                                           LAHandlerService     *service);
+static void     la_handler_service_finalize          (GObject               *object);
+static void     la_handler_service_get_property      (GObject               *object,
+                                                      guint                  prop_id,
+                                                      GValue                *value,
+                                                      GParamSpec            *pspec);
+static void     la_handler_service_set_property      (GObject               *object,
+                                                      guint                  prop_id,
+                                                      const GValue          *value,
+                                                      GParamSpec            *pspec);
+static gboolean la_handler_service_handle_register   (LAHandler             *interface,
+                                                      GDBusMethodInvocation *invocation,
+                                                      GVariant              *apps,
+                                                      LAHandlerService      *service);
+static gboolean la_handler_service_handle_deregister (LAHandler             *interface,
+                                                      GDBusMethodInvocation *invocation,
+                                                      GVariant              *apps,
+                                                      LAHandlerService      *service);
 
 
 
@@ -60,7 +60,7 @@ struct _LAHandlerService
   GObject          __parent__;
 
   GDBusConnection *connection;
-  LAHandler      *interface;
+  LAHandler       *interface;
 };
 
 
@@ -133,9 +133,9 @@ la_handler_service_finalize (GObject *object)
 
 static void
 la_handler_service_get_property (GObject    *object,
-                                  guint       prop_id,
-                                  GValue     *value,
-                                  GParamSpec *pspec)
+                                 guint       prop_id,
+                                 GValue     *value,
+                                 GParamSpec *pspec)
 {
   LAHandlerService *service = LA_HANDLER_SERVICE (object);
 
@@ -154,9 +154,9 @@ la_handler_service_get_property (GObject    *object,
 
 static void
 la_handler_service_set_property (GObject      *object,
-                                  guint         prop_id,
-                                  const GValue *value,
-                                  GParamSpec   *pspec)
+                                 guint         prop_id,
+                                 const GValue *value,
+                                 GParamSpec   *pspec)
 {
   LAHandlerService *service = LA_HANDLER_SERVICE (object);
 
@@ -174,14 +174,14 @@ la_handler_service_set_property (GObject      *object,
 
 
 static gboolean
-la_handler_service_handle_register (LAHandler            *object,
+la_handler_service_handle_register (LAHandler             *object,
                                     GDBusMethodInvocation *invocation,
                                     GVariant              *apps,
-                                    LAHandlerService     *service)
+                                    LAHandlerService      *service)
 {
   g_debug ("Register called:");
 
-  /* Notify the caller that we have handled the registration request */
+  /* notify the caller that we have handled the registration request */
   g_dbus_method_invocation_return_value (invocation, NULL);
   return TRUE;
 }
@@ -196,7 +196,7 @@ la_handler_service_handle_deregister (LAHandler            *object,
 {
   g_debug ("Deregister called:");
 
-  /* Notify the caller that we have handled the registration request */
+  /* notify the caller that we have handled the registration request */
   g_dbus_method_invocation_return_value (invocation, NULL);
   return TRUE;
 }

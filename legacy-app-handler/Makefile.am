@@ -3,19 +3,17 @@
 legacy_app_handlerdir =							\
 	$(libdir)/legacy-app-handler-$(BOOT_MANAGER_VERSION_API)
 
-legacy_app_handler_PROGRAMS =							\
+legacy_app_handler_PROGRAMS =						\
 	legacy-app-handler
 
-legacy_app_handler_built_headers =						\
+legacy_app_handler_built_headers =					\
 	la-handler-dbus.h
 
-legacy_app_handler_built_sources =						\
+legacy_app_handler_built_sources =					\
 	la-handler-dbus.c						\
 	$(legacy_app_handler_built_headers)
 
-legacy_app_handler_SOURCES =							\
-	../common/glib-extensions.c					\
-	../common/glib-extensions.h					\
+legacy_app_handler_SOURCES =						\
 	../common/watchdog-client.c					\
 	../common/watchdog-client.h					\
 	la-handler-application.c					\
@@ -25,8 +23,8 @@ legacy_app_handler_SOURCES =							\
 	main.c								\
 	$(legacy_app_handler_built_sources)
 
-legacy_app_handler_CFLAGS =							\
-	-DG_LOG_DOMAIN=\"legacy-app-handler\"					\
+legacy_app_handler_CFLAGS =						\
+	-DG_LOG_DOMAIN=\"legacy-app-handler\"				\
 	-I$(top_srcdir)							\
 	$(GIO_CFLAGS)							\
 	$(GIO_UNIX_CFLAGS)						\
@@ -35,11 +33,11 @@ legacy_app_handler_CFLAGS =							\
 	$(PLATFORM_CPPFLAGS)						\
 	$(SYSTEMD_DAEMON_CFLAGS)
 
-legacy_app_handler_LDFLAGS =							\
+legacy_app_handler_LDFLAGS =						\
 	-no-undefined							\
 	$(PLATFORM_LDFLAGS)
 
-legacy_app_handler_LDADD =							\
+legacy_app_handler_LDADD =						\
 	$(GIO_LIBS)							\
 	$(GIO_UNIX_LIBS)						\
 	$(GLIB_LIBS)							\
@@ -64,7 +62,7 @@ EXTRA_DIST =								\
 	la-handler-dbus.xml
 
 DISTCLEANFILES =							\
-	$(legacy_app_handler_built_sources)					\
+	$(legacy_app_handler_built_sources)				\
 	$(gsettings_SCHEMAS)
 
 BUILT_SOURCES =								\

@@ -32,33 +32,33 @@ main (int    argc,
   GDBusConnection      *connection;
   GError               *error = NULL;
   gint                  exit_status = EXIT_SUCCESS;
-  
+
   /* initialize the GType type system */
   g_type_init ();
-  
+
   /* attempt to connect to D-Bus */
   connection = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, &error);
   if (connection == NULL)
     {
       g_warning ("Failed to connect to D-Bus: %s", error->message);
-      
+
       /* clean up */
       g_error_free (error);
-      
+
       return EXIT_FAILURE;
     }
 
-  /* Instantiate the LegacyAppHandler service implementation */
+  /* instantiate the LegacyAppHandler service implementation */
   service = la_handler_service_new (connection);
   if (!la_handler_service_start (service, &error))
     {
       g_warning ("Failed to start the LegacyAppHandler service: %s", error->message);
-      
+
       /* clean up */
       g_error_free (error);
       g_object_unref (service);
       g_object_unref (connection);
-      
+
       return EXIT_FAILURE;
     }
 
@@ -66,10 +66,10 @@ main (int    argc,
   application = la_handler_application_new (service);
   exit_status = g_application_run (G_APPLICATION (application), 0, NULL);
   g_object_unref (application);
-  
+
   /* release allocated objects */
   g_object_unref (service);
   g_object_unref (connection);
-  
+
   return exit_status;
 }

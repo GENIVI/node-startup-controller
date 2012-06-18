@@ -3,10 +3,10 @@
   <!--
     org.genivi.LegacyAppHandler1:
     @short_description: Interface for registering legacy apps with the NSM
- 
+
     Legacy applications are applications that provide a systemd unit
     file but are unaware or do not make use of any GENIVI components.
- 
+
     The GENIVI Legacy App Handler registers these apps with the NSM
     (Node State Manager) as shutdown consumers, so that when the NSM
     performs a shutdown it can shut down the application in reverse
@@ -19,7 +19,7 @@
       @mode: Shutdown mode for which to register.
       @timeout: Timeout used by the NSM to wait for the legacy
                 app to shut down.
-       
+
       Registers a legacy application with the NSM as a shutdown
       consumer.
     -->
@@ -29,11 +29,11 @@
       <arg name="mode" type="s" direction="in"/>
       <arg name="timeout" type="u" direction="in"/>
     </method>
- 
+
     <!--
       Deregister:
       @unit: An application unit filename.
-       
+
       Removes the shutdown consumer for an app from the NSM.
     -->
     <method name="Deregister">
