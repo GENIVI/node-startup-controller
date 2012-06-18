@@ -18,6 +18,8 @@ boot_manager_built_sources =						\
 boot_manager_SOURCES =							\
 	../common/watchdog-client.c					\
 	../common/watchdog-client.h					\
+	../luc-handler/luc-handler-dbus.c				\
+	../luc-handler/luc-handler-dbus.h				\
 	boot-manager-application.c					\
 	boot-manager-application.h					\
 	boot-manager-service.c						\

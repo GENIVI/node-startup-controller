@@ -32,6 +32,7 @@ main (int    argc,
   BootManagerService     *service;
   GDBusConnection        *connection;
   SystemdManager         *systemd_manager;
+  LUCHandler             *luc_handler;
   GError                 *error = NULL;
   gint                    exit_status = EXIT_SUCCESS;
 
@@ -80,7 +81,26 @@ main (int    argc,
       return EXIT_FAILURE;
     }
 
-  /* instantiate the BootManager service implementation */
+  /* attempt to connect to the LUC handler */
+  luc_handler =
+    luc_handler_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+                                        G_DBUS_PROXY_FLAGS_NONE,
+                                        "org.freedesktop.LUCHandler1",
+                                        "/org/freedesktop/LUCHandler1",
+                                        NULL, &error);
+  if (luc_handler == NULL)
+    {
+      g_warning ("Failed to connect to the LUC handler: %s", error->message);
+
+      /* clean up */
+      g_error_free (error);
+      g_object_unref (systemd_manager);
+      g_object_unref (connection);
+
+      return EXIT_FAILURE;
+    }
+
+  /* instantiate the boot manager service implementation */
   service = boot_manager_service_new (connection, systemd_manager);
   if (!boot_manager_service_start_up (service, &error))
     {
@@ -96,7 +116,7 @@ main (int    argc,
     }
 
   /* create and run the main application */
-  application = boot_manager_application_new (service);
+  application = boot_manager_application_new (service, luc_handler);
   exit_status = g_application_run (G_APPLICATION (application), 0, NULL);
   g_object_unref (application);
 
