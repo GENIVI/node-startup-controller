@@ -46,6 +46,11 @@ void                boot_manager_service_stop     (BootManagerService        *se
                                                    GCancellable              *cancellable,
                                                    BootManagerServiceCallback callback,
                                                    gpointer                   user_data);
+void                boot_manager_service_kill     (BootManagerService        *service,
+                                                   const gchar               *unit,
+                                                   GCancellable              *cancellable,
+                                                   BootManagerServiceCallback callback,
+                                                   gpointer                   user_data);
 
 G_END_DECLS
 

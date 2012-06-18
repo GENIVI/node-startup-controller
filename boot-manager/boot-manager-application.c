@@ -164,6 +164,7 @@ boot_manager_application_set_property (GObject      *object,
 static void
 boot_manager_application_startup (GApplication *app)
 {
+  (*G_APPLICATION_CLASS (boot_manager_application_parent_class)->startup) (app);
 }
 
 
