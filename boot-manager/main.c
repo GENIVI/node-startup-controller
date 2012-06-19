@@ -85,8 +85,8 @@ main (int    argc,
   luc_handler =
     luc_handler_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
                                         G_DBUS_PROXY_FLAGS_NONE,
-                                        "org.freedesktop.LUCHandler1",
-                                        "/org/freedesktop/LUCHandler1",
+                                        "org.genivi.LUCHandler1",
+                                        "/org/genivi/LUCHandler1",
                                         NULL, &error);
   if (luc_handler == NULL)
     {
