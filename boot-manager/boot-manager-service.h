@@ -24,43 +24,52 @@ G_BEGIN_DECLS
 typedef struct _BootManagerServiceClass BootManagerServiceClass;
 typedef struct _BootManagerService      BootManagerService;
 
-typedef void (*BootManagerServiceCallback) (BootManagerService *service,
-                                            const gchar        *unit,
-                                            const gchar        *result,
-                                            GError             *error,
-                                            gpointer            user_data);
+typedef void (*BootManagerServiceCallback)     (BootManagerService *service,
+                                                const gchar        *unit,
+                                                const gchar        *result,
+                                                GError             *error,
+                                                gpointer            user_data);
+typedef void (*BootManagerServiceListCallback) (BootManagerService *service,
+                                                const gchar *const *result,
+                                                GError             *error,
+                                                gpointer            user_data);
+
 
 GType               boot_manager_service_get_type (void) G_GNUC_CONST;
 
-BootManagerService *boot_manager_service_new      (GDBusConnection           *connection,
-                                                   SystemdManager            *systemd_manager) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
-gboolean            boot_manager_service_start_up (BootManagerService        *service,
-                                                   GError                   **error);
-void                boot_manager_service_start    (BootManagerService        *service,
-                                                   const gchar               *unit,
-                                                   GCancellable              *cancellable,
-                                                   BootManagerServiceCallback callback,
-                                                   gpointer                   user_data);
-void                boot_manager_service_stop     (BootManagerService        *service,
-                                                   const gchar               *unit,
-                                                   GCancellable              *cancellable,
-                                                   BootManagerServiceCallback callback,
-                                                   gpointer                   user_data);
-void                boot_manager_service_kill     (BootManagerService        *service,
-                                                   const gchar               *unit,
-                                                   GCancellable              *cancellable,
-                                                   BootManagerServiceCallback callback,
-                                                   gpointer                   user_data);
-void                boot_manager_service_restart  (BootManagerService        *service,
-                                                   const gchar               *unit,
-                                                   GCancellable              *cancellable,
-                                                   BootManagerServiceCallback callback,
-                                                   gpointer                   user_data);
-void                boot_manager_service_isolate  (BootManagerService        *service,
-                                                   const gchar               *unit,
-                                                   GCancellable              *cancellable,
-                                                   BootManagerServiceCallback callback,
-                                                   gpointer                   user_data);
+BootManagerService *boot_manager_service_new      (GDBusConnection               *connection,
+                                                   SystemdManager                *systemd_manager) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
+gboolean            boot_manager_service_start_up (BootManagerService            *service,
+                                                   GError                       **error);
+void                boot_manager_service_start    (BootManagerService            *service,
+                                                   const gchar                   *unit,
+                                                   GCancellable                  *cancellable,
+                                                   BootManagerServiceCallback     callback,
+                                                   gpointer                       user_data);
+void                boot_manager_service_stop     (BootManagerService            *service,
+                                                   const gchar                   *unit,
+                                                   GCancellable                  *cancellable,
+                                                   BootManagerServiceCallback     callback,
+                                                   gpointer                       user_data);
+void                boot_manager_service_kill     (BootManagerService            *service,
+                                                   const gchar                   *unit,
+                                                   GCancellable                  *cancellable,
+                                                   BootManagerServiceCallback     callback,
+                                                   gpointer                       user_data);
+void                boot_manager_service_restart  (BootManagerService            *service,
+                                                   const gchar                   *unit,
+                                                   GCancellable                  *cancellable,
+                                                   BootManagerServiceCallback     callback,
+                                                   gpointer                       user_data);
+void                boot_manager_service_isolate  (BootManagerService            *service,
+                                                   const gchar                   *unit,
+                                                   GCancellable                  *cancellable,
+                                                   BootManagerServiceCallback     callback,
+                                                   gpointer                       user_data);
+void                boot_manager_service_list     (BootManagerService            *service,
+                                                   GCancellable                  *cancellable,
+                                                   BootManagerServiceListCallback list_callback,
+                                                   gpointer                       user_data); 
 
 G_END_DECLS
 
