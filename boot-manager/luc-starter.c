@@ -135,6 +135,12 @@ luc_starter_finalize (GObject *object)
 {
   LUCStarter *starter = LUC_STARTER (object);
 
+  /* release start order and groups */
+  if (starter->start_order != NULL)
+    g_list_free (starter->start_order);
+  if (starter->start_groups != NULL)
+    g_hash_table_unref (starter->start_groups);
+
   /* free the prioritised types array */
   g_strfreev (starter->prioritised_types);
 
@@ -371,7 +377,7 @@ luc_starter_start_groups (LUCStarter *starter)
     }
   else
     {
-      starter->start_groups = 
+      starter->start_groups =
         g_hash_table_new_full (g_str_hash, g_str_equal,
                                g_free, (GDestroyNotify) g_ptr_array_free);
     }
