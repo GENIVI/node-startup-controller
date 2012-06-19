@@ -91,6 +91,18 @@ static void                   boot_manager_service_handle_restart_finish (BootMa
 static void                   boot_manager_service_restart_unit_reply    (GObject                   *object,
                                                                           GAsyncResult              *result,
                                                                           gpointer                   user_data);
+static gboolean               boot_manager_service_handle_isolate        (BootManager               *interface,
+                                                                          GDBusMethodInvocation     *invocation,
+                                                                          const gchar               *unit,
+                                                                          BootManagerService        *service);
+static void                   boot_manager_service_handle_isolate_finish (BootManagerService        *service,
+                                                                          const gchar               *unit,
+                                                                          const gchar               *result,
+                                                                          GError                    *error,
+                                                                          gpointer                   user_data);
+static void                   boot_manager_service_isolate_unit_reply    (GObject                   *object,
+                                                                          GAsyncResult              *result,
+                                                                          gpointer                   user_data);
 static void                   boot_manager_service_job_removed           (SystemdManager            *manager,
                                                                           guint                      id,
                                                                           const gchar               *job_name,
@@ -200,6 +212,10 @@ boot_manager_service_init (BootManagerService *service)
   /* implement the Restart() method handler */
   g_signal_connect (service->interface, "handle-restart",
                     G_CALLBACK (boot_manager_service_handle_restart), service);
+  /* implement the Isolate() method handler */
+  g_signal_connect (service->interface, "handle-isolate",
+                    G_CALLBACK (boot_manager_service_handle_isolate), service);
+
 }
 
 
@@ -601,6 +617,85 @@ boot_manager_service_restart_unit_reply (GObject      *object,
 
 
 
+static gboolean
+boot_manager_service_handle_isolate (BootManager           *interface,
+                                     GDBusMethodInvocation *invocation,
+                                     const gchar           *unit,
+                                     BootManagerService    *service)
+{
+  g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
+  g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
+  g_return_val_if_fail (unit != NULL, FALSE);
+  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
+
+  /* ask systemd to isolate the unit for us, send a D-Bus reply in the finish callback */
+  boot_manager_service_isolate (service, unit, NULL,
+                                boot_manager_service_handle_isolate_finish, invocation);
+
+  return TRUE;
+}
+
+
+
+static void
+boot_manager_service_handle_isolate_finish (BootManagerService *service,
+                                            const gchar        *unit,
+                                            const gchar        *result,
+                                            GError             *error,
+                                            gpointer            user_data)
+{
+  GDBusMethodInvocation *invocation = G_DBUS_METHOD_INVOCATION (user_data);
+
+  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+  g_return_if_fail (unit != NULL);
+  g_return_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation));
+
+  /* log any potential errors */
+  if (error != NULL)
+    g_warning ("there was an error: %s", error->message);
+
+  /* report the result back to the boot manager client */
+  boot_manager_complete_isolate (service->interface, invocation, result);
+}
+
+
+
+static void
+boot_manager_service_isolate_unit_reply (GObject      *object,
+                                         GAsyncResult *result,
+                                         gpointer      user_data)
+{
+  BootManagerServiceJob *job = user_data;
+  GError                *error = NULL;
+  gchar                 *job_name = NULL;
+
+  g_return_if_fail (IS_SYSTEMD_MANAGER (object));
+  g_return_if_fail (G_IS_ASYNC_RESULT (result));
+  g_return_if_fail (user_data != NULL);
+
+  /* finish the isolate unit call */
+  if (!systemd_manager_call_start_unit_finish (job->service->systemd_manager,
+                                               &job_name, result, &error))
+    {
+      /* there was an error; let the caller know */
+      job->callback (job->service, job->unit, "failed", error, job->user_data);
+      g_error_free (error);
+      g_free (job_name);
+
+      /* finish the job immediately */
+      boot_manager_service_job_unref (job);
+    }
+  else
+    {
+      /* remember the job so that we can finish it in the "job-removed" signal
+       * handler. the service takes ownership of the job so we don't need to
+       * unref it here */
+      boot_manager_service_remember_job (job->service, job_name, job);
+    }
+}
+
+
+
 static void
 boot_manager_service_job_removed (SystemdManager     *manager,
                                   guint               id,
@@ -836,4 +931,29 @@ boot_manager_service_restart (BootManagerService        *service,
   /* ask systemd to restart the unit asynchronously */
   systemd_manager_call_restart_unit (service->systemd_manager, unit, "fail", cancellable,
                                      boot_manager_service_restart_unit_reply, job);
+}
+
+
+
+void
+boot_manager_service_isolate (BootManagerService        *service,
+                              const gchar               *unit,
+                              GCancellable              *cancellable,
+                              BootManagerServiceCallback callback,
+                              gpointer                   user_data)
+{
+  BootManagerServiceJob *job;
+
+  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+  g_return_if_fail (unit != NULL);
+  g_return_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable));
+  g_return_if_fail (callback != NULL);
+
+  /* create a new job object */
+  job = boot_manager_service_job_new (service, unit, cancellable, callback, user_data);
+
+  /* ask systemd to isolate the unit asynchronously */
+  systemd_manager_call_start_unit (service->systemd_manager, unit, "isolate", 
+                                   cancellable, boot_manager_service_isolate_unit_reply,
+                                   job);
 }
