@@ -70,6 +70,8 @@ struct _LUCStarter
 
   GList              *start_order;
   GHashTable         *start_groups;
+  
+  GHashTable         *cancellables;
 };
 
 
@@ -115,6 +117,7 @@ luc_starter_class_init (LUCStarterClass *klass)
 static void
 luc_starter_init (LUCStarter *starter)
 {
+  
 }
 
 
@@ -135,11 +138,15 @@ luc_starter_finalize (GObject *object)
 {
   LUCStarter *starter = LUC_STARTER (object);
 
-  /* release start order and groups */
+  /* release start order, and groups */
   if (starter->start_order != NULL)
     g_list_free (starter->start_order);
   if (starter->start_groups != NULL)
     g_hash_table_unref (starter->start_groups);
+
+  /* release the cancellables */
+  if (starter->cancellables != NULL)
+    g_hash_table_unref (starter->cancellables);
 
   /* free the prioritised types array */
   g_strfreev (starter->prioritised_types);
@@ -264,14 +271,24 @@ static void
 luc_starter_start_app (const gchar *app,
                        LUCStarter  *starter)
 {
+  GCancellable *cancellable;
+
   g_return_if_fail (app != NULL && *app != '\0');
   g_return_if_fail (IS_LUC_STARTER (starter));
 
   g_debug ("start app '%s'", app);
 
-  boot_manager_service_start (starter->boot_manager, app, NULL,
+  /* create the new cancellable */
+  cancellable = g_cancellable_new ();
+
+  /* store an association between each app and its cancellable, so that it is possible to
+   * call g_cancellable_cancel() for each respective app. */
+  g_hash_table_insert (starter->cancellables, g_strdup (app), cancellable);
+
+  /* start the service, passing the cancellable */
+  boot_manager_service_start (starter->boot_manager, app, cancellable,
                               luc_starter_start_app_finish,
-                              starter);
+                              g_object_ref (starter));
 }
 
 
@@ -329,6 +346,13 @@ luc_starter_start_app_finish (BootManagerService *service,
             luc_starter_start_next_group (starter);
         }
     }
+
+  /* remove the association between an app and its cancellable, because the app has
+   * finished starting, so cannot be cancelled any more */
+  g_hash_table_remove (starter->cancellables, unit);
+  
+  /* release the LUCStarter because the operation is finished */
+  g_object_unref (starter);
 }
 
 
@@ -380,6 +404,18 @@ luc_starter_start_groups (LUCStarter *starter)
       starter->start_groups =
         g_hash_table_new_full (g_str_hash, g_str_equal,
                                g_free, (GDestroyNotify) g_ptr_array_free);
+    }
+
+  /* clear the mapping between apps and their cancellables */
+  if (starter->cancellables != NULL)
+    {
+      g_hash_table_remove_all (starter->cancellables);
+    }
+  else
+    {
+      starter->cancellables =
+        g_hash_table_new_full (g_str_hash, g_str_equal,
+                               g_free, (GDestroyNotify) g_object_unref);
     }
 
   /* get the current last user context */
