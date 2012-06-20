@@ -13,6 +13,7 @@
 
 #include <glib-object.h>
 #include <gio/gio.h>
+#include <glib-unix.h>
 
 #include <common/watchdog-client.h>
 
@@ -35,17 +36,18 @@ enum
 
 
 
-static void boot_manager_application_finalize     (GObject      *object);
-static void boot_manager_application_constructed  (GObject      *object);
-static void boot_manager_application_get_property (GObject      *object,
-                                                   guint         prop_id,
-                                                   GValue       *value,
-                                                   GParamSpec   *pspec);
-static void boot_manager_application_set_property (GObject      *object,
-                                                   guint         prop_id,
-                                                   const GValue *value,
-                                                   GParamSpec   *pspec);
-static void boot_manager_application_startup      (GApplication *application);
+static void     boot_manager_application_finalize     (GObject      *object);
+static void     boot_manager_application_constructed  (GObject      *object);
+static void     boot_manager_application_get_property (GObject      *object,
+                                                       guint         prop_id,
+                                                       GValue       *value,
+                                                       GParamSpec   *pspec);
+static void     boot_manager_application_set_property (GObject      *object,
+                                                       guint         prop_id,
+                                                       const GValue *value,
+                                                       GParamSpec   *pspec);
+static void     boot_manager_application_startup      (GApplication *application);
+static gboolean boot_manager_application_int_handler  (GApplication *application);
 
 
 
@@ -68,6 +70,9 @@ struct _BootManagerApplication
   /* LUC starter to restore the LUC */
   LUCHandler         *luc_handler;
   LUCStarter         *luc_starter;
+
+  /* signal handler IDs */
+  guint               sigint_id;
 };
 
 
@@ -129,6 +134,11 @@ boot_manager_application_init (BootManagerApplication *application)
 {
   /* update systemd's watchdog timestamp every 120 seconds */
   application->watchdog_client = watchdog_client_new (120);
+
+  /* install the signal handler */
+  application->sigint_id =
+    g_unix_signal_add (SIGINT, (GSourceFunc) boot_manager_application_int_handler,
+                       application);
 }
 
 
@@ -137,6 +147,9 @@ static void
 boot_manager_application_finalize (GObject *object)
 {
   BootManagerApplication *application = BOOT_MANAGER_APPLICATION (object);
+
+  /* release the signal handler */
+  g_source_remove (application->sigint_id);
 
   /* release the watchdog client */
   g_object_unref (application->watchdog_client);
@@ -227,6 +240,18 @@ boot_manager_application_startup (GApplication *app)
 
   /* restore the LUC if desired */
   luc_starter_start_groups (application->luc_starter);
+}
+
+
+
+static gboolean
+boot_manager_application_int_handler (GApplication *app)
+{
+  BootManagerApplication *application = BOOT_MANAGER_APPLICATION (app);
+
+  luc_starter_cancel (application->luc_starter);
+
+  return TRUE;
 }
 
 

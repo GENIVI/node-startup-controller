@@ -30,6 +30,7 @@ GType       luc_starter_get_type     (void) G_GNUC_CONST;
 LUCStarter *luc_starter_new          (BootManagerService *boot_manager,
                                       LUCHandler         *luc_handler) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
 void        luc_starter_start_groups (LUCStarter         *starter);
+void        luc_starter_cancel       (LUCStarter         *starter);
 
 G_END_DECLS
 

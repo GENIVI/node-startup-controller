@@ -51,6 +51,9 @@ static void luc_starter_start_app_finish  (BootManagerService *service,
                                            const gchar        *result,
                                            GError             *error,
                                            gpointer            user_data);
+static void luc_starter_cancel_start      (const gchar        *app,
+                                           GCancellable       *cancellable,
+                                           gpointer            user_data);
 
 
 
@@ -313,6 +316,10 @@ luc_starter_start_app_finish (BootManagerService *service,
 
   g_debug ("start app '%s' finish", unit);
 
+  /* respond to errors */
+  if (error != NULL)
+    g_warning ("start app had error: %s", error->message);
+
   /* get the current start group */
   group_name = starter->start_order->data;
 
@@ -353,6 +360,16 @@ luc_starter_start_app_finish (BootManagerService *service,
   
   /* release the LUCStarter because the operation is finished */
   g_object_unref (starter);
+}
+
+
+
+static void
+luc_starter_cancel_start (const gchar  *app,
+                          GCancellable *cancellable,
+                          gpointer      user_data)
+{
+  g_cancellable_cancel (cancellable);
 }
 
 
@@ -451,4 +468,10 @@ luc_starter_start_groups (LUCStarter *starter)
 
   if (starter->start_order != NULL)
     luc_starter_start_next_group (starter);
+}
+
+void
+luc_starter_cancel (LUCStarter *starter)
+{
+  g_hash_table_foreach (starter->cancellables, (GHFunc) luc_starter_cancel_start, NULL);
 }
