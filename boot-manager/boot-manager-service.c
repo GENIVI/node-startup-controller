@@ -130,6 +130,9 @@ static void                   boot_manager_service_remember_job          (BootMa
                                                                           BootManagerServiceJob         *job);
 static void                   boot_manager_service_forget_job            (BootManagerService            *service,
                                                                           const gchar                   *job_name);
+static void                   boot_manager_service_cancel_task           (gpointer                       key,
+                                                                          GCancellable                  *cancellable,
+                                                                          gpointer                       user_data);
 
 
 
@@ -1003,6 +1006,16 @@ boot_manager_service_forget_job (BootManagerService *service,
 
 
 
+static void
+boot_manager_service_cancel_task (gpointer      key,
+                                  GCancellable *cancellable,
+                                  gpointer      user_data)
+{
+  g_cancellable_cancel (cancellable);
+}
+
+
+
 BootManagerService *
 boot_manager_service_new (GDBusConnection *connection,
                           SystemdManager  *systemd_manager)
@@ -1180,4 +1193,14 @@ boot_manager_service_list (BootManagerService            *service,
   /* ask systemd to list units asynchronously */
   systemd_manager_call_list_units (service->systemd_manager, cancellable,
                                    boot_manager_service_list_units_reply, job);
+}
+
+void
+boot_manager_service_cancel (BootManagerService *service)
+{
+  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+
+  /* cancel all listed cancellables */
+  g_hash_table_foreach (service->cancellables,
+                        (GHFunc) boot_manager_service_cancel_task, NULL);
 }

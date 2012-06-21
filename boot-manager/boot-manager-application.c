@@ -250,6 +250,7 @@ boot_manager_application_int_handler (GApplication *app)
   BootManagerApplication *application = BOOT_MANAGER_APPLICATION (app);
 
   luc_starter_cancel (application->luc_starter);
+  boot_manager_service_cancel (application->boot_manager);
 
   return TRUE;
 }

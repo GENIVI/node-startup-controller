@@ -69,7 +69,8 @@ void                boot_manager_service_isolate  (BootManagerService           
 void                boot_manager_service_list     (BootManagerService            *service,
                                                    GCancellable                  *cancellable,
                                                    BootManagerServiceListCallback list_callback,
-                                                   gpointer                       user_data); 
+                                                   gpointer                       user_data);
+void                boot_manager_service_cancel   (BootManagerService            *service);
 
 G_END_DECLS
 
