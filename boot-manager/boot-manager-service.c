@@ -147,6 +147,7 @@ struct _BootManagerService
   SystemdManager  *systemd_manager;
 
   GHashTable      *jobs;
+  GHashTable      *cancellables;
 };
 
 struct _BootManagerServiceJob
@@ -231,6 +232,12 @@ boot_manager_service_init (BootManagerService *service)
   g_signal_connect (service->interface, "handle-list",
                     G_CALLBACK (boot_manager_service_handle_list), service);
 
+  /* create a mapping of method calls to units and cancellables; we will use this to 
+   * cancel jobs that are in the middle of being started */
+  service->cancellables =
+    g_hash_table_new_full (g_direct_hash, g_direct_equal, (GDestroyNotify) g_object_unref,
+                           (GDestroyNotify) g_object_unref);
+
 }
 
 
@@ -257,6 +264,9 @@ boot_manager_service_finalize (GObject *object)
                                         G_SIGNAL_MATCH_DATA,
                                         0, 0, NULL, NULL, service);
   g_object_unref (service->interface);
+
+  /* release the cancellables hash table */
+  g_hash_table_unref (service->cancellables);
 
   (*G_OBJECT_CLASS (boot_manager_service_parent_class)->finalize) (object);
 }
@@ -330,13 +340,21 @@ boot_manager_service_handle_start (BootManager           *interface,
                                    const gchar           *unit,
                                    BootManagerService    *service)
 {
+  GCancellable *cancellable;
+
   g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (unit != NULL, FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
 
+  /* create a new cancellable so that we can cancel this start call */
+  cancellable = g_cancellable_new ();
+
+  /* store the cancellable in the cancellables GHashTable */
+  g_hash_table_insert (service->cancellables, g_object_ref (invocation), cancellable);
+
   /* ask systemd to start the unit for us, send a D-Bus reply in the finish callback */
-  boot_manager_service_start (service, unit, NULL,
+  boot_manager_service_start (service, unit, cancellable,
                               boot_manager_service_handle_start_finish, invocation);
 
   return TRUE;
@@ -360,6 +378,10 @@ boot_manager_service_handle_start_finish (BootManagerService *service,
   /* log any potential errors */
   if (error != NULL)
     g_warning ("there was an error: %s", error->message);
+
+  /* remove the cancellable associated with this invocation now the job is finished */
+  g_hash_table_remove (service->cancellables, invocation);
+  g_object_unref (invocation);
 
   /* report the result back to the boot manager client */
   boot_manager_complete_start (service->interface, invocation, result);
@@ -409,13 +431,21 @@ boot_manager_service_handle_stop (BootManager           *interface,
                                   const gchar           *unit,
                                   BootManagerService    *service)
 {
+  GCancellable *cancellable;
+
   g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (unit != NULL, FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
 
+  /* create a new cancellable so that we can cancel this stop call */
+  cancellable = g_cancellable_new ();
+
+  /* store the cancellable in the cancellables GHashTable */
+  g_hash_table_insert (service->cancellables, g_object_ref (invocation), cancellable);
+
   /* ask systemd to stop the unit for us, send a D-Bus reply in the finish callback */
-  boot_manager_service_stop (service, unit, NULL,
+  boot_manager_service_stop (service, unit, cancellable,
                              boot_manager_service_handle_stop_finish, invocation);
 
   return TRUE;
@@ -439,6 +469,10 @@ boot_manager_service_handle_stop_finish (BootManagerService *service,
   /* log any potential errors */
   if (error != NULL)
     g_warning ("there was an error: %s", error->message);
+
+  /* remove the cancellable associated with this invocation now the job is finished */
+  g_hash_table_remove (service->cancellables, invocation);
+  g_object_unref (invocation);
 
   /* report the result back to the boot manager client */
   boot_manager_complete_stop (service->interface, invocation, result);
@@ -488,14 +522,22 @@ boot_manager_service_handle_kill (BootManager           *interface,
                                   const gchar           *unit,
                                   BootManagerService    *service)
 {
+  GCancellable *cancellable;
+
   g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (unit != NULL, FALSE);
-  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);  
+  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
+
+  /* create a new cancellable so that we can cancel this kill call */
+  cancellable = g_cancellable_new ();
+
+  /* store the cancellable in the cancellables GHashTable */
+  g_hash_table_insert (service->cancellables, g_object_ref (invocation), cancellable);
 
   /* ask systemd to kill the unit, send a D-Bus reply in the finish callback */
-  boot_manager_service_kill (service, unit, NULL, boot_manager_service_handle_kill_finish,
-                             invocation);
+  boot_manager_service_kill (service, unit, cancellable,
+                             boot_manager_service_handle_kill_finish, invocation);
 
   return TRUE;
 }
@@ -518,6 +560,10 @@ boot_manager_service_handle_kill_finish (BootManagerService *service,
   /* log any potential errors */
   if (error != NULL)
     g_warning ("there was an error: %s", error->message);
+
+  /* remove the cancellable associated with this invocation now the job is finished */
+  g_hash_table_remove (service->cancellables, invocation);
+  g_object_unref (invocation);
 
   /* report the result back to the boot manager client */
   boot_manager_complete_kill (service->interface, invocation, result);
@@ -559,13 +605,21 @@ boot_manager_service_handle_restart (BootManager           *interface,
                                      const gchar           *unit,
                                      BootManagerService    *service)
 {
+  GCancellable *cancellable;
+
   g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (unit != NULL, FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
 
+  /* create a new cancellable so that we can cancel this restart call */
+  cancellable = g_cancellable_new ();
+
+  /* store the cancellable in the cancellables GHashTable */
+  g_hash_table_insert (service->cancellables, g_object_ref (invocation), cancellable);
+
   /* ask systemd to restart the unit for us, send a D-Bus reply in the finish callback */
-  boot_manager_service_restart (service, unit, NULL,
+  boot_manager_service_restart (service, unit, cancellable,
                                 boot_manager_service_handle_restart_finish, invocation);
 
   return TRUE;
@@ -589,6 +643,10 @@ boot_manager_service_handle_restart_finish (BootManagerService *service,
   /* log any potential errors */
   if (error != NULL)
     g_warning ("there was an error: %s", error->message);
+
+  /* remove the cancellable associated with this invocation now the job is finished */
+  g_hash_table_remove (service->cancellables, invocation);
+  g_object_unref (invocation);
 
   /* report the result back to the boot manager client */
   boot_manager_complete_restart (service->interface, invocation, result);
@@ -638,13 +696,21 @@ boot_manager_service_handle_isolate (BootManager           *interface,
                                      const gchar           *unit,
                                      BootManagerService    *service)
 {
+  GCancellable *cancellable;
+
   g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (unit != NULL, FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
 
+  /* create a new cancellable so that we can cancel this isolate call */
+  cancellable = g_cancellable_new ();
+
+  /* store the cancellable in the cancellables GHashTable */
+  g_hash_table_insert (service->cancellables, g_object_ref (invocation), cancellable);
+
   /* ask systemd to isolate the unit for us, send a D-Bus reply in the finish callback */
-  boot_manager_service_isolate (service, unit, NULL,
+  boot_manager_service_isolate (service, unit, cancellable,
                                 boot_manager_service_handle_isolate_finish, invocation);
 
   return TRUE;
@@ -668,6 +734,10 @@ boot_manager_service_handle_isolate_finish (BootManagerService *service,
   /* log any potential errors */
   if (error != NULL)
     g_warning ("there was an error: %s", error->message);
+
+  /* remove the cancellable associated with this invocation now the job is finished */
+  g_hash_table_remove (service->cancellables, invocation);
+  g_object_unref (invocation);
 
   /* report the result back to the boot manager client */
   boot_manager_complete_isolate (service->interface, invocation, result);
@@ -716,12 +786,20 @@ boot_manager_service_handle_list (BootManager           *interface,
                                   GDBusMethodInvocation *invocation,
                                   BootManagerService    *service)
 {
+  GCancellable *cancellable;
+
   g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
 
+  /* create a new cancellable so that we can cancel this list call */
+  cancellable = g_cancellable_new ();
+
+  /* store the cancellable in the cancellables GHashTable */
+  g_hash_table_insert (service->cancellables, g_object_ref (invocation), cancellable);
+
   /* ask systemd to list all its units, send a D-Bus reply in the finish callback */
-  boot_manager_service_list (service, NULL, boot_manager_service_handle_list_finish,
+  boot_manager_service_list (service, cancellable, boot_manager_service_handle_list_finish,
                              invocation);
 
   return TRUE;
@@ -744,6 +822,9 @@ boot_manager_service_handle_list_finish (BootManagerService *service,
   /* log any potential errors */
   if (error != NULL)
     g_warning ("there was an error: %s", error->message);
+
+  /* remove this cancellable now the job has finished */
+  g_hash_table_remove (service->cancellables, invocation);
 
   /* report the result back to the boot manager client */
   boot_manager_complete_list (service->interface, invocation, result);
@@ -1073,7 +1154,7 @@ boot_manager_service_isolate (BootManagerService        *service,
                                       user_data);
 
   /* ask systemd to isolate the unit asynchronously */
-  systemd_manager_call_start_unit (service->systemd_manager, unit, "isolate", 
+  systemd_manager_call_start_unit (service->systemd_manager, unit, "isolate",
                                    cancellable, boot_manager_service_isolate_unit_reply,
                                    job);
 }
