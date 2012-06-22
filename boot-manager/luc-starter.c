@@ -14,9 +14,15 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
+#include <dlt/dlt.h>
+
 #include <boot-manager/boot-manager-service.h>
 #include <boot-manager/luc-starter.h>
 #include <luc-handler/luc-handler-dbus.h>
+
+
+
+DLT_IMPORT_CONTEXT (boot_manager_context);
 
 
 
@@ -307,6 +313,7 @@ luc_starter_start_app_finish (BootManagerService *service,
   LUCStarter  *starter = LUC_STARTER (user_data);
   GPtrArray   *group;
   gboolean     app_found = FALSE;
+  gchar       *message;
   guint        n;
 
   g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
@@ -318,7 +325,12 @@ luc_starter_start_app_finish (BootManagerService *service,
 
   /* respond to errors */
   if (error != NULL)
-    g_warning ("start app had error: %s", error->message);
+    {
+      message = g_strdup_printf ("Failed to start the LUC application \"%s\": %s",
+                                 unit, error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (message));
+      g_free (message);
+    }
 
   /* get the current start group */
   group_name = starter->start_order->data;
@@ -357,7 +369,7 @@ luc_starter_start_app_finish (BootManagerService *service,
   /* remove the association between an app and its cancellable, because the app has
    * finished starting, so cannot be cancelled any more */
   g_hash_table_remove (starter->cancellables, unit);
-  
+
   /* release the LUCStarter because the operation is finished */
   g_object_unref (starter);
 }
