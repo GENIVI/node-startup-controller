@@ -18,9 +18,15 @@
 #include <glib.h>
 #include <gio/gio.h>
 
+#include <dlt/dlt.h>
+
 #include <boot-manager/boot-manager-application.h>
 #include <boot-manager/boot-manager-service.h>
 #include <boot-manager/systemd-manager-dbus.h>
+
+
+
+DLT_DECLARE_CONTEXT (boot_manager_context);
 
 
 
@@ -35,6 +41,11 @@ main (int    argc,
   LUCHandler             *luc_handler;
   GError                 *error = NULL;
   gint                    exit_status = EXIT_SUCCESS;
+
+  /* register the application and context in DLT */
+  DLT_REGISTER_APP ("BMGR", "GENIVI Boot Manager");
+  DLT_REGISTER_CONTEXT (boot_manager_context, "MGR",
+                        "Context of the boot manager itself");
 
   /* initialize the GType type system */
   g_type_init ();
@@ -124,6 +135,10 @@ main (int    argc,
   g_object_unref (systemd_manager);
   g_object_unref (service);
   g_object_unref (connection);
+
+  /* unregister the application and context with DLT */
+  DLT_UNREGISTER_CONTEXT (boot_manager_context);
+  DLT_UNREGISTER_APP ();
 
   return exit_status;
 }
