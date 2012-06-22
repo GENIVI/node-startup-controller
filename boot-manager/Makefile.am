@@ -32,6 +32,7 @@ boot_manager_SOURCES =							\
 boot_manager_CFLAGS =							\
 	-DG_LOG_DOMAIN=\"boot-manager\"					\
 	-I$(top_srcdir)							\
+	$(DLT_CFLAGS)							\
 	$(GIO_CFLAGS)							\
 	$(GIO_UNIX_CFLAGS)						\
 	$(GLIB_CFLAGS)							\
@@ -44,6 +45,7 @@ boot_manager_LDFLAGS =							\
 	$(PLATFORM_LDFLAGS)
 
 boot_manager_LDADD =							\
+	$(DLT_LIBS)							\
 	$(GIO_LIBS)							\
 	$(GIO_UNIX_LIBS)						\
 	$(GLIB_LIBS)							\

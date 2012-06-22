@@ -28,6 +28,7 @@ luc_handler_SOURCES =							\
 luc_handler_CFLAGS =							\
 	-DG_LOG_DOMAIN=\"luc-handler\"					\
 	-I$(top_srcdir)							\
+	$(DLT_CFLAGS)							\
 	$(GIO_CFLAGS)							\
 	$(GIO_UNIX_CFLAGS)						\
 	$(GLIB_CFLAGS)							\
@@ -40,6 +41,7 @@ luc_handler_LDFLAGS =							\
 	$(PLATFORM_LDFLAGS)
 
 luc_handler_LDADD =							\
+	$(DLT_LIBS)							\
 	$(GIO_LIBS)							\
 	$(GIO_UNIX_LIBS)						\
 	$(GLIB_LIBS)							\

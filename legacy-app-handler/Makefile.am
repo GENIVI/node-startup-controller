@@ -26,6 +26,7 @@ legacy_app_handler_SOURCES =						\
 legacy_app_handler_CFLAGS =						\
 	-DG_LOG_DOMAIN=\"legacy-app-handler\"				\
 	-I$(top_srcdir)							\
+	$(DLT_CFLAGS)							\
 	$(GIO_CFLAGS)							\
 	$(GIO_UNIX_CFLAGS)						\
 	$(GLIB_CFLAGS)							\
@@ -38,6 +39,7 @@ legacy_app_handler_LDFLAGS =						\
 	$(PLATFORM_LDFLAGS)
 
 legacy_app_handler_LDADD =						\
+	$(DLT_LIBS)							\
 	$(GIO_LIBS)							\
 	$(GIO_UNIX_LIBS)						\
 	$(GLIB_LIBS)							\
