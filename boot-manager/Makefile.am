@@ -26,6 +26,8 @@ boot_manager_SOURCES =							\
 	boot-manager-service.h						\
 	luc-starter.c							\
 	luc-starter.h							\
+	target-startup-monitor.c					\
+	target-startup-monitor.h					\
 	main.c								\
 	$(boot_manager_built_sources)
 

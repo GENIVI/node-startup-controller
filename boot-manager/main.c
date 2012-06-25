@@ -23,6 +23,7 @@
 #include <boot-manager/boot-manager-application.h>
 #include <boot-manager/boot-manager-service.h>
 #include <boot-manager/systemd-manager-dbus.h>
+#include <boot-manager/target-startup-monitor.h>
 
 
 
@@ -35,6 +36,7 @@ main (int    argc,
       char **argv)
 {
   BootManagerApplication *application;
+  TargetStartupMonitor   *target_startup_monitor;
   BootManagerService     *service;
   GDBusConnection        *connection;
   SystemdManager         *systemd_manager;
@@ -126,12 +128,16 @@ main (int    argc,
       return EXIT_FAILURE;
     }
 
+  /* start up the target startup monitor */
+  target_startup_monitor = target_startup_monitor_new (systemd_manager);
+
   /* create and run the main application */
   application = boot_manager_application_new (service, luc_handler);
   exit_status = g_application_run (G_APPLICATION (application), 0, NULL);
   g_object_unref (application);
 
   /* release allocated objects */
+  g_object_unref (target_startup_monitor);
   g_object_unref (systemd_manager);
   g_object_unref (service);
   g_object_unref (connection);
