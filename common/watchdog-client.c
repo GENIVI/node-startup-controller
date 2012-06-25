@@ -16,7 +16,7 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
-#include <boot-manager/watchdog-client.h>
+#include <common/watchdog-client.h>
 
 
 

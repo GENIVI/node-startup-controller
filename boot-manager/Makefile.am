@@ -18,13 +18,11 @@ boot_manager_PROGRAMS =							\
 boot_manager_built_headers =						\
 	boot-manager-dbus.h						\
 	la-handler-dbus.h						\
-	shutdown-consumer-dbus.h					\
 	systemd-manager-dbus.h
 
 boot_manager_built_sources =						\
 	boot-manager-dbus.c						\
 	la-handler-dbus.c						\
-	shutdown-consumer-dbus.c					\
 	systemd-manager-dbus.c						\
 	$(boot_manager_built_headers)
 
@@ -47,8 +45,6 @@ boot_manager_SOURCES =							\
 	shutdown-consumer-service.h					\
 	target-startup-monitor.c					\
 	target-startup-monitor.h					\
-	watchdog-client.c						\
-	watchdog-client.h						\
 	main.c								\
 	$(boot_manager_built_sources)
 
@@ -69,12 +65,16 @@ boot_manager_LDFLAGS =							\
 	-no-undefined							\
 	$(PLATFORM_LDFLAGS)
 
+boot_manager_DEPENDENCIES =						\
+	$(top_builddir)/common/libcommon.la
+
 boot_manager_LDADD =							\
 	$(DLT_LIBS)							\
 	$(GIO_LIBS)							\
 	$(GIO_UNIX_LIBS)						\
 	$(GLIB_LIBS)							\
-	$(SYSTEMD_DAEMON_LIBS)
+	$(SYSTEMD_DAEMON_LIBS)						\
+	$(top_builddir)/common/libcommon.la
 
 dbus_servicedir = $(datadir)/dbus-1/system-services
 
@@ -105,7 +105,6 @@ CLEANFILES =								\
 EXTRA_DIST =								\
 	boot-manager-dbus.xml						\
 	la-handler-dbus.xml						\
-	shutdown-consumer-dbus.xml					\
 	systemd-manager-dbus.xml					\
 	$(dbus_service_in_files)					\
 	$(systemd_service_in_files)
@@ -131,14 +130,6 @@ la-handler-dbus.h: la-handler-dbus.xml Makefile
 	    --generate-c-code la-handler-dbus				\
 	    --annotate org.genivi.BootManager1.LegacyAppHandler org.gtk.GDBus.C.Name	\
 	      LA_Handler $<
-
-shutdown-consumer-dbus.h: shutdown-consumer-dbus.xml Makefile
-	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
-	    --interface-prefix org.genivi				\
-	    --c-namespace ""						\
-	    --generate-c-code shutdown-consumer-dbus			\
-	    --annotate org.genivi.BootManager1.ShutdownConsumer org.gtk.GDBus.C.Name	\
-	      Shutdown_Consumer $<
 
 systemd-manager-dbus.h: systemd-manager-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\

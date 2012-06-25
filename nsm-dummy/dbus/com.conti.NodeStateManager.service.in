@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=com.conti.NodeStateManager
+SystemdService = com.conti.NodeStateManager.service
+Exec=@libdir@/nsm-dummy-@BOOT_MANAGER_VERSION_API@/nsm-dummy

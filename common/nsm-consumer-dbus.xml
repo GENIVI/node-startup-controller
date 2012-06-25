@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node>
+  <!--
+    com.conti.NodeStateManager.Consumer:
+    @short_description: Interface for testing the interaction between Boot
+                        Manager and Node State Manager.
+                        It is a summary of
+                        "com.conti.NodeStateManager.LifecycleControl" using
+                        only the methods needed to test Boot Manager.
+  -->
+  <interface name="com.conti.NodeStateManager.Consumer">
+    <!--
+      RegisterShutdownClient:
+      @BusName: Bus name of remote application.
+      @ObjName: Object name of remote object that provides the shutdown
+                interface
+      @ShutdownMode: Shutdown mode for which client wants to be informed
+                     (i.e normal, fast etc)
+      @TimeoutsMs:  Max. Timeout to wait for response from shutdown client.
+      @ErrorCode
+
+      The method is used by other applications to register themselves as
+      shutdown client. Any client that registers must provide a method in
+      their DBUS object called NSMLifecycleRequest. This method will take one
+      parameter which is the Lifecycle Request (i.e. normal shutdown, fast
+      shutdown, runup). For an example of the required client interface
+      please see the Boot Manager component who will be a client of the NSM.
+    -->
+    <method name="RegisterShutdownClient">
+      <arg name="BusName" direction="in" type="s"/>
+      <arg name="ObjName" direction="in" type="s"/>
+      <arg name="ShutdownMode" direction="in" type="i"/>
+      <arg name="TimeoutMs" direction="in" type="u"/>
+      <arg name="ErrorCode" direction="out" type="i"/>
+    </method>
+
+    <!--
+      UnRegisterShutdownClient
+      @BusName: Bus name of remote application.
+      @ObjName: Object name of remote object that provides the shutdown
+                interface
+      @ShutdownMode: Shutdown mode for which client wants to be informed
+                     (i.e normal, fast etc)
+      @TimeoutsMs:  Max. Timeout to wait for response from shutdown client.
+      @ErrorCode
+
+      The method is used by other applications to unregister themselves as
+      shutdown client.
+    -->
+    <method name="UnRegisterShutdownClient">
+      <arg name="BusName" direction="in" type="s"/>
+      <arg name="ObjName" direction="in" type="s"/>
+      <arg name="ShutdownMode" direction="in" type="i"/>
+      <arg name="ErrorCode" direction="out" type="i"/>
+    </method>
+
+  </interface>
+</node>

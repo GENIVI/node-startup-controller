@@ -19,12 +19,14 @@
 
 #include <dlt/dlt.h>
 
+#include <common/watchdog-client.h>
+
 #include <boot-manager/boot-manager-application.h>
 #include <boot-manager/boot-manager-service.h>
 #include <boot-manager/job-manager.h>
 #include <boot-manager/la-handler-service.h>
 #include <boot-manager/luc-starter.h>
-#include <boot-manager/watchdog-client.h>
+
 
 
 

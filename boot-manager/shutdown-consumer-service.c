@@ -14,7 +14,8 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
-#include <boot-manager/shutdown-consumer-dbus.h>
+#include <common/shutdown-consumer-dbus.h>
+
 #include <boot-manager/shutdown-consumer-service.h>
 
 

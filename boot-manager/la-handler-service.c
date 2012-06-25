@@ -16,6 +16,8 @@
 
 #include <dlt/dlt.h>
 
+#include <common/nsm-consumer-dbus.h>
+
 #include <boot-manager/job-manager.h>
 #include <boot-manager/la-handler-dbus.h>
 #include <boot-manager/la-handler-service.h>
@@ -57,6 +59,9 @@ static gboolean                        la_handler_service_handle_register       
                                                                                            const gchar                    *mode,
                                                                                            guint                           timeout,
                                                                                            LAHandlerService               *service);
+static void                            la_handler_service_handle_register_finish          (NSMConsumer                    *nsm_consumer,
+                                                                                           GAsyncResult                   *res,
+                                                                                           GDBusMethodInvocation          *invocation);
 static gboolean                        la_handler_service_handle_deregister               (LAHandler                      *interface,
                                                                                            GDBusMethodInvocation          *invocation,
                                                                                            const gchar                    *unit,
@@ -95,6 +100,8 @@ struct _LAHandlerService
   guint            index;
   guint            bus_name_id;
 
+  /* connection to the NSM consumer interface */
+  NSMConsumer     *nsm_consumer;
 };
 
 struct _LAHandlerServiceConsumerBundle
@@ -147,11 +154,23 @@ static void
 la_handler_service_constructed (GObject *object)
 {
   LAHandlerService *service = LA_HANDLER_SERVICE (object);
+  GError           *error = NULL;
+  gchar            *log_text;
 
-  /* get a bus name on the system bus */
-  service->bus_name_id =
-    g_bus_own_name_on_connection (service->connection, "org.genivi.LegacyAppHandler1",
-                                  G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
+  /* connect to the node state manager */
+  service->nsm_consumer =
+    nsm_consumer_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE,
+                                         "com.conti.NodeStateManager",
+                                         "/com/conti/NodeStateManager/Consumer", NULL,
+                                         &error);
+  if (error != NULL)
+    {
+      log_text = g_strdup_printf ("Error occurred connecting to NSM Consumer: %s",
+                                  error->message);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_error_free (error);
+    }
 }
 
 
@@ -270,11 +289,37 @@ la_handler_service_handle_register (LAHandler             *interface,
                                     guint                  timeout,
                                     LAHandlerService      *service)
 {
-  la_handler_service_register (service, unit, mode, timeout);
+  /* delegate registration of the legacy app to a more generalised function */
+  la_handler_service_register (service, unit, mode, timeout,
+                               (GAsyncReadyCallback) la_handler_service_handle_register_finish, invocation);
+
+  return TRUE;
+}
+
+
+
+static void
+la_handler_service_handle_register_finish (NSMConsumer           *nsm_consumer,
+                                           GAsyncResult          *res,
+                                           GDBusMethodInvocation *invocation)
+{
+  GError *error = NULL;
+  gchar  *log_text;
+  gint    error_code;
+
+  nsm_consumer_call_register_shutdown_client_finish (nsm_consumer, &error_code, res,
+                                                     &error);
+  if (error != NULL)
+    {
+      log_text = g_strdup_printf ("Error occurred registering legacy app: %s",
+                                  error->message);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_error_free (error);
+    }
 
   /* notify the caller that we have handled the registration request */
   g_dbus_method_invocation_return_value (invocation, NULL);
-  return TRUE;
 }
 
 
@@ -436,10 +481,12 @@ la_handler_service_start (LAHandlerService *service,
 
 
 void
-la_handler_service_register (LAHandlerService *service,
-                             const gchar      *unit,
-                             const gchar      *mode,
-                             guint             timeout)
+la_handler_service_register (LAHandlerService   *service,
+                             const gchar        *unit,
+                             const gchar        *mode,
+                             guint               timeout,
+                             GAsyncReadyCallback callback,
+                             gpointer            user_data)
 {
   ShutdownConsumerService *consumer;
   GError                  *error = NULL;
@@ -470,6 +517,11 @@ la_handler_service_register (LAHandlerService *service,
       g_free (log_text);
       g_error_free (error);
     }
+
+  /* register the shutdown consumer with the NSM Consumer */
+  nsm_consumer_call_register_shutdown_client (service->nsm_consumer,
+                                              "org.genivi.BootManager1", object_path, 0,
+                                              timeout, NULL, callback, user_data);
 
   g_free (object_path);
 }
