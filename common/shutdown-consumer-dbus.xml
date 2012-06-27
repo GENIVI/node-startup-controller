@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node>
+  <!--
+    org.genivi.lifecycle.ShutdownConsumer1:
+    @short_description: Interface for receiving Shutdown commands from the NSM
+
+    Shutdown Consumers are D-Bus object which are created to shut down apps
+    which do not have a Shutdown() D-Bus method to call. These are registered
+    with the Node State Manager (NSM) instead of the apps and shut down those
+    apps when Shutdown() is called on the Shutdown Consumer.
+  -->
+  <interface name="org.genivi.lifecycle.ShutdownConsumer1">
+    <!--
+      Shutdown:
+
+      Shuts down the app the ShutdownConsumer is associated with.
+    -->
+    <method name="Shutdown">
+      <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
+    </method>
+
+  </interface>
+</node>
