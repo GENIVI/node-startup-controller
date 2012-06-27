@@ -15,13 +15,13 @@
 #include <gio/gio.h>
 #include <glib-unix.h>
 
+#include <common/boot-manager-dbus.h>
 #include <common/watchdog-client.h>
+#include <luc-handler/luc-handler-dbus.h>
 
-#include <boot-manager/boot-manager-dbus.h>
 #include <boot-manager/boot-manager-application.h>
 #include <boot-manager/boot-manager-service.h>
 #include <boot-manager/luc-starter.h>
-#include <luc-handler/luc-handler-dbus.h>
 
 
 

@@ -47,6 +47,7 @@ main (int    argc,
   GDBusConnection      *connection;
   gboolean              is_remote;
   GError               *error = NULL;
+  gchar                *log_text;
   int                   exit_status;
 
   /* check if this program execution is meant as a remote application.
@@ -71,9 +72,11 @@ main (int    argc,
   connection = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, &error);
   if (connection == NULL)
     {
-      g_warning ("Failed to connect to D-Bus: %s", error->message);
+      log_text = g_strdup_printf ("Failed to connect to D-Bus: %s", error->message);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
 
       /* clean up */
+      g_free (log_text);
       g_error_free (error);
 
       return EXIT_FAILURE;
@@ -83,9 +86,12 @@ main (int    argc,
   service = la_handler_service_new (connection);
   if (!la_handler_service_start (service, &error))
     {
-      g_warning ("Failed to start the LegacyAppHandler service: %s", error->message);
+      log_text = g_strdup_printf ("Failed to start the legacy app handler service: %s",
+                                  error->message);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
 
       /* clean up */
+      g_free (log_text);
       g_error_free (error);
       g_object_unref (service);
       g_object_unref (connection);

@@ -198,14 +198,13 @@ la_handler_application_command_line (GApplication            *application,
 {
   GOptionContext *context;
   gboolean        do_register;
-  GError         *error;
+  GError         *error = NULL;
   gchar         **args;
   gchar         **argv;
-  gchar          *message;
   gchar          *mode = NULL;
   gchar          *unit = NULL;
   gint            argc;
-  gint            timeout;
+  gint            timeout = 0;
   gint            i;
 
   GOptionEntry entries[] = {
@@ -234,7 +233,7 @@ la_handler_application_command_line (GApplication            *application,
   g_option_context_add_main_entries (context, entries, NULL);
 
   /* parse the arguments into the argument data */
-  if (!g_option_context_parse (context, &argc, &argv, &error))
+  if (!g_option_context_parse (context, &argc, &argv, &error) || error != NULL)
     {
       /* an error occurred */
       g_application_command_line_printerr (cmdline, "%s\n", error->message);
@@ -246,14 +245,8 @@ la_handler_application_command_line (GApplication            *application,
       if (unit != NULL && *unit != '\0' && timeout >= 0)
         {
           /* register was called correctly */
-          message =
-            g_strdup_printf ("Register application \"%s\" with mode \"%s\"and "
-                             "timeout %dms",
-                             unit,
-                             (mode != NULL) ? mode : "normal",
-                             timeout);
-          DLT_LOG (la_handler_context, DLT_LOG_INFO, DLT_STRING (message));
-          g_free (message);
+          la_handler_service_register (LA_HANDLER_APPLICATION (application)->service,
+                                       unit, mode ? mode : "normal", (guint) timeout);
         }
       else
         {

@@ -7,11 +7,9 @@ boot_manager_PROGRAMS =							\
 	boot-manager
 
 boot_manager_built_headers =						\
-	boot-manager-dbus.h						\
 	systemd-manager-dbus.h
 
 boot_manager_built_sources =						\
-	boot-manager-dbus.c						\
 	systemd-manager-dbus.c						\
 	$(boot_manager_built_headers)
 
@@ -70,7 +68,6 @@ CLEANFILES =								\
 
 EXTRA_DIST =								\
 	$(service_in_files)						\
-	boot-manager-dbus.xml						\
 	systemd-manager-dbus.xml
 
 DISTCLEANFILES =							\
@@ -78,14 +75,6 @@ DISTCLEANFILES =							\
 
 BUILT_SOURCES =								\
 	$(boot_manager_built_headers)
-
-boot-manager-dbus.h: boot-manager-dbus.xml Makefile
-	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
-	    --interface-prefix org.genivi				\
-	    --c-namespace ""						\
-	    --generate-c-code boot-manager-dbus				\
-	    --annotate org.genivi.BootManager1 org.gtk.GDBus.C.Name	\
-	      BootManager $<
 
 systemd-manager-dbus.h: systemd-manager-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
