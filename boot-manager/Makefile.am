@@ -16,10 +16,8 @@ boot_manager_built_sources =						\
 	$(boot_manager_built_headers)
 
 boot_manager_SOURCES =							\
-	../common/watchdog-client.c					\
-	../common/watchdog-client.h					\
-	../luc-handler/luc-handler-dbus.c				\
-	../luc-handler/luc-handler-dbus.h				\
+	$(top_srcdir)/luc-handler/luc-handler-dbus.c			\
+	$(top_srcdir)/luc-handler/luc-handler-dbus.h			\
 	boot-manager-application.c					\
 	boot-manager-application.h					\
 	boot-manager-service.c						\
@@ -46,12 +44,16 @@ boot_manager_LDFLAGS =							\
 	-no-undefined							\
 	$(PLATFORM_LDFLAGS)
 
+boot_manager_DEPENDENCIES =						\
+	$(top_builddir)/common/libcommon.la
+
 boot_manager_LDADD =							\
 	$(DLT_LIBS)							\
 	$(GIO_LIBS)							\
 	$(GIO_UNIX_LIBS)						\
 	$(GLIB_LIBS)							\
-	$(SYSTEMD_DAEMON_LIBS)
+	$(SYSTEMD_DAEMON_LIBS)						\
+	$(top_builddir)/common/libcommon.la
 
 servicedir = $(datadir)/dbus-1/services
 service_in_files =							\

@@ -14,10 +14,6 @@ luc_handler_built_sources =						\
 	$(luc_handler_built_headers)
 
 luc_handler_SOURCES =							\
-	../common/glib-extensions.c					\
-	../common/glib-extensions.h					\
-	../common/watchdog-client.c					\
-	../common/watchdog-client.h					\
 	luc-handler-application.c					\
 	luc-handler-application.h					\
 	luc-handler-service.c						\
@@ -40,12 +36,16 @@ luc_handler_LDFLAGS =							\
 	-no-undefined							\
 	$(PLATFORM_LDFLAGS)
 
+luc_handler_DEPENDENCIES =						\
+	$(top_builddir)/common/libcommon.la
+
 luc_handler_LDADD =							\
 	$(DLT_LIBS)							\
 	$(GIO_LIBS)							\
 	$(GIO_UNIX_LIBS)						\
 	$(GLIB_LIBS)							\
-	$(SYSTEMD_DAEMON_LIBS)
+	$(SYSTEMD_DAEMON_LIBS)						\
+	$(top_builddir)/common/libcommon.la
 
 servicedir = $(datadir)/dbus-1/services
 service_in_files =							\

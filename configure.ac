@@ -135,6 +135,7 @@ AC_DEFINE_UNQUOTED([PRIORITISED_LUC_TYPES],
 
 AC_OUTPUT([
 Makefile
+common/Makefile
 boot-manager/Makefile
 legacy-app-handler/Makefile
 luc-handler/Makefile
