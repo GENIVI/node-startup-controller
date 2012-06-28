@@ -1,0 +1,5 @@
+[Service]
+ExecStart = /usr/bin/python /usr/bin/org-genivi-LegacyAppHandler1-test-service.py \
+            org.genivi.LegacyAppHandler1.test1
+ExecStartPost = @libdir@/legacy-app-handler-@BOOT_MANAGER_VERSION_API@/legacy-app-handler \
+                --register --unit="org.genivi.LegacyAppHandler1.test1.service"

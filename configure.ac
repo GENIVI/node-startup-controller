@@ -142,4 +142,5 @@ luc-handler/Makefile
 luc-handler/org.genivi.LUCHandler1.gschema.xml
 tests/Makefile
 tests/luc-handler/Makefile
+tests/legacy-app-handler/Makefile
 ])
