@@ -1,0 +1,8 @@
+0.1.0
+=====
+* Initial release for the GENIVI E-0.1 release
+* Preliminary implementation of the LUC Handler
+* Preliminary implementation of the boot manager D-Bus interface
+* Incomplete implementation of LUC startup
+* Incomplete implementation of target startup monitoring
+* Incomplete implementation of legacy application handling

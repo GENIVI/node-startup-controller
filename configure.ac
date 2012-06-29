@@ -3,7 +3,7 @@ dnl *** Version information ***
 dnl ***************************
 m4_define([boot_manager_version_api_major], [1])
 m4_define([boot_manager_version_major], [0])
-m4_define([boot_manager_version_minor], [0])
+m4_define([boot_manager_version_minor], [1])
 m4_define([boot_manager_version_micro], [0])
 m4_define([boot_manager_version], [boot_manager_version_major().boot_manager_version_minor().boot_manager_version_micro()])
 
