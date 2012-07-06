@@ -69,8 +69,8 @@ main (int    argc,
   g_type_init ();
 
   /* attempt to connect to D-Bus */
-  connection = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, &error);
-  if (connection == NULL)
+  connection = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
+  if (connection == NULL || error != NULL || !G_IS_DBUS_CONNECTION (connection))
     {
       log_text = g_strdup_printf ("Failed to connect to D-Bus: %s", error->message);
       DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
@@ -117,6 +117,8 @@ main (int    argc,
       application =
         la_handler_application_new (service, G_APPLICATION_IS_SERVICE);
     }
+
+  /* run the application */
   exit_status = g_application_run (G_APPLICATION (application), argc, argv);
   g_object_unref (application);
 

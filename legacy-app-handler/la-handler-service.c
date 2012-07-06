@@ -92,6 +92,7 @@ struct _LAHandlerService
 
   const gchar     *prefix;
   guint            index;
+  guint            bus_name_id;
 
 };
 
@@ -137,6 +138,7 @@ la_handler_service_constructed (GObject *object)
   GError           *error = NULL;
   gchar            *log_text;
 
+  /* connect to the boot manager */
   service->boot_manager = boot_manager_proxy_new_sync (service->connection,
                                                        G_DBUS_PROXY_FLAGS_NONE,
                                                        "org.genivi.BootManager1",
@@ -151,6 +153,11 @@ la_handler_service_constructed (GObject *object)
       g_free (log_text);
       g_error_free (error);
     }
+
+  /* get a bus name on the system bus */
+  service->bus_name_id =
+    g_bus_own_name_on_connection (service->connection, "org.genivi.LegacyAppHandler1",
+                                  G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
 }
 
 
@@ -188,6 +195,9 @@ static void
 la_handler_service_finalize (GObject *object)
 {
   LAHandlerService *service = LA_HANDLER_SERVICE (object);
+
+  /* release the bus name */
+  g_bus_unown_name (service->bus_name_id);
 
   /* release the D-Bus connection object */
   if (service->connection != NULL)

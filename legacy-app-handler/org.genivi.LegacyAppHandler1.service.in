@@ -1,3 +1,3 @@
 [D-BUS Service]
-Name=org.genivi.LAHandler1
+Name=org.genivi.LegacyAppHandler1
 Exec=@libdir@/legacy-app-handler-@BOOT_MANAGER_VERSION_API@/legacy-app-handler
