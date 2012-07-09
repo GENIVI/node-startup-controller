@@ -1,0 +1,4 @@
+[Service]
+Type = notify
+BusName = org.genivi.BootManager1.service
+ExecStart = @libdir@/boot-manager-@BOOT_MANAGER_VERSION_API@/boot-manager

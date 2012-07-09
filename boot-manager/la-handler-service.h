@@ -12,6 +12,8 @@
 
 #include <gio/gio.h>
 
+#include <boot-manager/job-manager.h>
+
 G_BEGIN_DECLS
 
 #define LA_HANDLER_TYPE_SERVICE            (la_handler_service_get_type ())
@@ -26,7 +28,8 @@ typedef struct _LAHandlerService      LAHandlerService;
 
 GType             la_handler_service_get_type (void) G_GNUC_CONST;
 
-LAHandlerService *la_handler_service_new      (GDBusConnection  *connection) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
+LAHandlerService *la_handler_service_new      (GDBusConnection  *connection,
+                                               JobManager       *job_manager) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
 gboolean          la_handler_service_start    (LAHandlerService *service,
                                                GError          **error);
 void              la_handler_service_register (LAHandlerService *service,

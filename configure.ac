@@ -135,14 +135,11 @@ AC_DEFINE_UNQUOTED([PRIORITISED_LUC_TYPES],
 
 AC_OUTPUT([
 Makefile
-common/Makefile
+boot-manager/busconf/Makefile
+boot-manager/dbus/Makefile
+boot-manager/systemd/Makefile
 boot-manager/Makefile
-legacy-app-handler/dbus/Makefile
-legacy-app-handler/Makefile
-legacy-app-handler/systemd/Makefile
-luc-handler/Makefile
-luc-handler/org.genivi.LUCHandler1.gschema.xml
 tests/Makefile
-tests/luc-handler/Makefile
+tests/boot-manager/Makefile
 tests/legacy-app-handler/Makefile
 ])

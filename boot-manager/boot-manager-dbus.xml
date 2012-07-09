@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node name="/org/genivi/BootManager1/BootManager">
+  <!--
+    org.genivi.BootManager1.BootManager:
+    @short_description: Interface for managing the GENIVI LUC (Last User Context)
+
+    The GENIVI Boot Manager remembers applications that were used in the last
+    session of a user. It is used in order to restore these applications on
+    the next start-up.
+
+    The Boot Manager is a passive component in the sense that it does not
+    remember applications on its own; instead, applications need to register
+    and deregister themselves proactively.
+
+    Applications can be registered for different LUC types, the standard ones
+    being "foreground", "background" and "audible".
+  -->
+  <interface name="org.genivi.BootManager1.BootManager">
+    <!--
+      BeginLUCRegistration:
+
+      Initialises the LUC registration sequence at shutdown in order to register
+      the applications which are running in the LUC in this moment.
+    -->
+    <method name="BeginLUCRegistration">
+      <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
+    </method>
+
+    <!--
+      RegisterWithLUC:
+      @apps: A dictionary that maps LUC types to arrays of application unit names.
+
+      Registers one or more applications for certain LUC types. Applications may
+      be listed multiple times. For LUC types where only a single application may
+      be registered at a time, the last application in the corresponding list wins.
+
+      An example for the apps parameter would be:
+
+        {
+          0 : [ "app1.unit" ],
+          1 : [ "app2.unit", "app3.unit" ],
+          2 : [ "app3.unit" ]
+        }
+
+     where 0 = "foreground", 1 = background , 2 = "audible"
+    -->
+    <method name="RegisterWithLUC">
+      <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
+      <arg name="apps" type="a{ias}" direction="in"/>
+    </method>
+
+    <!--
+      FinishLUCRegistration:
+
+      Finishes the LUC registration sequence and atomically replaces the previous LUC.
+    -->
+    <method name="FinishLUCRegistration">
+      <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
+    </method>
+  </interface>
+</node>

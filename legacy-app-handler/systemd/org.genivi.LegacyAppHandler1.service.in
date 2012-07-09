@@ -1,3 +1,0 @@
-[Service]
-BusName = org.genivi.LegacyAppHandler1.service
-ExecStart = @libdir@/legacy-app-handler-@BOOT_MANAGER_VERSION_API@/legacy-app-handler

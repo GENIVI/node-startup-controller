@@ -1,11 +1,11 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
-systemd_servicedir = $(libdir)/systemd/system
+systemd_servicedir = /lib/systemd/system
 
 systemd_service_in_files =							\
-	org.genivi.LegacyAppHandler1.service.in
+	org.genivi.BootManager1.service.in
 
-systemd_service_DATA = $(systmd_service_in_files:.service.in=.service)
+systemd_service_DATA = $(systemd_service_in_files:.service.in=.service)
 
 %.service: %.service.in
 	sed -e "s,\@libdir\@,$(libdir),g"				\

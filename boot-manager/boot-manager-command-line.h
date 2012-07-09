@@ -7,16 +7,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef __GLIB_EXTENSIONS_H__
-#define __GLIB_EXTENSIONS_H__
-
 #include <glib.h>
+#include <gio/gio.h>
 
-G_BEGIN_DECLS
-
-gboolean g_variant_string_array_has_string (GVariant    *array,
-		                            const gchar *str);
-
-G_END_DECLS
-
-#endif /* !__GLIB_EXTENSION_H__ */
+gint boot_manager_handle_command_line (int              argc,
+                                       char           **argv,
+                                       GDBusConnection *connection);

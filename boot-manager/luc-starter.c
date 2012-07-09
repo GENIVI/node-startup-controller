@@ -17,8 +17,8 @@
 #include <dlt/dlt.h>
 
 #include <boot-manager/boot-manager-service.h>
+#include <boot-manager/job-manager.h>
 #include <boot-manager/luc-starter.h>
-#include <luc-handler/luc-handler-dbus.h>
 
 
 
@@ -30,8 +30,8 @@ DLT_IMPORT_CONTEXT (boot_manager_context);
 enum
 {
   PROP_0,
-  PROP_BOOT_MANAGER,
-  PROP_LUC_HANDLER,
+  PROP_JOB_MANAGER,
+  PROP_BOOT_MANAGER_SERVICE,
 };
 
 
@@ -52,7 +52,7 @@ static gint luc_starter_compare_luc_types (gconstpointer       a,
 static void luc_starter_start_next_group  (LUCStarter         *starter);
 static void luc_starter_start_app         (const gchar        *app,
                                            LUCStarter         *starter);
-static void luc_starter_start_app_finish  (BootManagerService *service,
+static void luc_starter_start_app_finish  (JobManager         *manager,
                                            const gchar        *unit,
                                            const gchar        *result,
                                            GError             *error,
@@ -72,8 +72,8 @@ struct _LUCStarter
 {
   GObject             __parent__;
 
-  BootManagerService *boot_manager;
-  LUCHandler         *luc_handler;
+  JobManager         *job_manager;
+  BootManagerService *boot_manager_service;
 
   gchar             **prioritised_types;
 
@@ -101,21 +101,22 @@ luc_starter_class_init (LUCStarterClass *klass)
   gobject_class->set_property = luc_starter_set_property;
 
   g_object_class_install_property (gobject_class,
-                                   PROP_BOOT_MANAGER,
-                                   g_param_spec_object ("boot-manager",
-                                                        "boot-manager",
-                                                        "boot-manager",
-                                                        BOOT_MANAGER_TYPE_SERVICE,
+                                   PROP_JOB_MANAGER,
+                                   g_param_spec_object ("job-manager",
+                                                        "Job Manager",
+                                                        "The internal handler of Start()"
+                                                        " and Stop() jobs",
+                                                        TYPE_JOB_MANAGER,
                                                         G_PARAM_READWRITE |
                                                         G_PARAM_CONSTRUCT_ONLY |
                                                         G_PARAM_STATIC_STRINGS));
 
   g_object_class_install_property (gobject_class,
-                                   PROP_LUC_HANDLER,
-                                   g_param_spec_object ("luc-handler",
-                                                        "luc-handler",
-                                                        "luc-handler",
-                                                        TYPE_LUC_HANDLER,
+                                   PROP_BOOT_MANAGER_SERVICE,
+                                   g_param_spec_object ("boot-manager-service",
+                                                        "boot-manager-service",
+                                                        "boot-manager-service",
+                                                        BOOT_MANAGER_TYPE_SERVICE,
                                                         G_PARAM_READWRITE |
                                                         G_PARAM_CONSTRUCT_ONLY |
                                                         G_PARAM_STATIC_STRINGS));
@@ -160,11 +161,11 @@ luc_starter_finalize (GObject *object)
   /* free the prioritised types array */
   g_strfreev (starter->prioritised_types);
 
-  /* release the boot manager */
-  g_object_unref (starter->boot_manager);
+  /* release the job manager */
+  g_object_unref (starter->job_manager);
 
-  /* release the LUC handler */
-  g_object_unref (starter->luc_handler);
+  /* release the boot manager service */
+  g_object_unref (starter->boot_manager_service);
 
   (*G_OBJECT_CLASS (luc_starter_parent_class)->finalize) (object);
 }
@@ -181,11 +182,11 @@ luc_starter_get_property (GObject    *object,
 
   switch (prop_id)
     {
-    case PROP_BOOT_MANAGER:
-      g_value_set_object (value, starter->boot_manager);
+    case PROP_JOB_MANAGER:
+      g_value_set_object (value, starter->job_manager);
       break;
-    case PROP_LUC_HANDLER:
-      g_value_set_object (value, starter->luc_handler);
+    case PROP_BOOT_MANAGER_SERVICE:
+      g_value_set_object (value, starter->boot_manager_service);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -205,11 +206,11 @@ luc_starter_set_property (GObject      *object,
 
   switch (prop_id)
     {
-    case PROP_BOOT_MANAGER:
-      starter->boot_manager = g_value_dup_object (value);
+    case PROP_JOB_MANAGER:
+      starter->job_manager = g_value_dup_object (value);
       break;
-    case PROP_LUC_HANDLER:
-      starter->luc_handler = g_value_dup_object (value);
+    case PROP_BOOT_MANAGER_SERVICE:
+      starter->boot_manager_service = g_value_dup_object (value);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -295,19 +296,19 @@ luc_starter_start_app (const gchar *app,
   g_hash_table_insert (starter->cancellables, g_strdup (app), cancellable);
 
   /* start the service, passing the cancellable */
-  boot_manager_service_start (starter->boot_manager, app, cancellable,
-                              luc_starter_start_app_finish,
-                              g_object_ref (starter));
+  job_manager_start (starter->job_manager, app, cancellable,
+                     luc_starter_start_app_finish,
+                     g_object_ref (starter));
 }
 
 
 
 static void
-luc_starter_start_app_finish (BootManagerService *service,
-                              const gchar        *unit,
-                              const gchar        *result,
-                              GError             *error,
-                              gpointer            user_data)
+luc_starter_start_app_finish (JobManager  *manager,
+                              const gchar *unit,
+                              const gchar *result,
+                              GError      *error,
+                              gpointer     user_data)
 {
   const gchar *group_name;
   LUCStarter  *starter = LUC_STARTER (user_data);
@@ -316,7 +317,7 @@ luc_starter_start_app_finish (BootManagerService *service,
   gchar       *message;
   guint        n;
 
-  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+  g_return_if_fail (IS_JOB_MANAGER (manager));
   g_return_if_fail (unit != NULL && *unit != '\0');
   g_return_if_fail (IS_LUC_STARTER (user_data));
   g_return_if_fail (starter->start_order != NULL);
@@ -387,15 +388,15 @@ luc_starter_cancel_start (const gchar  *app,
 
 
 LUCStarter *
-luc_starter_new (BootManagerService *boot_manager,
-                 LUCHandler         *luc_handler)
+luc_starter_new          (JobManager         *job_manager,
+                          BootManagerService *boot_manager_service)
 {
-  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (boot_manager), NULL);
-  g_return_val_if_fail (IS_LUC_HANDLER (luc_handler), NULL);
+  g_return_val_if_fail (IS_JOB_MANAGER (job_manager), NULL);
+  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (boot_manager_service), NULL);
 
   return g_object_new (TYPE_LUC_STARTER,
-                       "boot-manager", boot_manager,
-                       "luc-handler", luc_handler,
+                       "job-manager", job_manager,
+                       "boot-manager-service", boot_manager_service,
                        NULL);
 }
 
@@ -407,10 +408,13 @@ luc_starter_start_groups (LUCStarter *starter)
   GVariantIter iter;
   GPtrArray   *group;
   GVariant    *context;
+  GError      *error = NULL;
   GList       *lp;
   gchar      **apps;
-  gchar       *type;
+  gchar       *log_text;
   guint        n;
+  gint         type;
+  gint        *dup_type;
 
   g_debug ("prioritised types:");
   for (n = 0; starter->prioritised_types[n] != NULL; n++)
@@ -448,23 +452,40 @@ luc_starter_start_groups (LUCStarter *starter)
     }
 
   /* get the current last user context */
-  context = luc_handler_get_last_user_context (starter->luc_handler);
-  type = g_variant_print (context, TRUE);
-  g_debug ("context: %s", type);
+  context = boot_manager_service_read_luc (starter->boot_manager_service, &error);
+  if (error != NULL)
+    {
+      if (error->code == G_IO_ERROR_NOT_FOUND)
+        {
+          DLT_LOG (boot_manager_context, DLT_LOG_INFO,
+                   DLT_STRING ("Boot manager could not find the last user context"));
+        }
+      else
+        {
+          log_text =
+            g_strdup_printf ("Error reading last user context: %s", error->message);
+          DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+          g_free (log_text);
+        }
+      g_error_free (error);
+      return;
+    }
 
   /* create groups for all types in the LUC */
   g_variant_iter_init (&iter, context);
-  while (g_variant_iter_loop (&iter, "{s^as}", &type, &apps))
+  while (g_variant_iter_loop (&iter, "{i^as}", &type, &apps))
     {
+      dup_type = g_new0 (gint, 1);
+      *dup_type = type;
       group = g_ptr_array_new_with_free_func (g_free);
 
       for (n = 0; apps != NULL && apps[n] != NULL; n++)
         {
-          g_debug ("  group %s app %s", type, apps[n]);
+          g_debug ("  group %d app %s", type, apps[n]);
           g_ptr_array_add (group, g_strdup (apps[n]));
         }
 
-      g_hash_table_insert (starter->start_groups, g_strdup (type), group);
+      g_hash_table_insert (starter->start_groups, dup_type, group);
     }
 
   /* generate the start order by sorting the LUC types according to
@@ -480,6 +501,8 @@ luc_starter_start_groups (LUCStarter *starter)
 
   if (starter->start_order != NULL)
     luc_starter_start_next_group (starter);
+
+  g_variant_unref (context);
 }
 
 void

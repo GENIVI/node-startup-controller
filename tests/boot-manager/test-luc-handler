@@ -1,0 +1,98 @@
+#!/bin/bash
+
+#set -e
+
+#function to compare the LastUserContext
+# $1 is the context
+# $2 is the path to the file to compare the context to
+compare_luc()
+{
+  ./gvariant-writer "$1" "$2"
+  diff -q "$luc_path" "$2"
+}
+
+# function to begin registration
+begin()
+{
+  gdbus call --system \
+    -d org.genivi.BootManager1 \
+    -o /org/genivi/BootManager1/BootManager \
+    -m org.genivi.BootManager1.BootManager.BeginLUCRegistration \
+     &> /dev/null
+}
+
+# function to make a registration call
+register()
+{
+  gdbus call --system \
+    -d org.genivi.BootManager1 \
+    -o /org/genivi/BootManager1/BootManager \
+    -m org.genivi.BootManager1.BootManager.RegisterWithLUC \
+    "$1" &> /dev/null
+}
+
+# function to begin registration
+end()
+{
+  gdbus call --system \
+    -d org.genivi.BootManager1 \
+    -o /org/genivi/BootManager1/BootManager \
+    -m org.genivi.BootManager1.BootManager.FinishLUCRegistration \
+     &> /dev/null
+}
+
+
+# function to fail with a reason
+fail()
+{
+  echo "ERROR: $1"
+  exit 1
+}
+
+rm -f temp
+rm -f "$luc_path"
+
+
+#Test a simple dictionary
+begin
+register "{0: ['app1.unit']}"
+end
+[ -z "$(compare_luc "{0: ['app1.unit']}" "temp")" ] \
+  || fail "Registration was not identical"
+
+#Test whether RegisterWithLUC() writes by itself
+register "{1: ['app2.service']}"
+[ "$(compare_luc "{1: ['app2.service']}" "temp" )" ] \
+  || fail "Registration happened with only RegisterWithLUC() called"
+
+#Test whether calling FinishLUCRegistration() by itself changes the file
+end
+[ -z "$(compare_luc "{0: ['app1.unit']}" "temp")" ] \
+  || fail "FinishLUCRegistration() without BeginLUCRegistration() changed the file"
+
+#Test whether a complex dictionary works
+dict="{0: ['app1.unit'], 1: ['app1.unit', 'app3.unit'], 2: ['app2.unit']}"
+begin
+register "$dict"
+end
+[ -z "$(compare_luc "$dict" "temp")" ] \
+  || fail "Failed to register a complex dictionary type"
+
+#Test with multiple RegisterWithLUC() calls
+dict="{0: ['app1.unit'], 1: ['app3.unit']}"
+begin
+register "{0: ['app1.unit']}"
+register "{1: ['app3.unit']}"
+end
+[ -z "$(compare_luc "$dict" "temp")" ] \
+  || fail "Failed to register correctly when multiple calls are used"
+
+#Test that using multiply RegisterWithLUC() calls changes the order of the apps
+dict="{1: ['app2.unit', 'app1.unit']}"
+begin
+register "{1: ['app1.unit', 'app2.unit']}"
+register "{1: ['app1.unit']}"
+end
+[ -z "$(compare_luc "$dict" "temp")" ] \
+  || fail "Failed to change the order of the apps on multiple RegisterWithLUC() calls"
+
