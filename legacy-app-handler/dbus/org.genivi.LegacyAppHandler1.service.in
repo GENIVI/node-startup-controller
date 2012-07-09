@@ -1,3 +1,4 @@
 [D-BUS Service]
 Name=org.genivi.LegacyAppHandler1
+SystemdService = org.genivi.LegacyAppHandler1.service
 Exec=@libdir@/legacy-app-handler-@BOOT_MANAGER_VERSION_API@/legacy-app-handler
