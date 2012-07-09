@@ -37,7 +37,7 @@ legacy_app_handler_LDFLAGS =						\
 	$(PLATFORM_LDFLAGS)
 
 legacy_app_handler_DEPENDENCIES =					\
-	$(top_builddir)/common/libcommon.la
+	$(top_builddir)/common/libcommon.la				
 
 legacy_app_handler_LDADD =						\
 	$(DLT_LIBS)							\
