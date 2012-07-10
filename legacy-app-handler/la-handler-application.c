@@ -51,8 +51,6 @@ static void la_handler_application_set_property (GObject                 *object
                                                  const GValue            *value,
                                                  GParamSpec              *pspec);
 static void la_handler_application_startup      (GApplication            *application);
-static int  la_handler_application_command_line (GApplication            *application,
-                                                 GApplicationCommandLine *cmdline);
 
 
 
@@ -92,7 +90,6 @@ la_handler_application_class_init (LAHandlerApplicationClass *klass)
 
   gapplication_class = G_APPLICATION_CLASS (klass);
   gapplication_class->startup = la_handler_application_startup;
-  gapplication_class->command_line = la_handler_application_command_line;
 
   g_object_class_install_property (gobject_class,
                                    PROP_LA_HANDLER_SERVICE,
@@ -188,88 +185,6 @@ la_handler_application_startup (GApplication *app)
   /* the Legacy Application Handler should keep running until it is shut down by the Node
    * State Manager. */
   g_application_hold (app);
-}
-
-
-
-static int
-la_handler_application_command_line (GApplication            *application,
-                                     GApplicationCommandLine *cmdline)
-{
-  GOptionContext *context;
-  gboolean        do_register;
-  GError         *error = NULL;
-  gchar         **args;
-  gchar         **argv;
-  gchar          *mode = NULL;
-  gchar          *unit = NULL;
-  gint            argc;
-  gint            timeout = 0;
-  gint            i;
-
-  GOptionEntry entries[] = {
-    {"register",      0, 0, G_OPTION_ARG_NONE,   &do_register, NULL, NULL},
-    {"unit",          0, 0, G_OPTION_ARG_STRING, &unit,     NULL, NULL},
-    {"timeout",       0, 0, G_OPTION_ARG_INT,    &timeout,  NULL, NULL},
-    {"shutdown-mode", 0, 0, G_OPTION_ARG_STRING, &mode,     NULL, NULL},
-    {NULL},
-  };
-
-  /* keep the application running until we have finished */
-  g_application_hold (application);
-
-  /* retrieve the command-line arguments */
-  args = g_application_command_line_get_arguments (cmdline, &argc);
-
-  /* copy the args array, because g_option_context_parse() removes elements without
-   * freeing them */
-  argv = g_new (gchar *, argc + 1);
-  for (i = 0; i <= argc; i++)
-    argv[i] = args[i];
-
-  /* set up the option context */
-  context = g_option_context_new (NULL);
-  g_option_context_set_help_enabled (context, FALSE);
-  g_option_context_add_main_entries (context, entries, NULL);
-
-  /* parse the arguments into the argument data */
-  if (!g_option_context_parse (context, &argc, &argv, &error) || error != NULL)
-    {
-      /* an error occurred */
-      g_application_command_line_printerr (cmdline, "%s\n", error->message);
-      g_error_free (error);
-      g_application_command_line_set_exit_status (cmdline, EXIT_FAILURE);
-    }
-  else if (do_register)
-    {
-      if (unit != NULL && *unit != '\0' && timeout >= 0)
-        {
-          /* register was called correctly */
-          la_handler_service_register (LA_HANDLER_APPLICATION (application)->service,
-                                       unit, mode ? mode : "normal", (guint) timeout);
-        }
-      else
-        {
-          /* register was called incorrectly */
-          g_application_command_line_printerr (cmdline,
-                                               "Invalid arguments. A unit must be "
-                                               "specified and the timeout must be "
-                                               "positive.\n");
-        }
-    }
-
-  /* clean up */
-  g_free (argv);
-  g_strfreev (args);
-  g_option_context_free (context);
-
-  g_free (mode);
-  g_free (unit);
-
-  /* allow the application to stop */
-  g_application_release (application);
-
-  return EXIT_SUCCESS;
 }
 
 

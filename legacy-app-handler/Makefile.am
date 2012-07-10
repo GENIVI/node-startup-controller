@@ -1,5 +1,14 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
+SUBDIRS =								\
+	dbus								\
+	systemd
+
+legacy_app_handler_confdir = /etc/dbus-1/system.d
+
+legacy_app_handler_conf_DATA =						\
+	org.genivi.LegacyAppHandler1.conf
+
 legacy_app_handlerdir =							\
 	$(libdir)/legacy-app-handler-$(BOOT_MANAGER_VERSION_API)
 
@@ -47,21 +56,7 @@ legacy_app_handler_LDADD =						\
 	$(SYSTEMD_DAEMON_LIBS)						\
 	$(top_builddir)/common/libcommon.la
 
-servicedir = $(datadir)/dbus-1/services
-service_in_files =							\
-	org.genivi.LAHandler1.service.in
-
-service_DATA = $(service_in_files:.service.in=.service)
-
-%.service: %.service.in
-	sed -e "s,\@libdir\@,$(libdir),g"				\
-	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
-
-CLEANFILES =								\
-	$(service_DATA)
-
 EXTRA_DIST =								\
-	$(service_in_files)						\
 	$(gsettingsschema_in_files)					\
 	la-handler-dbus.xml
 

@@ -21,6 +21,7 @@
 #include <dlt/dlt.h>
 
 #include <legacy-app-handler/la-handler-application.h>
+#include <legacy-app-handler/la-handler-dbus.h>
 #include <legacy-app-handler/la-handler-service.h>
 
 
@@ -34,6 +35,177 @@ dlt_cleanup (void)
 {
   DLT_UNREGISTER_CONTEXT (la_handler_context);
   DLT_UNREGISTER_APP ();
+}
+
+
+
+static gboolean
+handle_command_line (int              argc,
+                     char           **argv,
+                     GDBusConnection *connection)
+{
+  GOptionContext *context = g_option_context_new (NULL);
+  LAHandler      *legacy_app_handler;
+  gboolean        do_register = FALSE;
+  gboolean        do_deregister = FALSE;
+  GError         *error = NULL;
+  gchar          *unit = NULL;
+  gchar          *log_message = NULL;
+  gchar          *mode = NULL;
+  gint            timeout = 0;
+
+  GOptionEntry entries[] = {
+    {"deregister",    0, 0, G_OPTION_ARG_NONE,   &do_deregister, NULL, NULL},
+    {"register",      0, 0, G_OPTION_ARG_NONE,   &do_register,   NULL, NULL},
+    {"unit",          0, 0, G_OPTION_ARG_STRING, &unit,          NULL, NULL},
+    {"timeout",       0, 0, G_OPTION_ARG_INT,    &timeout,       NULL, NULL},
+    {"shutdown-mode", 0, 0, G_OPTION_ARG_STRING, &mode,          NULL, NULL},
+    {NULL},
+  };
+
+  /* set up the option context */
+  g_option_context_set_help_enabled (context, FALSE);
+  g_option_context_add_main_entries (context, entries, NULL);
+
+  /* parse the arguments into argument data */
+  if (!g_option_context_parse (context, &argc, &argv, &error) || error != NULL)
+    {
+      /* an error occurred */
+      log_message =
+        g_strdup_printf ("Error occurred parsing arguments: %s\n", error->message);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_message));
+
+      g_error_free (error);
+      g_free (log_message);
+
+      return FALSE;
+    }
+  else if (do_register && !do_deregister)
+    {
+      if (unit == NULL || *unit == '\0' || timeout < 0)
+        {
+          /* register was called incorrectly */
+          log_message =
+            g_strdup_printf ("Invalid arguments for --register. A unit must be specified"
+                             " and the timeout must be positive.");
+          DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_message));
+
+          g_free (log_message);
+
+          return FALSE;
+        }
+
+      /* get a legacy app handler interface */
+      legacy_app_handler =
+        la_handler_proxy_new_sync (connection, G_DBUS_PROXY_FLAGS_NONE,
+                                   "org.genivi.LegacyAppHandler1",
+                                   "/org/genivi/LegacyAppHandler1", NULL, &error);
+      if (error != NULL)
+        {
+          /* failed to connect to the legacy app handler */
+          log_message =
+            g_strdup_printf ("Error occurred connecting to legacy app handler "
+                             "interface: %s", error->message);
+          DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_message));
+
+          g_free (log_message);
+          g_error_free (error);
+
+          return FALSE;
+        }
+
+      /* call the legacy app handler's Register() method */
+      la_handler_call_register_sync (legacy_app_handler, unit,
+                                     mode ? mode : "normal", (guint) timeout, NULL,
+                                     &error);
+      if (error != NULL)
+        {
+          /* failed to register the legacy app */
+          log_message = g_strdup_printf ("Error occurred registering legacy app: %s",
+                                         error->message);
+          DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_message));
+
+          g_object_unref (legacy_app_handler);
+          g_free (log_message);
+          g_error_free (error);
+
+          return FALSE;
+        }
+
+      g_object_unref (legacy_app_handler);
+
+      return TRUE;
+
+    }
+  else if (do_deregister && !do_register)
+    {
+      if (unit == NULL || *unit == '\0')
+        {
+          /* deregister was called incorrectly */
+          log_message =
+            g_strdup_printf ("Invalid arguments for --deregister. A unit must be "
+                             "specified.");
+          DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_message));
+
+          g_free (log_message);
+
+          return FALSE;
+        }
+
+      /* get a legacy app handler interface */
+      legacy_app_handler =
+        la_handler_proxy_new_sync (connection, G_DBUS_PROXY_FLAGS_NONE,
+                                   "org.genivi.LegacyAppHandler1",
+                                   "/org/genivi/LegacyAppHandler1", NULL, &error);
+      if (error != NULL)
+        {
+          log_message =
+            g_strdup_printf ("Error occurred connecting to legacy app handler "
+                             "interface: %s", error->message);
+          DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_message));
+
+          g_free (log_message);
+          g_error_free (error);
+
+          return FALSE;
+        }
+
+      /* call the legacy app handler's Deregister() method */
+      la_handler_call_deregister_sync (legacy_app_handler, unit, NULL, &error);
+      if (error != NULL)
+        {
+          log_message = g_strdup_printf ("Error occurred deregistering legacy "
+                                         "app: %s", error->message);
+          DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_message));
+
+          g_object_unref (legacy_app_handler);
+          g_free (log_message);
+          g_error_free (error);
+
+          return FALSE;
+        }
+
+      g_object_unref (legacy_app_handler);
+
+      return TRUE;
+    }
+  else if (do_register && do_deregister)
+    {
+      log_message =
+        g_strdup_printf ("Invalid arguments. Please choose either --register or "
+                         "--deregister.");
+        DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_message));
+
+        g_free (log_message);
+
+        return FALSE;
+    }
+  else
+    {
+        DLT_LOG (la_handler_context, DLT_LOG_ERROR,
+                 DLT_STRING ("No arguments recognised"));
+        return FALSE;
+    }
 }
 
 
@@ -69,8 +241,8 @@ main (int    argc,
   g_type_init ();
 
   /* attempt to connect to D-Bus */
-  connection = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, &error);
-  if (connection == NULL)
+  connection = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
+  if (connection == NULL || error != NULL || !G_IS_DBUS_CONNECTION (connection))
     {
       log_text = g_strdup_printf ("Failed to connect to D-Bus: %s", error->message);
       DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
@@ -82,46 +254,43 @@ main (int    argc,
       return EXIT_FAILURE;
     }
 
-  /* instantiate the LegacyAppHandler service implementation */
-  service = la_handler_service_new (connection);
-  if (!la_handler_service_start (service, &error))
-    {
-      log_text = g_strdup_printf ("Failed to start the legacy app handler service: %s",
-                                  error->message);
-      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-
-      /* clean up */
-      g_free (log_text);
-      g_error_free (error);
-      g_object_unref (service);
-      g_object_unref (connection);
-
-      return EXIT_FAILURE;
-    }
-
-  /* create and run the main application */
   if (is_remote)
     {
-      /* an application with the flag G_APPLICATION_IS_SERVICE tries to be the primary
-       * instance of the application, and fails if another instance already exists.
-       * setting G_APPLICATION_IS_LAUNCHER indicates that it shouldn't try to be the
-       * primary instance */
-      application =
-        la_handler_application_new (service, G_APPLICATION_HANDLES_COMMAND_LINE |
-                                             G_APPLICATION_IS_LAUNCHER);
+      if (!handle_command_line (argc, argv, connection))
+        exit_status = EXIT_FAILURE;
+      else
+        exit_status = EXIT_SUCCESS;
     }
   else
     {
-      /* this application is meant to be the primary instance, so
-       * G_APPLICATION_IS_LAUNCHER is not set */
+      /* instantiate the LegacyAppHandler service implementation */
+      service = la_handler_service_new (connection);
+      if (!la_handler_service_start (service, &error))
+        {
+          log_text = g_strdup_printf ("Failed to start the legacy app handler service: %s",
+                                      error->message);
+          DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+
+          /* clean up */
+          g_free (log_text);
+          g_error_free (error);
+          g_object_unref (service);
+          g_object_unref (connection);
+
+          return EXIT_FAILURE;
+        }
+
+      /* create and run the main application */
       application =
         la_handler_application_new (service, G_APPLICATION_IS_SERVICE);
-    }
-  exit_status = g_application_run (G_APPLICATION (application), argc, argv);
-  g_object_unref (application);
 
-  /* release allocated objects */
-  g_object_unref (service);
+      exit_status = g_application_run (G_APPLICATION (application), argc, argv);
+      g_object_unref (application);
+
+      /* release allocated objects */
+      g_object_unref (service);
+    }
+
   g_object_unref (connection);
 
   return exit_status;
