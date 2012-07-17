@@ -1,3 +1,0 @@
-[D-BUS Service]
-Name=org.genivi.LUCHandler1
-Exec=@libdir@/luc-handler-@BOOT_MANAGER_VERSION_API@/luc-handler

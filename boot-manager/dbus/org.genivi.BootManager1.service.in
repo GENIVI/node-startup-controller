@@ -1,3 +1,4 @@
 [D-BUS Service]
 Name=org.genivi.BootManager1
+SystemdService = org.genivi.BootManager1.service
 Exec=@libdir@/boot-manager-@BOOT_MANAGER_VERSION_API@/boot-manager

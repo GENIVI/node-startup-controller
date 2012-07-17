@@ -3,7 +3,7 @@
 bus_servicedir = $(datadir)/dbus-1/system-services
 
 bus_service_in_files =							\
-	org.genivi.LegacyAppHandler1.service.in
+	org.genivi.BootManager1.service.in
 
 bus_service_DATA = $(bus_service_in_files:.service.in=.service)
 

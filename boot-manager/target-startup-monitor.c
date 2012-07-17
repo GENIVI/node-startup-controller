@@ -14,8 +14,7 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
-#include <common/boot-manager-dbus.h>
-
+#include <boot-manager/boot-manager-dbus.h>
 #include <boot-manager/target-startup-monitor.h>
 
 

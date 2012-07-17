@@ -9,7 +9,7 @@
     with the Node State Manager (NSM) instead of the apps and shut down those
     apps when Shutdown() is called on the Shutdown Consumer.
   -->
-  <interface name="org.genivi.lifecycle.ShutdownConsumer1">
+  <interface name="org.genivi.BootManager1.ShutdownConsumer">
     <!--
       Shutdown:
 

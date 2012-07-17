@@ -10,8 +10,11 @@
 #ifndef __BOOT_MANAGER_APPLICATION_H__
 #define __BOOT_MANAGER_APPLICATION_H__
 
-#include <luc-handler/luc-handler-dbus.h>
+#include <gio/gio.h>
+
 #include <boot-manager/boot-manager-service.h>
+#include <boot-manager/job-manager.h>
+#include <boot-manager/la-handler-service.h>
 
 G_BEGIN_DECLS
 
@@ -27,8 +30,10 @@ typedef struct _BootManagerApplication      BootManagerApplication;
 
 GType		                boot_manager_application_get_type (void) G_GNUC_CONST;
 
-BootManagerApplication *boot_manager_application_new      (BootManagerService *service,
-                                                           LUCHandler         *luc_handler) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
+BootManagerApplication *boot_manager_application_new      (GDBusConnection    *connection,
+                                                           JobManager         *job_manager,
+                                                           LAHandlerService   *la_handler,
+                                                           BootManagerService *boot_manager_service) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
 
 G_END_DECLS
 

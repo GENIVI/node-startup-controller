@@ -16,12 +16,10 @@
 
 #include <dlt/dlt.h>
 
-#include <common/boot-manager-dbus.h>
-#include <common/glib-extensions.h>
-#include <common/shutdown-consumer-service.h>
-
-#include <legacy-app-handler/la-handler-dbus.h>
-#include <legacy-app-handler/la-handler-service.h>
+#include <boot-manager/job-manager.h>
+#include <boot-manager/la-handler-dbus.h>
+#include <boot-manager/la-handler-service.h>
+#include <boot-manager/shutdown-consumer-service.h>
 
 
 
@@ -34,6 +32,7 @@ enum
 {
   PROP_0,
   PROP_CONNECTION,
+  PROP_JOB_MANAGER,
 };
 
 
@@ -64,8 +63,10 @@ static gboolean                        la_handler_service_handle_deregister     
                                                                                            LAHandlerService               *service);
 static void                            la_handler_service_handle_consumer_shutdown        (ShutdownConsumerService        *interface,
                                                                                            LAHandlerService               *service);
-static void                            la_handler_service_handle_consumer_shutdown_finish (GObject                        *object,
-                                                                                           GAsyncResult                   *res,
+static void                            la_handler_service_handle_consumer_shutdown_finish (JobManager                     *manager,
+                                                                                           const gchar                    *unit,
+                                                                                           const gchar                    *result,
+                                                                                           GError                         *error,
                                                                                            gpointer                        user_data);
 static LAHandlerServiceConsumerBundle *la_handler_service_consumer_bundle_new             (LAHandlerService               *la_handler,
                                                                                            ShutdownConsumerService        *consumer);
@@ -85,7 +86,7 @@ struct _LAHandlerService
 
   GDBusConnection *connection;
   LAHandler       *interface;
-  BootManager     *boot_manager;
+  JobManager      *job_manager;
 
   /* list of shutdown consumers */
   GList           *shutdown_consumers;
@@ -127,6 +128,16 @@ la_handler_service_class_init (LAHandlerServiceClass *klass)
                                                         G_PARAM_READWRITE |
                                                         G_PARAM_CONSTRUCT_ONLY |
                                                         G_PARAM_STATIC_STRINGS));
+  g_object_class_install_property (gobject_class,
+                                   PROP_JOB_MANAGER,
+                                   g_param_spec_object ("job-manager",
+                                                        "Job Manager",
+                                                        "The internal handler of Start()"
+                                                        " and Stop() jobs",
+                                                        TYPE_JOB_MANAGER,
+                                                        G_PARAM_READWRITE |
+                                                        G_PARAM_CONSTRUCT_ONLY |
+                                                        G_PARAM_STATIC_STRINGS));
 }
 
 
@@ -138,13 +149,6 @@ la_handler_service_constructed (GObject *object)
   GError           *error = NULL;
   gchar            *log_text;
 
-  /* connect to the boot manager */
-  service->boot_manager = boot_manager_proxy_new_sync (service->connection,
-                                                       G_DBUS_PROXY_FLAGS_NONE,
-                                                       "org.genivi.BootManager1",
-                                                       "/org/genivi/BootManager1",
-                                                       NULL,
-                                                       &error);
   if (error != NULL)
     {
       log_text = g_strdup_printf ("Failed to connect to the boot manager service: %s",
@@ -172,7 +176,7 @@ la_handler_service_init (LAHandlerService *service)
   service->index = 1;
 
   /* the string that precedes the index in the shutdown consumer's object path */
-  service->prefix = "/org/genivi/lifecycle/LegacyAppHandler1";
+  service->prefix = "/org/genivi/BootManager1/ShutdownConsumer";
 
   /* initialize the list of shutdown consumers */
   service->shutdown_consumers = NULL;
@@ -209,8 +213,8 @@ la_handler_service_finalize (GObject *object)
                                         0, 0, NULL, NULL, service);
   g_object_unref (service->interface);
 
-  /* release the boot manager skeleton */
-  g_object_unref (service->boot_manager);
+  /* release the job manager skeleton */
+  g_object_unref (service->job_manager);
 
   /* release the shutdown consumers */
   g_list_free_full (service->shutdown_consumers,
@@ -234,6 +238,9 @@ la_handler_service_get_property (GObject    *object,
     case PROP_CONNECTION:
       g_value_set_object (value, service->connection);
       break;
+    case PROP_JOB_MANAGER:
+      g_value_set_object (value, service->job_manager);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -254,6 +261,9 @@ la_handler_service_set_property (GObject      *object,
     {
     case PROP_CONNECTION:
       service->connection = g_value_dup_object (value);
+      break;
+    case PROP_JOB_MANAGER:
+      service->job_manager = g_value_dup_object (value);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -308,50 +318,41 @@ la_handler_service_handle_consumer_shutdown (ShutdownConsumerService *consumer,
   object_path = shutdown_consumer_service_get_object_path (consumer);
   if (g_str_has_prefix (object_path, service->prefix))
     {
-      /* tell boot manager to stop the unit */
+      /* tell job manager to stop the unit */
       unit_name = shutdown_consumer_service_get_unit_name (consumer);
-
       bundle = la_handler_service_consumer_bundle_new (service, consumer);
 
-      boot_manager_call_stop (service->boot_manager, unit_name, NULL,
-                              la_handler_service_handle_consumer_shutdown_finish,
-                              bundle);
+      job_manager_stop (service->job_manager, unit_name, NULL,
+                        la_handler_service_handle_consumer_shutdown_finish, bundle);
     }
 }
 
 
 
 static void
-la_handler_service_handle_consumer_shutdown_finish (GObject      *object,
-                                                    GAsyncResult *res,
+la_handler_service_handle_consumer_shutdown_finish (JobManager   *manager,
+                                                    const gchar  *unit,
+                                                    const gchar  *result,
+                                                    GError       *error,
                                                     gpointer      user_data)
 {
   LAHandlerServiceConsumerBundle *bundle = user_data;
-  BootManager                    *proxy = BOOT_MANAGER (object);
-  GError                         *error = NULL;
-  gchar                          *result;
   gchar                          *log_text;
-  const gchar                    *unit_name;
 
-  g_return_if_fail (IS_BOOT_MANAGER (object));
-  g_return_if_fail (G_IS_ASYNC_RESULT (res));
+  g_return_if_fail (IS_JOB_MANAGER (manager));
   g_return_if_fail (user_data != NULL);
-
-  boot_manager_call_stop_finish (proxy, &result, res, &error);
-
-  unit_name = shutdown_consumer_service_get_unit_name (bundle->consumer);
 
   /* log any potential errors */
   if (error != NULL)
     {
       log_text =
-        g_strdup_printf ("Failed to stop unit \"%s\": %s", unit_name, error->message);
+        g_strdup_printf ("Failed to stop unit \"%s\": %s", unit, error->message);
       DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
     }
   else if (g_strcmp0 (result, "failed") == 0)
     {
-      log_text = g_strdup_printf ("Failed to stop unit \"%s\"", unit_name);
+      log_text = g_strdup_printf ("Failed to stop unit \"%s\"", unit);
       DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
     }
@@ -366,7 +367,6 @@ la_handler_service_handle_consumer_shutdown_finish (GObject      *object,
     g_error_free (error);
   la_handler_service_consumer_bundle_unref (bundle);
 }
-
 
 
 static void
@@ -417,10 +417,16 @@ la_handler_service_consumer_bundle_unref (LAHandlerServiceConsumerBundle *bundle
 
 
 LAHandlerService *
-la_handler_service_new (GDBusConnection *connection)
+la_handler_service_new (GDBusConnection *connection,
+                        JobManager      *job_manager)
 {
   g_return_val_if_fail (G_IS_DBUS_CONNECTION (connection), NULL);
-  return g_object_new (LA_HANDLER_TYPE_SERVICE, "connection", connection, NULL);
+  g_return_val_if_fail (IS_JOB_MANAGER (job_manager), NULL);
+
+  return g_object_new (LA_HANDLER_TYPE_SERVICE,
+                       "connection", connection,
+                       "job-manager", job_manager,
+                       NULL);
 }
 
 
@@ -432,10 +438,10 @@ la_handler_service_start (LAHandlerService *service,
   g_return_val_if_fail (LA_HANDLER_IS_SERVICE (service), FALSE);
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
-  /* announce the org.genivi.LegacyAppHandler1 service on the bus */
+  /* announce the org.genivi.BootManager1.LegacyAppHandler service on the bus */
   return g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (service->interface),
                                            service->connection,
-                                           "/org/genivi/LegacyAppHandler1",
+                                           "/org/genivi/BootManager1/LegacyAppHandler",
                                            error);
 }
 
