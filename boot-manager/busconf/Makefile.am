@@ -5,4 +5,5 @@ boot_manager_confdir = /etc/dbus-1/system.d
 boot_manager_conf_DATA =						\
 	org.genivi.BootManager1.conf
 
-
+EXTRA_DIST =								\
+	org.genivi.BootManager1.conf
