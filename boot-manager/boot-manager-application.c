@@ -45,18 +45,18 @@ enum
 
 
 
-static void     boot_manager_application_finalize     (GObject      *object);
-static void     boot_manager_application_constructed  (GObject      *object);
-static void     boot_manager_application_get_property (GObject      *object,
-                                                       guint         prop_id,
-                                                       GValue       *value,
-                                                       GParamSpec   *pspec);
-static void     boot_manager_application_set_property (GObject      *object,
-                                                       guint         prop_id,
-                                                       const GValue *value,
-                                                       GParamSpec   *pspec);
-static void     boot_manager_application_startup      (GApplication *application);
-static gboolean boot_manager_application_int_handler  (GApplication *application);
+static void     boot_manager_application_finalize       (GObject      *object);
+static void     boot_manager_application_constructed    (GObject      *object);
+static void     boot_manager_application_get_property   (GObject      *object,
+                                                         guint         prop_id,
+                                                         GValue       *value,
+                                                         GParamSpec   *pspec);
+static void     boot_manager_application_set_property   (GObject      *object,
+                                                         guint         prop_id,
+                                                         const GValue *value,
+                                                         GParamSpec   *pspec);
+static void     boot_manager_application_startup        (GApplication *application);
+static gboolean boot_manager_application_sigint_handler (GApplication *application);
 
 
 
@@ -177,7 +177,7 @@ boot_manager_application_init (BootManagerApplication *application)
 
   /* install the signal handler */
   application->sigint_id =
-    g_unix_signal_add (SIGINT, (GSourceFunc) boot_manager_application_int_handler,
+    g_unix_signal_add (SIGINT, (GSourceFunc) boot_manager_application_sigint_handler,
                        application);
 }
 
@@ -341,8 +341,9 @@ boot_manager_application_startup (GApplication *app)
 }
 
 
+
 static gboolean
-boot_manager_application_int_handler (GApplication *app)
+boot_manager_application_sigint_handler (GApplication *app)
 {
   BootManagerApplication *application = BOOT_MANAGER_APPLICATION (app);
 
@@ -354,10 +355,10 @@ boot_manager_application_int_handler (GApplication *app)
 
 
 BootManagerApplication *
-boot_manager_application_new (GDBusConnection         *connection,
-                              JobManager              *job_manager,
-                              LAHandlerService        *la_handler,
-                              BootManagerService      *boot_manager_service)
+boot_manager_application_new (GDBusConnection    *connection,
+                              JobManager         *job_manager,
+                              LAHandlerService   *la_handler,
+                              BootManagerService *boot_manager_service)
 {
   g_return_val_if_fail (IS_JOB_MANAGER (job_manager), NULL);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (boot_manager_service), NULL);

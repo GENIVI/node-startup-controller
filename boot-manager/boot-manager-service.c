@@ -36,25 +36,25 @@ enum
 
 
 
-static void                   boot_manager_service_finalize                       (GObject                       *object);
-static void                   boot_manager_service_get_property                   (GObject                       *object,
-                                                                                   guint                          prop_id,
-                                                                                   GValue                        *value,
-                                                                                   GParamSpec                    *pspec);
-static void                   boot_manager_service_set_property                   (GObject                       *object,
-                                                                                   guint                          prop_id,
-                                                                                   const GValue                  *value,
-                                                                                   GParamSpec                    *pspec);
-static gboolean               boot_manager_service_handle_begin_luc_registration  (BootManager                   *object,
-                                                                                   GDBusMethodInvocation         *invocation,
-                                                                                   BootManagerService            *service);
-static gboolean               boot_manager_service_handle_finish_luc_registration (BootManager                   *object,
-                                                                                   GDBusMethodInvocation         *invocation,
-                                                                                   BootManagerService            *service);
-static gboolean               boot_manager_service_handle_register_with_luc       (BootManager                   *object,
-                                                                                   GDBusMethodInvocation         *invocation,
-                                                                                   GVariant                      *apps,
-                                                                                   BootManagerService            *service);
+static void     boot_manager_service_finalize                       (GObject               *object);
+static void     boot_manager_service_get_property                   (GObject               *object,
+                                                                     guint                  prop_id,
+                                                                     GValue                *value,
+                                                                     GParamSpec            *pspec);
+static void     boot_manager_service_set_property                   (GObject               *object,
+                                                                     guint                  prop_id,
+                                                                     const GValue          *value,
+                                                                     GParamSpec            *pspec);
+static gboolean boot_manager_service_handle_begin_luc_registration  (BootManager           *interface,
+                                                                     GDBusMethodInvocation *invocation,
+                                                                     BootManagerService    *service);
+static gboolean boot_manager_service_handle_finish_luc_registration (BootManager           *interface,
+                                                                     GDBusMethodInvocation *invocation,
+                                                                     BootManagerService    *service);
+static gboolean boot_manager_service_handle_register_with_luc       (BootManager           *interface,
+                                                                     GDBusMethodInvocation *invocation,
+                                                                     GVariant              *apps,
+                                                                     BootManagerService    *service);
 
 
 
@@ -108,10 +108,10 @@ boot_manager_service_init (BootManagerService *service)
 {
   service->interface = boot_manager_skeleton_new ();
 
-  /* initialise started_registration */
+  /* initially, no registration is assumed to have been started */
   service->started_registration = FALSE;
 
-  /* prepare current_user_contex */
+  /* reset current user context */
   service->current_user_context = NULL;
 
   /* implement the RegisterWithLUC() handler */
@@ -147,7 +147,8 @@ boot_manager_service_finalize (GObject *object)
   g_object_unref (service->interface);
 
   /* release the current user context */
-  g_variant_unref (service->current_user_context);
+  if (service->current_user_context != NULL)
+    g_variant_unref (service->current_user_context);
 
   (*G_OBJECT_CLASS (boot_manager_service_parent_class)->finalize) (object);
 }
@@ -197,25 +198,25 @@ boot_manager_service_set_property (GObject      *object,
 
 
 static gboolean
-boot_manager_service_handle_begin_luc_registration (BootManager           *object,
+boot_manager_service_handle_begin_luc_registration (BootManager           *interface,
                                                     GDBusMethodInvocation *invocation,
                                                     BootManagerService    *service)
 {
   GVariantBuilder *luc_builder;
 
-  g_return_val_if_fail (IS_BOOT_MANAGER (object), FALSE);
+  g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
 
-  /* last user context registration started */
+  /* mark the last user context registration as started */
   service->started_registration = TRUE;
 
   /* initialize the current user context */
-  luc_builder = g_variant_builder_new (G_VARIANT_TYPE("a{ias}"));
+  luc_builder = g_variant_builder_new (G_VARIANT_TYPE ("a{ias}"));
   service->current_user_context = g_variant_new ("a{ias}", luc_builder);
   g_variant_builder_unref (luc_builder);
 
-  /* notify the caller that we have handled the register request */
+  /* notify the caller that we have handled the method call */
   g_dbus_method_invocation_return_value (invocation, NULL);
   return TRUE;
 }
@@ -223,26 +224,26 @@ boot_manager_service_handle_begin_luc_registration (BootManager           *objec
 
 
 static gboolean
-boot_manager_service_handle_finish_luc_registration (BootManager           *object,
+boot_manager_service_handle_finish_luc_registration (BootManager           *interface,
                                                      GDBusMethodInvocation *invocation,
                                                      BootManagerService    *service)
 {
   GError *error = NULL;
   gchar  *log_text;
 
-  g_return_val_if_fail (IS_BOOT_MANAGER (object), FALSE);
+  g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
 
   /* check if last user context registration started */
   if (!service->started_registration)
     {
-      log_text = g_strdup_printf ("Failed to finish LUC registration. Begin registration"
-                                  " did not start");
+      log_text = g_strdup_printf ("Failed to finish LUC registration: "
+                                  "the registration sequence has not been started yet");
       DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
 
-      /* notify the caller that we have handled the register request */
+      /* notify the caller that we have handled the method call */
       g_dbus_method_invocation_return_value (invocation, NULL);
       return TRUE;
     }
@@ -251,15 +252,18 @@ boot_manager_service_handle_finish_luc_registration (BootManager           *obje
   boot_manager_service_write_luc (service, &error);
   if (error != NULL)
    {
-     log_text = g_strdup_printf ("Failed to finish LUC registration: %s",
-                                  error->message);
+     log_text = g_strdup_printf ("Failed to finish LUC registration: %s", error->message);
      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
      g_free (log_text);
      g_error_free (error);
    }
 
-  /* last user context registration finished */
+  /* mark the last user context registration as finished */
   service->started_registration = FALSE;
+
+  /* clear the current user context */
+  g_variant_unref (service->current_user_context);
+  service->current_user_context = NULL;
 
   /* notify the caller that we have handled the register request */
   g_dbus_method_invocation_return_value (invocation, NULL);
@@ -269,7 +273,7 @@ boot_manager_service_handle_finish_luc_registration (BootManager           *obje
 
 
 static gboolean
-boot_manager_service_handle_register_with_luc (BootManager           *object,
+boot_manager_service_handle_register_with_luc (BootManager           *interface,
                                                GDBusMethodInvocation *invocation,
                                                GVariant              *apps,
                                                BootManagerService    *service)
@@ -292,15 +296,15 @@ boot_manager_service_handle_register_with_luc (BootManager           *object,
   gint            luc_type;
   gint            builder_luc_type;
 
-  g_return_val_if_fail (IS_BOOT_MANAGER (object), FALSE);
+  g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
 
   /* check if last user context registration started */
   if (!service->started_registration)
     {
-      log_text = g_strdup_printf ("Failed to register apps. Begin registration "
-                                  "did not start");
+      log_text = g_strdup_printf ("Failed to register apps with the LUC: "
+                                  "The registration sequence has not been started yet");
       DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
 
@@ -557,8 +561,4 @@ boot_manager_service_write_luc (BootManagerService *service,
   /* release the GFiles */
   g_object_unref (luc_file);
   g_object_unref (luc_dir);
-
-  /* clear the current user context */
-  g_variant_unref (service->current_user_context);
-  service->current_user_context = NULL;
 }

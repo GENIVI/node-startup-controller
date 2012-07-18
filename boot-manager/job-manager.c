@@ -66,6 +66,8 @@ static void           job_manager_remember_job     (JobManager        *manager,
 static void           job_manager_forget_job       (JobManager        *manager,
                                                     const gchar       *job_name);
 
+
+
 struct _JobManagerClass
 {
   GObjectClass __parent__;
@@ -170,8 +172,8 @@ job_manager_constructed (GObject *object)
 {
   JobManager *manager = JOB_MANAGER (object);
 
-  /* connect to systemd's "JobRemoved" signal so that we are notified whenever a job is
-   * finished */
+  /* connect to systemd's "JobRemoved" signal so that we are notified
+   * whenever a job is finished */
   g_signal_connect (manager->systemd_manager, "job-removed",
                     G_CALLBACK (job_manager_job_removed), manager);
 }
@@ -276,7 +278,7 @@ job_manager_stop_unit_reply (GObject       *object,
 
   /* finish the stop unit call */
   if (!systemd_manager_call_stop_unit_finish (job->manager->systemd_manager,
-                                               &job_name, result, &error))
+                                              &job_name, result, &error))
     {
       /* there was an error. notify the caller */
       job->callback (job->manager, job->unit, "failed", error, job->user_data);
@@ -462,5 +464,5 @@ job_manager_stop (JobManager        *manager,
 
   /* ask systemd to stop the unit asynchronously */
   systemd_manager_call_stop_unit (manager->systemd_manager, unit, "fail", cancellable,
-                                   job_manager_stop_unit_reply, job);
+                                  job_manager_stop_unit_reply, job);
 }

@@ -28,15 +28,15 @@ typedef struct _BootManagerService      BootManagerService;
 
 
 
-GType               boot_manager_service_get_type     (void) G_GNUC_CONST;
+GType               boot_manager_service_get_type  (void) G_GNUC_CONST;
 
-BootManagerService *boot_manager_service_new          (GDBusConnection    *connection) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
-gboolean            boot_manager_service_start_up     (BootManagerService *service,
-                                                       GError            **error);
-GVariant           *boot_manager_service_read_luc     (BootManagerService *service,
-                                                       GError            **error);
-void                boot_manager_service_write_luc    (BootManagerService *service,
-                                                       GError            **error);
+BootManagerService *boot_manager_service_new       (GDBusConnection    *connection) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
+gboolean            boot_manager_service_start_up  (BootManagerService *service,
+                                                    GError            **error);
+GVariant           *boot_manager_service_read_luc  (BootManagerService *service,
+                                                    GError            **error);
+void                boot_manager_service_write_luc (BootManagerService *service,
+                                                    GError            **error);
 
 
 G_END_DECLS

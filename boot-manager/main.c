@@ -64,9 +64,9 @@ main (int    argc,
   DLT_REGISTER_CONTEXT (boot_manager_context, "MGR",
                         "Context of the boot manager itself");
   DLT_REGISTER_CONTEXT (la_handler_context, "LAH",
-                            "Context of the legacy application handler that hooks legacy "
-                            "applications up with the shutdown concept of the Node State "
-                            "Manager");
+                        "Context of the legacy application handler that hooks legacy "
+                        "applications up with the shutdown concept of the Node State "
+                        "Manager");
 
   /* have DLT unregistered at exit */
   atexit (unregister_dlt);
@@ -78,7 +78,7 @@ main (int    argc,
   connection = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
   if (connection == NULL)
     {
-      g_warning ("Failed to connect to D-Bus: %s", error->message);
+      g_warning ("Failed to connect to the system bus: %s", error->message);
 
       /* clean up */
       g_error_free (error);

@@ -145,12 +145,12 @@ target_startup_monitor_get_property (GObject    *object,
 
   switch (prop_id)
     {
-      case PROP_SYSTEMD_MANAGER:
-        g_value_set_object (value, monitor->systemd_manager);
-        break;
-      default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-        break;
+    case PROP_SYSTEMD_MANAGER:
+      g_value_set_object (value, monitor->systemd_manager);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
     }
 }
 
@@ -166,12 +166,12 @@ target_startup_monitor_set_property (GObject      *object,
 
   switch (prop_id)
     {
-      case PROP_SYSTEMD_MANAGER:
-        monitor->systemd_manager = g_value_dup_object (value);
-        break;
-      default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-        break;
+    case PROP_SYSTEMD_MANAGER:
+      monitor->systemd_manager = g_value_dup_object (value);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
     }
 }
 

@@ -36,30 +36,30 @@ enum
 
 
 
-static void luc_starter_constructed       (GObject            *object);
-static void luc_starter_finalize          (GObject            *object);
-static void luc_starter_get_property      (GObject            *object,
-                                           guint               prop_id,
-                                           GValue             *value,
-                                           GParamSpec         *pspec);
-static void luc_starter_set_property      (GObject            *object,
-                                           guint               prop_id,
-                                           const GValue       *value,
-                                           GParamSpec         *pspec);
-static gint luc_starter_compare_luc_types (gconstpointer       a,
-                                           gconstpointer       b,
-                                           gpointer            user_data);
-static void luc_starter_start_next_group  (LUCStarter         *starter);
-static void luc_starter_start_app         (const gchar        *app,
-                                           LUCStarter         *starter);
-static void luc_starter_start_app_finish  (JobManager         *manager,
-                                           const gchar        *unit,
-                                           const gchar        *result,
-                                           GError             *error,
-                                           gpointer            user_data);
-static void luc_starter_cancel_start      (const gchar        *app,
-                                           GCancellable       *cancellable,
-                                           gpointer            user_data);
+static void luc_starter_constructed       (GObject      *object);
+static void luc_starter_finalize          (GObject      *object);
+static void luc_starter_get_property      (GObject      *object,
+                                           guint         prop_id,
+                                           GValue       *value,
+                                           GParamSpec   *pspec);
+static void luc_starter_set_property      (GObject      *object,
+                                           guint         prop_id,
+                                           const GValue *value,
+                                           GParamSpec   *pspec);
+static gint luc_starter_compare_luc_types (gconstpointer a,
+                                           gconstpointer b,
+                                           gpointer      user_data);
+static void luc_starter_start_next_group  (LUCStarter   *starter);
+static void luc_starter_start_app         (const gchar  *app,
+                                           LUCStarter   *starter);
+static void luc_starter_start_app_finish  (JobManager   *manager,
+                                           const gchar  *unit,
+                                           const gchar  *result,
+                                           GError       *error,
+                                           gpointer      user_data);
+static void luc_starter_cancel_start      (const gchar  *app,
+                                           GCancellable *cancellable,
+                                           gpointer      user_data);
 
 
 
@@ -79,7 +79,7 @@ struct _LUCStarter
 
   GList              *start_order;
   GHashTable         *start_groups;
-  
+
   GHashTable         *cancellables;
 };
 
@@ -127,7 +127,6 @@ luc_starter_class_init (LUCStarterClass *klass)
 static void
 luc_starter_init (LUCStarter *starter)
 {
-  
 }
 
 
@@ -388,8 +387,8 @@ luc_starter_cancel_start (const gchar  *app,
 
 
 LUCStarter *
-luc_starter_new          (JobManager         *job_manager,
-                          BootManagerService *boot_manager_service)
+luc_starter_new (JobManager         *job_manager,
+                 BootManagerService *boot_manager_service)
 {
   g_return_val_if_fail (IS_JOB_MANAGER (job_manager), NULL);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (boot_manager_service), NULL);

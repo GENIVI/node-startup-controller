@@ -104,6 +104,7 @@ struct _LAHandlerServiceConsumerBundle
 };
 
 
+
 G_DEFINE_TYPE (LAHandlerService, la_handler_service, G_TYPE_OBJECT);
 
 
@@ -146,17 +147,6 @@ static void
 la_handler_service_constructed (GObject *object)
 {
   LAHandlerService *service = LA_HANDLER_SERVICE (object);
-  GError           *error = NULL;
-  gchar            *log_text;
-
-  if (error != NULL)
-    {
-      log_text = g_strdup_printf ("Failed to connect to the boot manager service: %s",
-                                  error->message);
-      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
-      g_error_free (error);
-    }
 
   /* get a bus name on the system bus */
   service->bus_name_id =
@@ -171,8 +161,8 @@ la_handler_service_init (LAHandlerService *service)
 {
   service->interface = la_handler_skeleton_new ();
 
-  /* the number that follows the prefix in the shutdown consumer's object path, making
-   * every shutdown consumer unique */
+  /* the number that follows the prefix in the shutdown consumer's object path,
+   * making every shutdown consumer unique */
   service->index = 1;
 
   /* the string that precedes the index in the shutdown consumer's object path */
@@ -191,7 +181,6 @@ la_handler_service_init (LAHandlerService *service)
                     G_CALLBACK (la_handler_service_handle_deregister),
                     service);
 }
-
 
 
 
@@ -345,8 +334,7 @@ la_handler_service_handle_consumer_shutdown_finish (JobManager   *manager,
   /* log any potential errors */
   if (error != NULL)
     {
-      log_text =
-        g_strdup_printf ("Failed to stop unit \"%s\": %s", unit, error->message);
+      log_text = g_strdup_printf ("Failed to stop unit \"%s\": %s", unit, error->message);
       DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
     }
@@ -444,6 +432,8 @@ la_handler_service_start (LAHandlerService *service,
                                            "/org/genivi/BootManager1/LegacyAppHandler",
                                            error);
 }
+
+
 
 void
 la_handler_service_register (LAHandlerService *service,

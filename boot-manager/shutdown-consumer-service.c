@@ -28,6 +28,9 @@ enum
   PROP_UNIT_NAME,
 };
 
+
+
+/* signal identifiers */
 enum
 {
   SIGNAL_SHUTDOWN_REQUESTED,
@@ -170,18 +173,18 @@ shutdown_consumer_service_get_property (GObject    *object,
 
   switch (prop_id)
     {
-      case PROP_CONNECTION:
-        g_value_set_object (value, service->connection);
-        break;
-      case PROP_OBJECT_PATH:
-        g_value_set_string (value, service->object_path);
-        break;
-      case PROP_UNIT_NAME:
-        g_value_set_string (value, service->unit_name);
-        break;
-      default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-        break;
+    case PROP_CONNECTION:
+      g_value_set_object (value, service->connection);
+      break;
+    case PROP_OBJECT_PATH:
+      g_value_set_string (value, service->object_path);
+      break;
+    case PROP_UNIT_NAME:
+      g_value_set_string (value, service->unit_name);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
     }
 }
 
@@ -197,18 +200,18 @@ shutdown_consumer_service_set_property (GObject      *object,
 
   switch (prop_id)
     {
-      case PROP_CONNECTION:
-        service->connection = g_value_dup_object (value);
-        break;
-      case PROP_OBJECT_PATH:
-        service->object_path = g_value_dup_string (value);
-        break;
-      case PROP_UNIT_NAME:
-        service->unit_name = g_value_dup_string (value);
-        break;
-      default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-        break;
+    case PROP_CONNECTION:
+      service->connection = g_value_dup_object (value);
+      break;
+    case PROP_OBJECT_PATH:
+      service->object_path = g_value_dup_string (value);
+      break;
+    case PROP_UNIT_NAME:
+      service->unit_name = g_value_dup_string (value);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
     }
 }
 
