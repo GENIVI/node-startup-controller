@@ -492,10 +492,9 @@ void
 boot_manager_service_write_luc (BootManagerService *service,
                                 GError            **error)
 {
-  GFileOutputStream *stream = NULL;
-  GError            *error_file = NULL;
-  GFile             *luc_file;
-  GFile             *luc_dir;
+  GError *err = NULL;
+  GFile  *luc_file;
+  GFile  *luc_dir;
 
   g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
   g_return_if_fail (error == NULL || *error == NULL);
@@ -505,49 +504,25 @@ boot_manager_service_write_luc (BootManagerService *service,
   luc_dir = g_file_get_parent (luc_file);
 
   /* make sure the last user context's directory exists */
-  g_file_make_directory_with_parents (luc_dir, NULL, &error_file);
-  if (error_file != NULL)
+  if (!g_file_make_directory_with_parents (luc_dir, NULL, &err))
     {
-      if (error_file->code != G_IO_ERROR_EXISTS)
+      if (err->domain == G_IO_ERROR && err->code == G_IO_ERROR_EXISTS)
         {
-          *error = g_error_copy (error_file);
-          g_error_free (error_file);
+          /* clear the error for reuse */
+          g_clear_error (&err);
+        }
+      else
+        {
+          /* let the caller know there was a problem */
+          g_propagate_error (error, err);
           g_object_unref (luc_file);
           g_object_unref (luc_dir);
           return;
         }
-      else
-        {
-          g_error_free (error_file);
-          error_file = NULL;
-        }
     }
 
-  /* try to create the file. It is fine if this already exists */
-  stream = g_file_create (luc_file, G_FILE_CREATE_NONE, NULL, &error_file);
-  if (error_file != NULL)
-    {
-      if (error_file->code != G_IO_ERROR_EXISTS)
-        {
-          *error = g_error_copy (error_file);
-          g_error_free (error_file);
-          g_object_unref (luc_file);
-          g_object_unref (luc_dir);
-          return;
-        }
-      else
-        {
-          g_error_free (error_file);
-          error_file = NULL;
-        }
-    }
-  else
-    {
-      g_object_unref (stream);
-    }
-
-  /* replace the contents with that of the new file. g_file_replace_contents guarantees
-   * atomic overwriting and can make backups */
+  /* replace the contents with that of the file. g_file_replace_contents
+   * guarantees atomic overwriting and can make backups */
   g_file_replace_contents (luc_file, g_variant_get_data (service->current_user_context),
                            g_variant_get_size (service->current_user_context), NULL,
                            TRUE, G_FILE_CREATE_NONE, NULL, NULL, error);

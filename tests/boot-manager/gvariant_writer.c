@@ -18,6 +18,8 @@
 #include <glib.h>
 #include <gio/gio.h>
 
+
+
 static void
 print_usage (const char *process_name)
 {
@@ -25,6 +27,8 @@ print_usage (const char *process_name)
            "i.e.    %s \"{0: ['foo.service']}\" \"temporary_file\"\n",
            process_name, process_name);
 }
+
+
 
 int
 main (int    argc,
@@ -55,12 +59,10 @@ main (int    argc,
   stream = g_file_create (outfile, G_FILE_CREATE_NONE, NULL, &error);
   if (error != NULL)
     {
-      if (error->code != G_IO_ERROR_EXISTS)
-        {
-          g_error ("Error occurred creating file: %s", error->message);
-        }
-      g_error_free (error);
-      error = NULL;
+      if (error->domain == G_IO_ERROR && error->code == G_IO_ERROR_EXISTS)
+        g_clear_error (&error);
+      else
+        g_error ("Error occurred creating file: %s", error->message);
     }
   else
     {
