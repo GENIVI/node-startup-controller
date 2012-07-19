@@ -136,8 +136,6 @@ AC_DEFINE_UNQUOTED([PRIORITISED_LUC_TYPES],
 AC_OUTPUT([
 Makefile
 boot-manager/busconf/Makefile
-boot-manager/dbus/Makefile
-boot-manager/systemd/Makefile
 boot-manager/Makefile
 tests/Makefile
 tests/boot-manager/Makefile

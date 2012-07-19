@@ -1,9 +1,7 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
 SUBDIRS =								\
-	busconf								\
-	dbus								\
-	systemd
+	busconf
 
 luc_dir =								\
 	$(datadir)/org.genivi.BootManager$(BOOT_MANAGER_VERSION_API)
@@ -78,11 +76,39 @@ boot_manager_LDADD =							\
 	$(GLIB_LIBS)							\
 	$(SYSTEMD_DAEMON_LIBS)
 
+dbus_servicedir = $(datadir)/dbus-1/system-services
+
+dbus_service_in_files =							\
+	org.genivi.BootManager1.service.in
+
+dbus_service_DATA = $(dbus_service_in_files:.service.in=.service)
+
+%.service: %.service.in
+	sed -e "s,\@libdir\@,$(libdir),g"				\
+	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
+
+systemd_servicedir = /lib/systemd/system
+
+systemd_service_in_files =						\
+	boot-manager.service.in
+
+systemd_service_DATA = $(systemd_service_in_files:.service.in=.service)
+
+%.service: %.service.in
+	sed -e "s,\@libdir\@,$(libdir),g"				\
+	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
+
+CLEANFILES =								\
+	$(dbus_service_DATA)						\
+	$(systemd_service_DATA)
+
 EXTRA_DIST =								\
 	boot-manager-dbus.xml						\
 	la-handler-dbus.xml						\
 	shutdown-consumer-dbus.xml					\
-	systemd-manager-dbus.xml
+	systemd-manager-dbus.xml					\
+	$(dbus_service_in_files)					\
+	$(systemd_service_in_files)
 
 DISTCLEANFILES =							\
 	$(boot_manager_built_sources)
