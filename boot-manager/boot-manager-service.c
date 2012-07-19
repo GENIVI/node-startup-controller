@@ -202,7 +202,7 @@ boot_manager_service_handle_begin_luc_registration (BootManager           *inter
                                                     GDBusMethodInvocation *invocation,
                                                     BootManagerService    *service)
 {
-  GVariantBuilder *luc_builder;
+  GVariantBuilder builder;
 
   g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
@@ -212,9 +212,8 @@ boot_manager_service_handle_begin_luc_registration (BootManager           *inter
   service->started_registration = TRUE;
 
   /* initialize the current user context */
-  luc_builder = g_variant_builder_new (G_VARIANT_TYPE ("a{ias}"));
-  service->current_user_context = g_variant_new ("a{ias}", luc_builder);
-  g_variant_builder_unref (luc_builder);
+  g_variant_builder_init (&builder, G_VARIANT_TYPE ("a{ias}"));
+  service->current_user_context = g_variant_builder_end (&builder);
 
   /* notify the caller that we have handled the method call */
   g_dbus_method_invocation_return_value (invocation, NULL);
