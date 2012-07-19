@@ -6,11 +6,8 @@ TESTS =									\
 EXTRA_DIST =								\
 	test-luc-handler
 
-luc_dir =								\
-	$(datadir)/org.genivi.BootManager$(BOOT_MANAGER_VERSION_API)
-
-export luc_path =							\
-	$(luc_dir)/last-user-context
+export LUC_PATH =							\
+	$(sysconfdir)/boot-manager/last-user-context
 
 noinst_PROGRAMS =							\
 	gvariant-writer

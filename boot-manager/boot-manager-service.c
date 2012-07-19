@@ -473,7 +473,7 @@ boot_manager_service_read_luc (BootManagerService *service,
   g_return_val_if_fail ((error == NULL || *error == NULL), NULL);
 
   /* initialize the GFile */
-  luc_file = g_file_new_for_path (LUCPATH);
+  luc_file = g_file_new_for_path (LUC_PATH);
 
   /* read the contents of the file */
   if (!g_file_load_contents (luc_file, NULL, &data, &data_len, NULL, error))
@@ -506,8 +506,8 @@ boot_manager_service_write_luc (BootManagerService *service,
   g_return_if_fail (error == NULL || *error == NULL);
 
   /* initialize the GFiles */
-  luc_file = g_file_new_for_path (LUCPATH);
-  luc_dir = g_file_new_for_path (LUCDIR);
+  luc_file = g_file_new_for_path (LUC_PATH);
+  luc_dir = g_file_get_parent (luc_file);
 
   /* make sure the last user context's directory exists */
   g_file_make_directory_with_parents (luc_dir, NULL, &error_file);

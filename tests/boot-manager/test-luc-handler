@@ -8,7 +8,7 @@
 compare_luc()
 {
   ./gvariant-writer "$1" "$2"
-  diff -q "$luc_path" "$2"
+  diff -q "$LUC_PATH" "$2"
 }
 
 # function to begin registration
@@ -50,7 +50,7 @@ fail()
 }
 
 rm -f temp
-rm -f "$luc_path"
+rm -f "$LUC_PATH"
 
 
 #Test a simple dictionary

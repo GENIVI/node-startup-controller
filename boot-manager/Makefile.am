@@ -3,12 +3,6 @@
 SUBDIRS =								\
 	busconf
 
-luc_dir =								\
-	$(datadir)/org.genivi.BootManager$(BOOT_MANAGER_VERSION_API)
-
-luc_path =								\
-	$(luc_dir)/last-user-context
-
 boot_managerdir =							\
 	$(libdir)/boot-manager-$(BOOT_MANAGER_VERSION_API)
 
@@ -49,8 +43,7 @@ boot_manager_SOURCES =							\
 	$(boot_manager_built_sources)
 
 boot_manager_CFLAGS =							\
-	-DLUCDIR=\"$(luc_dir)\"						\
-	-DLUCPATH=\"$(luc_path)\"					\
+	-DLUC_PATH=\"$(sysconfdir)/boot-manager/last-user-context\"	\
 	-DG_LOG_DOMAIN=\"boot-manager\"					\
 	-I$(top_srcdir)							\
 	$(DLT_CFLAGS)							\
