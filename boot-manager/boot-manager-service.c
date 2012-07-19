@@ -285,19 +285,20 @@ boot_manager_service_handle_register_with_luc (BootManager           *interface,
   GVariant       *current_context;
   GVariant       *current_apps;
   GVariant       *new_apps;
+  gpointer        key;
   GList          *lp;
   GList          *luc_types;
   gchar          *app;
   gchar          *debug_text = NULL;
   gchar          *log_text = NULL;
   guint           n;
-  gint           *dup_luc_type;
   gint            luc_type;
-  gint            builder_luc_type;
 
   g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
+
+  g_debug ("register with LUC");
 
   /* check if last user context registration started */
   if (!service->started_registration)
@@ -313,8 +314,8 @@ boot_manager_service_handle_register_with_luc (BootManager           *interface,
     }
 
   /* create a hash table to merge the current context and the newly registered apps */
-  table = g_hash_table_new_full (g_int_hash, g_int_equal,
-                                 g_free, (GDestroyNotify) g_ptr_array_unref);
+  table = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+                                 NULL, (GDestroyNotify) g_ptr_array_unref);
 
   /* obtain the current content of the last user context */
   current_context = g_variant_ref (service->current_user_context);
@@ -323,10 +324,7 @@ boot_manager_service_handle_register_with_luc (BootManager           *interface,
   g_variant_iter_init (&viter, current_context);
   while (g_variant_iter_loop (&viter, "{ias}", &luc_type, NULL))
     {
-      dup_luc_type = g_new0(gint, 1);
-      *dup_luc_type = luc_type;
-
-      g_hash_table_insert (table, dup_luc_type,
+      g_hash_table_insert (table, GINT_TO_POINTER (luc_type),
                            g_ptr_array_new_with_free_func (g_free));
     }
 
@@ -334,10 +332,7 @@ boot_manager_service_handle_register_with_luc (BootManager           *interface,
   g_variant_iter_init (&viter, apps);
   while (g_variant_iter_loop (&viter, "{ias}", &luc_type, NULL))
     {
-      dup_luc_type = g_new0(gint, 1);
-      *dup_luc_type = luc_type;
-
-      g_hash_table_insert (table, dup_luc_type,
+      g_hash_table_insert (table, GINT_TO_POINTER (luc_type),
                            g_ptr_array_new_with_free_func (g_free));
     }
 
@@ -347,16 +342,16 @@ boot_manager_service_handle_register_with_luc (BootManager           *interface,
   /* fill the app lists for each LUC type involved, make sure that newly registered
    * apps are added at the end so that they are "prioritized" */
   g_hash_table_iter_init (&hiter, table);
-  while (g_hash_table_iter_next (&hiter, (gpointer) &dup_luc_type, (gpointer) &apps_array))
+  while (g_hash_table_iter_next (&hiter, (gpointer) &key, (gpointer) &apps_array))
     {
       /* get apps currently registered for the LUC type */
       current_apps = g_variant_lookup_value_with_int_key (current_context,
-                                                          *dup_luc_type,
+                                                          GPOINTER_TO_INT (key),
                                                           G_VARIANT_TYPE_STRING_ARRAY);
 
       /* get apps to be registered for the LUC type now */
       new_apps = g_variant_lookup_value_with_int_key (apps,
-                                                      *dup_luc_type,
+                                                      GPOINTER_TO_INT (key),
                                                       G_VARIANT_TYPE_STRING_ARRAY);
 
       /* add all currently registered apps unless they are to be registered now.
@@ -390,10 +385,9 @@ boot_manager_service_handle_register_with_luc (BootManager           *interface,
    * make sure the order in which we add LUC types to the context
    * dict is always the same. this is helpful for testing */
   luc_types = g_hash_table_get_keys (table);
-  luc_types = g_list_sort (luc_types, (GCompareFunc) g_int_compare);
+  luc_types = g_list_sort (luc_types, (GCompareFunc) g_int_pointer_compare);
   for (lp = luc_types; lp != NULL; lp = lp->next)
     {
-      builder_luc_type = *(gint*) lp->data;
       /* get the apps list registered for this LUC type */
       apps_array = g_hash_table_lookup (table, lp->data);
 
@@ -401,7 +395,8 @@ boot_manager_service_handle_register_with_luc (BootManager           *interface,
       g_ptr_array_add (apps_array, NULL);
 
       /* add the LUC type and its apps to the new context */
-      g_variant_builder_add (&dict_builder, "{i^as}", builder_luc_type, apps_array->pdata);
+      g_variant_builder_add (&dict_builder, "{i^as}",
+                             GPOINTER_TO_INT (lp->data), apps_array->pdata);
     }
 
   /* free the LUC types and our LUC type to apps mapping */

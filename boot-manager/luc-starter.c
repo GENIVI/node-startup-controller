@@ -11,6 +11,10 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
 #include <glib-object.h>
 #include <gio/gio.h>
 
@@ -75,9 +79,9 @@ struct _LUCStarter
   JobManager         *job_manager;
   BootManagerService *boot_manager_service;
 
-  gchar             **prioritised_types;
+  GArray             *prioritised_types;
 
-  GList              *start_order;
+  GArray             *start_order;
   GHashTable         *start_groups;
 
   GHashTable         *cancellables;
@@ -127,6 +131,14 @@ luc_starter_class_init (LUCStarterClass *klass)
 static void
 luc_starter_init (LUCStarter *starter)
 {
+  /* allocate data structures for the start order and groups */
+  starter->start_order = g_array_new (FALSE, TRUE, sizeof (gint));
+  starter->start_groups = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+                                                 NULL, (GDestroyNotify) g_ptr_array_free);
+
+  /* allocate a mapping of app names to correspoding cancellables */
+  starter->cancellables = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, (GDestroyNotify) g_object_unref);
 }
 
 
@@ -135,9 +147,19 @@ static void
 luc_starter_constructed (GObject *object)
 {
   LUCStarter *starter = LUC_STARTER (object);
+  gchar     **types;
+  guint       n;
+  gint        type;
 
   /* parse the prioritised LUC types defined at build-time */
-  starter->prioritised_types = g_strsplit (PRIORITISED_LUC_TYPES, ",", -1);
+  types = g_strsplit (PRIORITISED_LUC_TYPES, ",", -1);
+  starter->prioritised_types = g_array_new (FALSE, TRUE, sizeof (gint));
+  for (n = 0; types != NULL && types[n] != NULL; n++)
+    {
+      type = strtol (types[n], NULL, 10);
+      g_array_append_val (starter->prioritised_types, type);
+    }
+  g_strfreev (types);
 }
 
 
@@ -148,17 +170,14 @@ luc_starter_finalize (GObject *object)
   LUCStarter *starter = LUC_STARTER (object);
 
   /* release start order, and groups */
-  if (starter->start_order != NULL)
-    g_list_free (starter->start_order);
-  if (starter->start_groups != NULL)
-    g_hash_table_unref (starter->start_groups);
+  g_array_free (starter->start_order, TRUE);
+  g_hash_table_unref (starter->start_groups);
 
   /* release the cancellables */
-  if (starter->cancellables != NULL)
-    g_hash_table_unref (starter->cancellables);
+  g_hash_table_unref (starter->cancellables);
 
   /* free the prioritised types array */
-  g_strfreev (starter->prioritised_types);
+  g_array_free (starter->prioritised_types, TRUE);
 
   /* release the job manager */
   g_object_unref (starter->job_manager);
@@ -225,21 +244,28 @@ luc_starter_compare_luc_types (gconstpointer a,
                                gpointer      user_data)
 {
   LUCStarter *starter = LUC_STARTER (user_data);
-  gchar      *type_a;
-  gchar      *type_b;
-  gint        n;
+  guint       n;
+  gint        type;
+  gint        type_a = *(gint *)a;
+  gint        type_b = *(gint *)b;
   gint        pos_a = G_MAXINT;
   gint        pos_b = G_MAXINT;
 
   /* try to find the first type in the prioritised types list */
-  for (n = 0; pos_a < 0 && starter->prioritised_types[n] != NULL; n++)
-    if (g_strcmp0 (starter->prioritised_types[n], type_a) == 0)
-      pos_a = n;
+  for (n = 0; pos_a == G_MAXINT && n < starter->prioritised_types->len; n++)
+    {
+      type = g_array_index (starter->prioritised_types, gint, n);
+      if (type == type_a)
+        pos_a = n;
+    }
 
   /* try to find the second type in the prioritised types list */
-  for (n = 0; pos_b < 0 && starter->prioritised_types[n] != NULL; n++)
-    if (g_strcmp0 (starter->prioritised_types[n], type_b) == 0)
-      pos_b = n;
+  for (n = 0; pos_b == G_MAXINT && n < starter->prioritised_types->len; n++)
+    {
+      type = g_array_index (starter->prioritised_types, gint, n);
+      if (type == type_b)
+        pos_b = n;
+    }
 
   /* this statement has the following effect when sorting:
    * - a and b are prioritised     -> prioritization order is preserved
@@ -255,22 +281,23 @@ luc_starter_compare_luc_types (gconstpointer a,
 static void
 luc_starter_start_next_group (LUCStarter *starter)
 {
-  const gchar *group_name;
-  GPtrArray   *group;
+  GPtrArray *apps;
+  gint       group;
 
   g_return_if_fail (IS_LUC_STARTER (starter));
-  g_return_if_fail (starter->start_order != NULL);
+  g_return_if_fail (starter->start_order->len > 0);
 
-  group_name = starter->start_order->data;
+  /* fetch the next group */
+  group = g_array_index (starter->start_order, gint, 0);
 
-  g_debug ("start group '%s'", group_name);
+  g_debug ("start group %i", group);
 
-  /* look up the group with this name */
-  group = g_hash_table_lookup (starter->start_groups, group_name);
-  if (group != NULL)
+  /* look up the apps for the group */
+  apps = g_hash_table_lookup (starter->start_groups, GINT_TO_POINTER (group));
+  if (apps != NULL)
     {
       /* launch all the applications in the group asynchronously */
-      g_ptr_array_foreach (group, (GFunc) luc_starter_start_app, starter);
+      g_ptr_array_foreach (apps, (GFunc) luc_starter_start_app, starter);
     }
 }
 
@@ -309,17 +336,17 @@ luc_starter_start_app_finish (JobManager  *manager,
                               GError      *error,
                               gpointer     user_data)
 {
-  const gchar *group_name;
-  LUCStarter  *starter = LUC_STARTER (user_data);
-  GPtrArray   *group;
-  gboolean     app_found = FALSE;
-  gchar       *message;
-  guint        n;
+  LUCStarter *starter = LUC_STARTER (user_data);
+  GPtrArray  *apps;
+  gboolean    app_found = FALSE;
+  gchar      *message;
+  guint       n;
+  gint        group;
 
   g_return_if_fail (IS_JOB_MANAGER (manager));
   g_return_if_fail (unit != NULL && *unit != '\0');
   g_return_if_fail (IS_LUC_STARTER (user_data));
-  g_return_if_fail (starter->start_order != NULL);
+  g_return_if_fail (starter->start_order->len > 0);
 
   g_debug ("start app '%s' finish", unit);
 
@@ -333,35 +360,34 @@ luc_starter_start_app_finish (JobManager  *manager,
     }
 
   /* get the current start group */
-  group_name = starter->start_order->data;
+  group = g_array_index (starter->start_order, gint, 0);
 
   /* look up the apps for this group */
-  group = g_hash_table_lookup (starter->start_groups, group_name);
-  if (group != NULL)
+  apps = g_hash_table_lookup (starter->start_groups, GINT_TO_POINTER (group));
+  if (apps != NULL)
     {
       /* try to find the current app in the group */
-      for (n = 0; !app_found && n < group->len; n++)
+      for (n = 0; !app_found && n < apps->len; n++)
         {
-          if (g_strcmp0 (unit, g_ptr_array_index (group, n)) == 0)
+          if (g_strcmp0 (unit, g_ptr_array_index (apps, n)) == 0)
             app_found = TRUE;
         }
 
       /* remove the app from the group */
       if (app_found)
-        g_ptr_array_remove_index (group, n-1);
+        g_ptr_array_remove_index (apps, n-1);
 
       /* check if this was the last app in the group to be started */
-      if (group->len == 0)
+      if (apps->len == 0)
         {
-          g_debug ("start group %s finish", group_name);
+          g_debug ("start group %i finish", group);
 
           /* remove the group from the groups and the order */
-          g_hash_table_remove (starter->start_groups, group_name);
-          starter->start_order = g_list_delete_link (starter->start_order,
-                                                     starter->start_order);
+          g_hash_table_remove (starter->start_groups, GINT_TO_POINTER (group));
+          g_array_remove_index (starter->start_order, 0);
 
           /* start the next group if there are any left */
-          if (starter->start_order != NULL)
+          if (starter->start_order->len > 0)
             luc_starter_start_next_group (starter);
         }
     }
@@ -405,50 +431,30 @@ void
 luc_starter_start_groups (LUCStarter *starter)
 {
   GVariantIter iter;
-  GPtrArray   *group;
+  GPtrArray   *group_apps;
   GVariant    *context;
   GError      *error = NULL;
+  GList       *groups;
   GList       *lp;
   gchar      **apps;
   gchar       *log_text;
   guint        n;
+  gint         group;
   gint         type;
-  gint        *dup_type;
 
   g_debug ("prioritised types:");
-  for (n = 0; starter->prioritised_types[n] != NULL; n++)
-    g_debug ("  %s",  starter->prioritised_types[n]);
+  for (n = 0; n < starter->prioritised_types->len; n++)
+    g_debug ("  %i", g_array_index (starter->prioritised_types, gint, n));
 
   /* clear the start order */
-  if (starter->start_order != NULL)
-    {
-      g_list_free (starter->start_order);
-      starter->start_order = NULL;
-    }
+  if (starter->start_order->len > 0)
+    g_array_remove_range (starter->start_order, 0, starter->start_order->len);
 
   /* clear the start groups */
-  if (starter->start_groups != NULL)
-    {
-      g_hash_table_remove_all (starter->start_groups);
-    }
-  else
-    {
-      starter->start_groups =
-        g_hash_table_new_full (g_str_hash, g_str_equal,
-                               g_free, (GDestroyNotify) g_ptr_array_free);
-    }
+  g_hash_table_remove_all (starter->start_groups);
 
   /* clear the mapping between apps and their cancellables */
-  if (starter->cancellables != NULL)
-    {
-      g_hash_table_remove_all (starter->cancellables);
-    }
-  else
-    {
-      starter->cancellables =
-        g_hash_table_new_full (g_str_hash, g_str_equal,
-                               g_free, (GDestroyNotify) g_object_unref);
-    }
+  g_hash_table_remove_all (starter->cancellables);
 
   /* get the current last user context */
   context = boot_manager_service_read_luc (starter->boot_manager_service, &error);
@@ -461,8 +467,8 @@ luc_starter_start_groups (LUCStarter *starter)
         }
       else
         {
-          log_text =
-            g_strdup_printf ("Error reading last user context: %s", error->message);
+          log_text = g_strdup_printf ("Error reading last user context: %s",
+                                      error->message);
           DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
           g_free (log_text);
         }
@@ -474,34 +480,33 @@ luc_starter_start_groups (LUCStarter *starter)
   g_variant_iter_init (&iter, context);
   while (g_variant_iter_loop (&iter, "{i^as}", &type, &apps))
     {
-      dup_type = g_new0 (gint, 1);
-      *dup_type = type;
-      group = g_ptr_array_new_with_free_func (g_free);
+      group_apps = g_ptr_array_new_with_free_func (g_free);
 
       for (n = 0; apps != NULL && apps[n] != NULL; n++)
-        {
-          g_debug ("  group %d app %s", type, apps[n]);
-          g_ptr_array_add (group, g_strdup (apps[n]));
-        }
+        g_ptr_array_add (group_apps, g_strdup (apps[n]));
 
-      g_hash_table_insert (starter->start_groups, dup_type, group);
+      g_hash_table_insert (starter->start_groups, GINT_TO_POINTER (type), group_apps);
     }
+
+  /* release the last user context */
+  g_variant_unref (context);
 
   /* generate the start order by sorting the LUC types according to
    * the prioritised types */
-  starter->start_order = g_hash_table_get_keys (starter->start_groups);
-  starter->start_order = g_list_sort_with_data (starter->start_order,
-                                                luc_starter_compare_luc_types,
-                                                starter);
+  groups = g_hash_table_get_keys (starter->start_groups);
+  for (lp = groups; lp != NULL; lp = lp->next)
+    {
+      group = GPOINTER_TO_INT (lp->data);
+      g_array_append_val (starter->start_order, group);
+    }
+  g_array_sort_with_data (starter->start_order, luc_starter_compare_luc_types, starter);
 
   g_debug ("start groups (ordered):");
-  for (lp = starter->start_order; lp != NULL; lp = lp->next)
-    g_debug ("  %s", (gchar *)lp->data);
+  for (n = 0; n < starter->start_order->len; n++)
+    g_debug ("  %i", g_array_index (starter->start_order, gint, n));
 
-  if (starter->start_order != NULL)
+  if (starter->start_order->len > 0)
     luc_starter_start_next_group (starter);
-
-  g_variant_unref (context);
 }
 
 void

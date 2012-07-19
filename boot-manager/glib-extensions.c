@@ -94,10 +94,7 @@ g_variant_string_array_has_string (GVariant    *array,
 
 
 gint
-g_int_compare (gconstpointer a, gconstpointer b)
+g_int_pointer_compare (gconstpointer a, gconstpointer b)
 {
-  const gint *a1 = a;
-  const gint *b1 = b;
-
-  return (*a1 - *b1);
+  return GPOINTER_TO_INT (a) - GPOINTER_TO_INT (b);
 }
