@@ -67,7 +67,7 @@ AC_CHECK_FUNCS([])
 dnl *************************
 dnl *** Check for GTK-Doc ***
 dnl *************************
-GTK_DOC_CHECK(1.9)
+GTK_DOC_CHECK([1.14])
 
 dnl *******************************
 dnl *** Check for gdbus-codegen ***
@@ -135,9 +135,12 @@ AC_DEFINE_UNQUOTED([PRIORITISED_LUC_TYPES],
 
 AC_OUTPUT([
 Makefile
-common/Makefile
 boot-manager/busconf/Makefile
 boot-manager/Makefile
+common/Makefile
+docs/Makefile
+docs/reference/Makefile
+docs/reference/node-startup-controller/Makefile
 legacy-app-handler/Makefile
 nsm-dummy/busconf/Makefile
 nsm-dummy/Makefile

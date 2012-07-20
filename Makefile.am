@@ -1,8 +1,9 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
 SUBDIRS =								\
-	common								\
 	boot-manager							\
+	common								\
+	docs								\
 	legacy-app-handler						\
 	nsm-dummy							\
 	tests
