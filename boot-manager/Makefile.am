@@ -83,7 +83,8 @@ systemd_service_DATA = $(systemd_service_in_files:.service.in=.service)
 
 CLEANFILES =								\
 	$(dbus_service_DATA)						\
-	$(systemd_service_DATA)
+	$(systemd_service_DATA)						\
+	boot-manager-dbus-doc-*.xml
 
 EXTRA_DIST =								\
 	boot-manager-dbus.xml						\
@@ -102,6 +103,7 @@ boot-manager-dbus.h: boot-manager-dbus.xml Makefile
 	    --interface-prefix org.genivi				\
 	    --c-namespace ""						\
 	    --generate-c-code boot-manager-dbus				\
+	    --generate-docbook boot-manager-dbus-doc			\
 	    --annotate org.genivi.BootManager1.BootManager org.gtk.GDBus.C.Name	\
 	      Boot_Manager $<
 
