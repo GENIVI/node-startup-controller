@@ -33,33 +33,33 @@ enum
   PROP_0,
   PROP_CONNECTION,
   PROP_CONSUMER_SERVICE,
-  PROP_LIFECYCLE_CONTROL_SERVICE
+  PROP_LIFECYCLE_CONTROL_SERVICE,
+  PROP_MAIN_LOOP,
 };
 
 
-static void     nsm_dummy_application_constructed  (GObject      *object);
-static void     nsm_dummy_application_finalize     (GObject      *object);
-static void     nsm_dummy_application_get_property (GObject      *object,
-                                                    guint         prop_id,
-                                                    GValue       *value,
-                                                    GParamSpec   *pspec);
-static void     nsm_dummy_application_set_property (GObject      *object,
-                                                    guint         prop_id,
-                                                    const GValue *value,
-                                                    GParamSpec   *pspec);
-static void     nsm_dummy_application_startup      (GApplication *application);
-static gboolean nsm_dummy_application_int_handler  (GApplication *application);
+static void     nsm_dummy_application_constructed  (GObject             *object);
+static void     nsm_dummy_application_finalize     (GObject             *object);
+static void     nsm_dummy_application_get_property (GObject             *object,
+                                                    guint                prop_id,
+                                                    GValue              *value,
+                                                    GParamSpec          *pspec);
+static void     nsm_dummy_application_set_property (GObject             *object,
+                                                    guint                prop_id,
+                                                    const GValue        *value,
+                                                    GParamSpec          *pspec);
+static gboolean nsm_dummy_application_int_handler  (NSMDummyApplication *application);
 
 
 
 struct _NSMDummyApplicationClass
 {
-  GApplicationClass __parent__;
+  GObjectClass __parent__;
 };
 
 struct _NSMDummyApplication
 {
-  GApplication                __parent__;
+  GObject                     __parent__;
 
   /* the connection to D-Bus */
   GDBusConnection            *connection;
@@ -72,6 +72,9 @@ struct _NSMDummyApplication
   NSMLifecycleControlService *lifecycle_control_service;
   NSMConsumerService         *consumer_service;
 
+  /* the main loop of the application */
+  GMainLoop                  *main_loop;
+
   /* signal handler IDs */
   guint                       sigint_id;
 
@@ -81,24 +84,20 @@ struct _NSMDummyApplication
 
 
 
-G_DEFINE_TYPE (NSMDummyApplication, nsm_dummy_application, G_TYPE_APPLICATION);
+G_DEFINE_TYPE (NSMDummyApplication, nsm_dummy_application, G_TYPE_OBJECT);
 
 
 
 static void
 nsm_dummy_application_class_init (NSMDummyApplicationClass *klass)
 {
-  GApplicationClass *gapplication_class;
-  GObjectClass      *gobject_class;
+  GObjectClass *gobject_class;
 
   gobject_class = G_OBJECT_CLASS (klass);
   gobject_class->finalize = nsm_dummy_application_finalize;
   gobject_class->constructed = nsm_dummy_application_constructed;
   gobject_class->get_property = nsm_dummy_application_get_property;
   gobject_class->set_property = nsm_dummy_application_set_property;
-
-  gapplication_class = G_APPLICATION_CLASS (klass);
-  gapplication_class->startup = nsm_dummy_application_startup;
 
   g_object_class_install_property (gobject_class,
                                    PROP_CONNECTION,
@@ -129,8 +128,15 @@ nsm_dummy_application_class_init (NSMDummyApplicationClass *klass)
                                                         G_PARAM_CONSTRUCT_ONLY |
                                                         G_PARAM_STATIC_STRINGS));
 
-  /* inform systemd that this process has started */
-  sd_notify (0, "READY=1");
+ g_object_class_install_property (gobject_class,
+                                  PROP_MAIN_LOOP,
+                                  g_param_spec_boxed ("main-loop",
+                                                      "main-loop",
+                                                      "main-loop",
+                                                       G_TYPE_MAIN_LOOP,
+                                                       G_PARAM_READWRITE |
+                                                       G_PARAM_CONSTRUCT_ONLY |
+                                                       G_PARAM_STATIC_STRINGS));
 }
 
 
@@ -167,6 +173,9 @@ nsm_dummy_application_finalize (GObject *object)
   /* release the watchdog client */
   g_object_unref (application->watchdog_client);
 
+  /* release the main loop */
+  g_main_loop_unref (application->main_loop);
+
   /* release the NSM Dummy service implementations */
   if (application->consumer_service != NULL)
     g_object_unref (application->consumer_service);
@@ -189,6 +198,9 @@ nsm_dummy_application_constructed (GObject *object)
     g_bus_own_name_on_connection (application->connection,
                                   "com.contiautomotive.NodeStateManager",
                                   G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
+
+  /* inform systemd that this process has started */
+  sd_notify (0, "READY=1");
 }
 
 
@@ -211,6 +223,9 @@ nsm_dummy_application_get_property (GObject    *object,
       break;
     case PROP_LIFECYCLE_CONTROL_SERVICE:
       g_value_set_object (value, application->lifecycle_control_service);
+      break;
+    case PROP_MAIN_LOOP:
+      g_value_set_boxed (value, application->main_loop);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -239,6 +254,9 @@ nsm_dummy_application_set_property (GObject      *object,
     case PROP_LIFECYCLE_CONTROL_SERVICE:
       application->lifecycle_control_service = g_value_dup_object (value);
       break;
+    case PROP_MAIN_LOOP:
+      application->main_loop = g_main_loop_ref (g_value_get_boxed (value));
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -248,46 +266,32 @@ nsm_dummy_application_set_property (GObject      *object,
 
 
 static gboolean
-nsm_dummy_application_int_handler (GApplication *app)
+nsm_dummy_application_int_handler (NSMDummyApplication *application)
 {
-  NSMDummyApplication *application = NSM_DUMMY_APPLICATION (app);
-
   /* call the shutdown consumer method */
-  nsm_shutdown_consumers (application->consumer_service);
+  nsm_consumer_service_shutdown_consumers (application->consumer_service);
 
-  return TRUE;
-}
+  /* quit the application */
+  g_main_loop_quit (application->main_loop);
 
-
-
-static void
-nsm_dummy_application_startup (GApplication *app)
-{
-  NSMDummyApplication *application = NSM_DUMMY_APPLICATION (app);
-
-  /* chain up to the parent class */
-  (*G_APPLICATION_CLASS (nsm_dummy_application_parent_class)->startup) (app);
-
-  /* update systemd's watchdog timestamp every 120 seconds */
-  application->watchdog_client = watchdog_client_new (120);
-
-  /* increment the reference count holding the application running to test the services */
-  g_application_hold (app);
+  return FALSE;
 }
 
 
 
 NSMDummyApplication *
-nsm_dummy_application_new (GDBusConnection            *connection,
+nsm_dummy_application_new (GMainLoop                  *main_loop,
+                           GDBusConnection            *connection,
                            NSMConsumerService         *consumer_service,
                            NSMLifecycleControlService *lifecycle_control_service)
 {
+  g_return_val_if_fail (main_loop != NULL, NULL);
+  g_return_val_if_fail (G_IS_DBUS_CONNECTION (connection), NULL);
   g_return_val_if_fail (NSM_CONSUMER_IS_SERVICE (consumer_service), NULL);
   g_return_val_if_fail (NSM_LIFECYCLE_CONTROL_IS_SERVICE (lifecycle_control_service), NULL);
 
   return g_object_new (NSM_DUMMY_TYPE_APPLICATION,
-                       "application-id", "com.contiautomotive.NodeStateManager",
-                       "flags", G_APPLICATION_IS_SERVICE,
+                       "main-loop", main_loop,
                        "connection", connection,
                        "nsm-consumer-service", consumer_service,
                        "nsm-lifecycle-control-service", lifecycle_control_service,

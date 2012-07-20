@@ -56,6 +56,7 @@ main (int    argc,
   GDBusConnection        *connection;
   SystemdManager         *systemd_manager;
   JobManager             *job_manager;
+  GMainLoop              *main_loop;
   GError                 *error = NULL;
   gint                    exit_status;
 
@@ -91,9 +92,7 @@ main (int    argc,
   if (argc > 1)
     {
       exit_status = boot_manager_handle_command_line (argc, argv, connection);
-
       g_object_unref (connection);
-
       return exit_status;
     }
 
@@ -139,18 +138,24 @@ main (int    argc,
   /* instantiate the legacy app handler */
   la_handler_service = la_handler_service_new (connection, job_manager);
 
+  /* create the main loop */
+  main_loop = g_main_loop_new (NULL, FALSE);
+
   /* create and run the main application */
-  application = boot_manager_application_new (connection, job_manager,
+  application = boot_manager_application_new (main_loop, connection, job_manager,
                                               la_handler_service, boot_manager_service);
-  exit_status = g_application_run (G_APPLICATION (application), 0, NULL);
-  g_object_unref (application);
+
+  /* run the main loop */
+  g_main_loop_run (main_loop);
+  g_main_loop_unref (main_loop);
 
   /* release allocated objects */
+  g_object_unref (application);
   g_object_unref (target_startup_monitor);
   g_object_unref (systemd_manager);
   g_object_unref (job_manager);
   g_object_unref (boot_manager_service);
   g_object_unref (connection);
 
-  return exit_status;
+  return EXIT_SUCCESS;
 }

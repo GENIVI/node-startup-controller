@@ -24,12 +24,12 @@ G_BEGIN_DECLS
 typedef struct _NSMConsumerServiceClass NSMConsumerServiceClass;
 typedef struct _NSMConsumerService      NSMConsumerService;
 
-GType               nsm_consumer_service_get_type  (void) G_GNUC_CONST;
+GType               nsm_consumer_service_get_type           (void) G_GNUC_CONST;
 
-NSMConsumerService *nsm_consumer_service_new       (GDBusConnection    *connection) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
-gboolean            nsm_consumer_service_start     (NSMConsumerService *service,
-                                                    GError            **error);
-void                nsm_shutdown_consumers         (NSMConsumerService *service);
+NSMConsumerService *nsm_consumer_service_new                (GDBusConnection    *connection) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
+gboolean            nsm_consumer_service_start              (NSMConsumerService *service,
+                                                             GError            **error);
+void                nsm_consumer_service_shutdown_consumers (NSMConsumerService *service);
 
 G_END_DECLS
 

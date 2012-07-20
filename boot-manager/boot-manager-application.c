@@ -43,33 +43,33 @@ enum
   PROP_BOOT_MANAGER_SERVICE,
   PROP_LUC_STARTER,
   PROP_LA_HANDLER,
+  PROP_MAIN_LOOP,
 };
 
 
 
-static void     boot_manager_application_finalize       (GObject      *object);
-static void     boot_manager_application_constructed    (GObject      *object);
-static void     boot_manager_application_get_property   (GObject      *object,
-                                                         guint         prop_id,
-                                                         GValue       *value,
-                                                         GParamSpec   *pspec);
-static void     boot_manager_application_set_property   (GObject      *object,
-                                                         guint         prop_id,
-                                                         const GValue *value,
-                                                         GParamSpec   *pspec);
-static void     boot_manager_application_startup        (GApplication *application);
-static gboolean boot_manager_application_sigint_handler (GApplication *application);
+static void     boot_manager_application_finalize       (GObject                *object);
+static void     boot_manager_application_constructed    (GObject                *object);
+static void     boot_manager_application_get_property   (GObject                *object,
+                                                         guint                   prop_id,
+                                                         GValue                 *value,
+                                                         GParamSpec             *pspec);
+static void     boot_manager_application_set_property   (GObject                *object,
+                                                         guint                   prop_id,
+                                                         const GValue           *value,
+                                                         GParamSpec             *pspec);
+static gboolean boot_manager_application_sigint_handler (BootManagerApplication *application);
 
 
 
 struct _BootManagerApplicationClass
 {
-  GApplicationClass __parent__;
+  GObjectClass __parent__;
 };
 
 struct _BootManagerApplication
 {
-  GApplication        __parent__;
+  GObject             __parent__;
 
   /* the connection to D-Bus */
   GDBusConnection    *connection;
@@ -93,20 +93,22 @@ struct _BootManagerApplication
   /* Legacy App Handler to register apps with the Node State Manager */
   LAHandlerService   *la_handler;
 
+  /* the application's main loop */
+  GMainLoop          *main_loop;
+
   /* Identifier for the registered bus name */
   guint               bus_name_id;
 };
 
 
 
-G_DEFINE_TYPE (BootManagerApplication, boot_manager_application, G_TYPE_APPLICATION);
+G_DEFINE_TYPE (BootManagerApplication, boot_manager_application, G_TYPE_OBJECT);
 
 
 
 static void
 boot_manager_application_class_init (BootManagerApplicationClass *klass)
 {
-  GApplicationClass *gapplication_class;
   GObjectClass *gobject_class;
 
   gobject_class = G_OBJECT_CLASS (klass);
@@ -114,9 +116,6 @@ boot_manager_application_class_init (BootManagerApplicationClass *klass)
   gobject_class->constructed = boot_manager_application_constructed;
   gobject_class->get_property = boot_manager_application_get_property;
   gobject_class->set_property = boot_manager_application_set_property;
-
-  gapplication_class = G_APPLICATION_CLASS (klass);
-  gapplication_class->startup = boot_manager_application_startup;
 
   g_object_class_install_property (gobject_class,
                                    PROP_CONNECTION,
@@ -167,6 +166,16 @@ boot_manager_application_class_init (BootManagerApplicationClass *klass)
                                                         TYPE_LUC_STARTER,
                                                         G_PARAM_READABLE |
                                                         G_PARAM_STATIC_STRINGS));
+
+  g_object_class_install_property (gobject_class,
+                                   PROP_MAIN_LOOP,
+                                   g_param_spec_boxed ("main-loop",
+                                                       "main-loop",
+                                                       "main-loop",
+                                                       G_TYPE_MAIN_LOOP,
+                                                       G_PARAM_READWRITE |
+                                                       G_PARAM_CONSTRUCT_ONLY |
+                                                       G_PARAM_STATIC_STRINGS));
 }
 
 
@@ -215,6 +224,9 @@ boot_manager_application_finalize (GObject *object)
   /* release the job manager */
   g_object_unref (application->job_manager);
 
+  /* release the main loop */
+  g_main_loop_unref (application->main_loop);
+
   (*G_OBJECT_CLASS (boot_manager_application_parent_class)->finalize) (object);
 }
 
@@ -224,6 +236,8 @@ static void
 boot_manager_application_constructed (GObject *object)
 {
   BootManagerApplication *application = BOOT_MANAGER_APPLICATION (object);
+  GError                 *error = NULL;
+  gchar                  *log_text;
 
   /* get a bus name on the given connection */
   application->bus_name_id =
@@ -233,6 +247,30 @@ boot_manager_application_constructed (GObject *object)
   /* instantiate the LUC starter */
   application->luc_starter = luc_starter_new (application->job_manager,
                                               application->boot_manager_service);
+
+  /* attempt to start the boot manager service */
+  if (!boot_manager_service_start_up (application->boot_manager_service, &error))
+    {
+      log_text = g_strdup_printf ("Failed to start the boot manager service: %s",
+                                  error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+    }
+
+  /* restore the LUC if desired */
+  luc_starter_start_groups (application->luc_starter);
+
+  /* start the legacy app handler */
+  if (!la_handler_service_start (application->la_handler, &error))
+    {
+      log_text = g_strdup_printf ("Failed to start the legacy app handler service: %s",
+                                  error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+    }
+
+  /* inform systemd that this process has started */
+  sd_notify (0, "READY=1");
 }
 
 
@@ -260,6 +298,9 @@ boot_manager_application_get_property (GObject    *object,
       break;
     case PROP_LUC_STARTER:
       g_value_set_object (value, application->luc_starter);
+      break;
+    case PROP_MAIN_LOOP:
+      g_value_set_boxed (value, application->main_loop);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -291,6 +332,9 @@ boot_manager_application_set_property (GObject      *object,
     case PROP_LA_HANDLER:
       application->la_handler = g_value_dup_object (value);
       break;
+    case PROP_MAIN_LOOP:
+      application->main_loop = g_main_loop_ref (g_value_get_boxed (value));
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -299,78 +343,38 @@ boot_manager_application_set_property (GObject      *object,
 
 
 
-static void
-boot_manager_application_startup (GApplication *app)
-{
-  BootManagerApplication *application = BOOT_MANAGER_APPLICATION (app);
-  GError                 *error = NULL;
-  gchar                  *log_text;
-
-  /* chain up to the parent class */
-  (*G_APPLICATION_CLASS (boot_manager_application_parent_class)->startup) (app);
-
-  /* start the boot manager service */
-  boot_manager_service_start_up (application->boot_manager_service, &error);
-
-  if (error != NULL)
-    {
-      log_text = g_strdup_printf ("Error starting boot manager service: %s",
-                                  error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
-    }
-
-  /* restore the LUC if desired */
-  luc_starter_start_groups (application->luc_starter);
-
-  /* start the legacy app handler */
-  la_handler_service_start (application->la_handler, &error);
-
-  if (error != NULL)
-    {
-      log_text =
-        g_strdup_printf ("Boot Manager Application failed to start the legacy app "
-                         "handler: %s", error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
-    }
-
-  /* inform systemd that this process has started */
-  sd_notify (0, "READY=1");
-
-  /* hold the application so that it persists */
-  g_application_hold (app);
-}
-
-
-
 static gboolean
-boot_manager_application_sigint_handler (GApplication *app)
+boot_manager_application_sigint_handler (BootManagerApplication *application)
 {
-  BootManagerApplication *application = BOOT_MANAGER_APPLICATION (app);
-
+  /* cancel the LUC startup */
   luc_starter_cancel (application->luc_starter);
 
-  return TRUE;
+  /* quit the application */
+  g_main_loop_quit (application->main_loop);
+
+  return FALSE;
 }
 
 
 
 BootManagerApplication *
-boot_manager_application_new (GDBusConnection    *connection,
+boot_manager_application_new (GMainLoop          *main_loop,
+                              GDBusConnection    *connection,
                               JobManager         *job_manager,
                               LAHandlerService   *la_handler,
                               BootManagerService *boot_manager_service)
 {
+  g_return_val_if_fail (main_loop != NULL, NULL);
+  g_return_val_if_fail (G_IS_DBUS_CONNECTION (connection), NULL);
   g_return_val_if_fail (IS_JOB_MANAGER (job_manager), NULL);
+  g_return_val_if_fail (LA_HANDLER_IS_SERVICE (la_handler), NULL);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (boot_manager_service), NULL);
 
   return g_object_new (BOOT_MANAGER_TYPE_APPLICATION,
-                       "application-id", "org.genivi.BootManager1",
-                       "flags", G_APPLICATION_IS_SERVICE,
                        "connection", connection,
-                       "job-manager", job_manager,
                        "boot-manager-service", boot_manager_service,
+                       "job-manager", job_manager,
                        "la-handler", la_handler,
+                       "main-loop", main_loop,
                        NULL);
 }

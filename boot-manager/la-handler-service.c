@@ -28,7 +28,7 @@
 DLT_IMPORT_CONTEXT (la_handler_context);
 
 
-  
+
 /* property identifiers */
 enum
 {
@@ -39,44 +39,45 @@ enum
 
 
 
-typedef struct _LAHandlerServiceConsumerBundle LAHandlerServiceConsumerBundle;
-typedef struct _LAHandlerServiceShutdownConsumer LAHandlerServiceShutdownConsumer;
+typedef struct _LAHandlerServiceData LAHandlerServiceData;
 
 
 
-static void     la_handler_service_constructed                              (GObject               *object);
-static void     la_handler_service_finalize                                 (GObject               *object);
-static void     la_handler_service_get_property                             (GObject               *object,
-                                                                             guint                  prop_id,
-                                                                             GValue                *value,
-                                                                             GParamSpec            *pspec);
-static void     la_handler_service_set_property                             (GObject               *object,
-                                                                             guint                  prop_id,
-                                                                             const GValue          *value,
-                                                                             GParamSpec            *pspec);
-static gboolean la_handler_service_handle_register                          (LAHandler             *interface,
-                                                                             GDBusMethodInvocation *invocation,
-                                                                             const gchar           *unit,
-                                                                             const gchar           *mode,
-                                                                             guint                  timeout,
-                                                                             LAHandlerService      *service);
-static void     la_handler_service_handle_register_finish                   (NSMConsumer           *nsm_consumer,
-                                                                             GAsyncResult          *res,
-                                                                             GDBusMethodInvocation *invocation);
-static gboolean la_handler_service_handle_deregister                        (LAHandler             *interface,
-                                                                             GDBusMethodInvocation *invocation,
-                                                                             const gchar           *unit,
-                                                                             LAHandlerService      *service);
-static void     la_handler_service_handle_consumer_lifecycle_request        (ShutdownConsumer      *interface,
-                                                                             GDBusMethodInvocation *invocation,
-                                                                             guint                  request,
-                                                                             guint                  request_id,
-                                                                             LAHandlerService      *service);
-static void     la_handler_service_handle_consumer_lifecycle_request_finish (JobManager            *manager,
-                                                                             const gchar           *unit,
-                                                                             const gchar           *result,
-                                                                             GError                *error,
-                                                                             gpointer               user_data);
+static void                  la_handler_service_constructed                              (GObject               *object);
+static void                  la_handler_service_finalize                                 (GObject               *object);
+static void                  la_handler_service_get_property                             (GObject               *object,
+                                                                                          guint                  prop_id,
+                                                                                          GValue                *value,
+                                                                                          GParamSpec            *pspec);
+static void                  la_handler_service_set_property                             (GObject               *object,
+                                                                                          guint                  prop_id,
+                                                                                          const GValue          *value,
+                                                                                          GParamSpec            *pspec);
+static gboolean              la_handler_service_handle_register                          (LAHandler             *interface,
+                                                                                          GDBusMethodInvocation *invocation,
+                                                                                          const gchar           *unit,
+                                                                                          const gchar           *mode,
+                                                                                          guint                  timeout,
+                                                                                          LAHandlerService      *service);
+static void                  la_handler_service_handle_register_finish                   (GObject               *object,
+                                                                                          GAsyncResult          *res,
+                                                                                          gpointer               user_data);
+static void                  la_handler_service_handle_consumer_lifecycle_request        (ShutdownConsumer      *interface,
+                                                                                          GDBusMethodInvocation *invocation,
+                                                                                          guint                  request,
+                                                                                          guint                  request_id,
+                                                                                          LAHandlerService      *service);
+static void                  la_handler_service_handle_consumer_lifecycle_request_finish (JobManager            *manager,
+                                                                                          const gchar           *unit,
+                                                                                          const gchar           *result,
+                                                                                          GError                *error,
+                                                                                          gpointer               user_data);
+static LAHandlerServiceData *la_handler_service_data_new                                 (LAHandlerService      *service,
+                                                                                          GDBusMethodInvocation *invocation,
+                                                                                          guint                  request_id);
+static void                  la_handler_service_data_unref                               (LAHandlerServiceData  *data);
+
+
 
 struct _LAHandlerServiceClass
 {
@@ -101,6 +102,13 @@ struct _LAHandlerService
 
   /* connection to the NSM consumer interface */
   NSMConsumer     *nsm_consumer;
+};
+
+struct _LAHandlerServiceData
+{
+  GDBusMethodInvocation *invocation;
+  LAHandlerService      *service;
+  guint                  request_id;
 };
 
 
@@ -181,21 +189,16 @@ la_handler_service_init (LAHandlerService *service)
   service->prefix = "/org/genivi/BootManager1/ShutdownConsumer";
 
   /* initialize the association of shutdown consumers to units */
-  service->units_to_consumers =
-    g_hash_table_new_full (g_str_hash, g_str_equal,
-                           (GDestroyNotify) g_free, (GDestroyNotify) g_object_unref);
-  service->consumers_to_units =
-    g_hash_table_new_full (g_direct_hash, g_direct_equal, 
-                           (GDestroyNotify) g_object_unref, (GDestroyNotify) g_free);
+  service->units_to_consumers = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                       (GDestroyNotify) g_free,
+                                                       (GDestroyNotify) g_object_unref);
+  service->consumers_to_units = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+                                                       (GDestroyNotify) g_object_unref,
+                                                       (GDestroyNotify) g_free);
 
   /* implement the Register() handler */
   g_signal_connect (service->interface, "handle-register",
                     G_CALLBACK (la_handler_service_handle_register),
-                    service);
-
-  /* implement the Deregister() handler */
-  g_signal_connect (service->interface, "handle-deregister",
-                    G_CALLBACK (la_handler_service_handle_deregister),
                     service);
 }
 
@@ -223,8 +226,8 @@ la_handler_service_finalize (GObject *object)
   g_object_unref (service->job_manager);
 
   /* release the shutdown consumers */
-  g_hash_table_destroy (service->units_to_consumers);
-  g_hash_table_destroy (service->consumers_to_units);
+  g_hash_table_unref (service->units_to_consumers);
+  g_hash_table_unref (service->consumers_to_units);
 
   (*G_OBJECT_CLASS (la_handler_service_parent_class)->finalize) (object);
 }
@@ -287,9 +290,66 @@ la_handler_service_handle_register (LAHandler             *interface,
                                     guint                  timeout,
                                     LAHandlerService      *service)
 {
-  /* delegate registration of the legacy app to a more generalised function */
-  la_handler_service_register (service, unit, mode, timeout,
-                               (GAsyncReadyCallback) la_handler_service_handle_register_finish, invocation);
+  ShutdownConsumer *consumer;
+  GError           *error = NULL;
+  gchar            *log_text;
+  gchar            *object_path;
+
+  g_return_val_if_fail (IS_LA_HANDLER (interface), FALSE);
+  g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
+  g_return_val_if_fail (unit != NULL && *unit != '\0', FALSE);
+  g_return_val_if_fail (mode != NULL && *mode != '\0', FALSE);
+  g_return_val_if_fail (LA_HANDLER_IS_SERVICE (service), FALSE);
+
+  /* find out if this unit is already registered with a shutdown consumer */
+  if (g_hash_table_lookup (service->units_to_consumers, unit))
+   {
+      /* there already is a shutdown consumer for the unit, so ignore this request */
+      la_handler_complete_register (interface, invocation);
+      return TRUE;
+   }
+
+  /* create a new ShutdownConsumer and implement its LifecycleRequest method */
+  consumer = shutdown_consumer_skeleton_new ();
+  g_signal_connect (consumer, "handle-lifecycle-request",
+                    G_CALLBACK (la_handler_service_handle_consumer_lifecycle_request),
+                    service);
+
+  /* associate the shutdown consumer with the unit name */
+  g_hash_table_insert (service->units_to_consumers, g_strdup (unit),
+                       g_object_ref (consumer));
+  g_hash_table_insert (service->consumers_to_units, g_object_ref (consumer),
+                       g_strdup (unit));
+
+  /* export the shutdown consumer on the bus */
+  object_path = g_strdup_printf ("%s/%u", service->prefix, service->index);
+  g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (consumer),
+                                    service->connection, object_path, &error);
+  if (error != NULL)
+    {
+      log_text =
+        g_strdup_printf ("Failed to export shutdown consumer on the bus: %s",
+                         error->message);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_error_free (error);
+    }
+
+  /* temporarily store a reference to the LAHandlerService in the invocation object */
+  g_object_set_data_full (G_OBJECT (invocation), "la-handler-service",
+                          g_object_ref (service), (GDestroyNotify) g_object_unref);
+
+  /* register the shutdown consumer with the NSM Consumer */
+  nsm_consumer_call_register_shutdown_client (service->nsm_consumer,
+                                              "org.genivi.BootManager1", object_path, 0,
+                                              timeout, NULL,
+                                              la_handler_service_handle_register_finish,
+                                              invocation);
+
+  g_free (object_path);
+
+  /* increment the counter for our shutdown consumer object paths */
+  service->index++;
 
   return TRUE;
 }
@@ -297,63 +357,77 @@ la_handler_service_handle_register (LAHandler             *interface,
 
 
 static void
-la_handler_service_handle_register_finish (NSMConsumer           *nsm_consumer,
-                                           GAsyncResult          *res,
-                                           GDBusMethodInvocation *invocation)
+la_handler_service_handle_register_finish (GObject      *object,
+                                           GAsyncResult *res,
+                                           gpointer      user_data)
 {
-  GError *error = NULL;
-  gchar  *log_text;
-  gint    error_code;
+  GDBusMethodInvocation *invocation = G_DBUS_METHOD_INVOCATION (user_data);
+  LAHandlerService      *service;
+  NSMConsumer           *nsm_consumer = NSM_CONSUMER (object);
+  GError                *error = NULL;
+  gchar                 *log_text;
+  gint                   error_code;
 
+  g_return_if_fail (IS_NSM_CONSUMER (nsm_consumer));
+  g_return_if_fail (G_IS_ASYNC_RESULT (res));
+  g_return_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation));
+
+  /* finish registering the shutdown client */
   nsm_consumer_call_register_shutdown_client_finish (nsm_consumer, &error_code, res,
                                                      &error);
   if (error != NULL)
     {
-      log_text = g_strdup_printf ("Error occurred registering legacy app: %s",
+      log_text = g_strdup_printf ("Failed to register a shutdown consumer: %s",
                                   error->message);
       DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
       g_error_free (error);
     }
 
+  /* retrieve the LAHandlerService from the invocation object */
+  service = g_object_get_data (G_OBJECT (invocation), "la-handler-service");
+
   /* notify the caller that we have handled the registration request */
-  g_dbus_method_invocation_return_value (invocation, NULL);
-}
-
-
-
-static gboolean
-la_handler_service_handle_deregister (LAHandler             *object,
-                                      GDBusMethodInvocation *invocation,
-                                      const gchar           *unit,
-                                      LAHandlerService      *service)
-{
-  /* notify the caller that we have handled the registration request */
-  g_dbus_method_invocation_return_value (invocation, NULL);
-  return TRUE;
+  la_handler_complete_register (service->interface, invocation);
 }
 
 
 
 static void
-la_handler_service_handle_consumer_lifecycle_request (ShutdownConsumer      *interface,
+la_handler_service_handle_consumer_lifecycle_request (ShutdownConsumer      *consumer,
                                                       GDBusMethodInvocation *invocation,
                                                       guint                  request,
                                                       guint                  request_id,
                                                       LAHandlerService      *service)
 {
-  GVariant *return_type;
-  gchar    *unit_name = g_hash_table_lookup (service->consumers_to_units, interface);
+  LAHandlerServiceData *data;
+  gchar                *unit_name;
 
-  /* call job_manager_stop */
-  job_manager_stop (service->job_manager, unit_name, NULL,
-                    la_handler_service_handle_consumer_lifecycle_request_finish,
-                    GUINT_TO_POINTER (request_id));
-  
-  /* returns for the invocation (with error code) */
-  return_type = g_variant_new_int32 (1); /* bare number because enum comes later */
-  g_dbus_method_invocation_return_value (invocation, return_type);
-  g_variant_unref (return_type);
+  g_return_if_fail (IS_SHUTDOWN_CONSUMER (consumer));
+  g_return_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation));
+  g_return_if_fail (LA_HANDLER_IS_SERVICE (service));
+
+  /* look up the unit name associated with this shutdown consumer */
+  unit_name = g_hash_table_lookup (service->consumers_to_units, consumer);
+
+  if (unit_name != NULL)
+    {
+      data = la_handler_service_data_new (service, NULL, request_id);
+
+      /* stop this unit now */
+      job_manager_stop (service->job_manager, unit_name, NULL,
+                        la_handler_service_handle_consumer_lifecycle_request_finish,
+                        data);
+
+      /* let the NSM know that we are working on this request */
+      shutdown_consumer_complete_lifecycle_request (consumer, invocation, 7);
+    }
+  else
+    {
+      /* NSM asked us to shutdown a shutdown consumer we did not register;
+       * make it aware by returning an error */
+      shutdown_consumer_complete_lifecycle_request (consumer, invocation, 2);
+    }
 }
 
 
@@ -365,23 +439,85 @@ la_handler_service_handle_consumer_lifecycle_request_finish (JobManager  *manage
                                                              GError      *error,
                                                              gpointer     user_data)
 {
-  gchar *log_text;
+  LAHandlerServiceData *data = (LAHandlerServiceData *)user_data;
+  GError               *err = NULL;
+  gchar                *log_text;
+  gint                  status = 1;
 
-  /* log any errors */
+  g_return_if_fail (IS_JOB_MANAGER (manager));
+  g_return_if_fail (unit != NULL && *unit != '\0');
+  g_return_if_fail (result != NULL && *result != '\0');
+  g_return_if_fail (data != NULL);
+
+  /* log an error if shutting down the consumer has failed */
   if (error != NULL)
     {
-      log_text = g_strdup_printf ("Error occurred handling lifecycle request: %s",
+      log_text = g_strdup_printf ("Failed to shutdown a shutdown consumer: %s",
                                   error->message);
       DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
+
+      /* send an error back to the NSM */
+      status = 2;
     }
 
+  /* log an error if systemd failed to stop the consumer */
   if (g_strcmp0 (result, "failed") == 0)
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Error occurred handling lifecycle request"));
+               DLT_STRING ("Failed to shutdown a shutdown consumer"));
+
+      /* send an error back to the NSM */
+      status = 2;
     }
 
+  /* let the NSM know that we have handled the lifecycle request */
+  if (!nsm_consumer_call_lifecycle_request_complete_sync (data->service->nsm_consumer,
+                                                          data->request_id, status,
+                                                          NULL, NULL, &err))
+    {
+      log_text = g_strdup_printf ("Failed to notify Node State Manager about completed "
+                                  "lifecycle request: %s", err->message);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_error_free (err);
+    }
+
+  la_handler_service_data_unref (data);
+}
+
+
+
+static LAHandlerServiceData *
+la_handler_service_data_new (LAHandlerService      *service,
+                             GDBusMethodInvocation *invocation,
+                             guint                  request_id)
+{
+  LAHandlerServiceData *data;
+
+  data = g_slice_new0 (LAHandlerServiceData);
+  if (service != NULL)
+    data->service = g_object_ref (service);
+  if (invocation != NULL)
+    data->invocation = g_object_ref (invocation);
+  data->request_id = request_id;
+
+  return data;
+}
+
+
+
+static void
+la_handler_service_data_unref (LAHandlerServiceData *data)
+{
+  if (data == NULL)
+    return;
+
+  if (data->invocation != NULL)
+    g_object_unref (data->invocation);
+  if (data->service != NULL)
+    g_object_unref (data->service);
+  g_slice_free (LAHandlerServiceData, data);
 }
 
 
@@ -412,60 +548,4 @@ la_handler_service_start (LAHandlerService *service,
                                            service->connection,
                                            "/org/genivi/BootManager1/LegacyAppHandler",
                                            error);
-}
-
-
-
-void
-la_handler_service_register (LAHandlerService   *service,
-                             const gchar        *unit,
-                             const gchar        *mode,
-                             guint               timeout,
-                             GAsyncReadyCallback callback,
-                             gpointer            user_data)
-{
-  ShutdownConsumer *consumer;
-  GError           *error = NULL;
-  gchar            *log_text;
-  gchar            *object_path;
-
-  g_return_if_fail (LA_HANDLER_IS_SERVICE (service));
-  g_return_if_fail (unit != NULL && *unit != '\0');
-  g_return_if_fail (mode != NULL && *mode != '\0');
-
-  /* find out if this unit is already registered with a shutdown consumer */
-  if (g_hash_table_lookup (service->units_to_consumers, unit))
-    return;
-
-  /* create a new ShutdownConsumer and store it in service */
-  consumer = shutdown_consumer_skeleton_new ();
-  g_hash_table_insert (service->units_to_consumers, g_strdup (unit),
-                       g_object_ref (consumer));
-  g_hash_table_insert (service->consumers_to_units, g_object_ref (consumer),
-                       g_strdup (unit));
-  service->index++;
-
-  /* set up signal handling and skeleton exporting */
-  object_path = g_strdup_printf ("%s/%u", service->prefix, service->index);
-  g_signal_connect (consumer, "handle-lifecycle-request",
-                    G_CALLBACK (la_handler_service_handle_consumer_lifecycle_request),
-                    service);
-  g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (consumer),
-                                    service->connection, object_path, &error);
-  if (error != NULL)
-    {
-      log_text = 
-        g_strdup_printf ("Error exporting shutdown consumer interface skeleton: %s",
-                         error->message);
-      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
-      g_error_free (error);
-    }
-
-  /* register the shutdown consumer with the NSM Consumer */
-  nsm_consumer_call_register_shutdown_client (service->nsm_consumer,
-                                              "org.genivi.BootManager1", object_path, 0,
-                                              timeout, NULL, callback, user_data);
-
-  g_free (object_path);
 }

@@ -30,7 +30,8 @@ typedef struct _BootManagerApplication      BootManagerApplication;
 
 GType		                boot_manager_application_get_type (void) G_GNUC_CONST;
 
-BootManagerApplication *boot_manager_application_new      (GDBusConnection    *connection,
+BootManagerApplication *boot_manager_application_new      (GMainLoop          *main_loop,
+                                                           GDBusConnection    *connection,
                                                            JobManager         *job_manager,
                                                            LAHandlerService   *la_handler,
                                                            BootManagerService *boot_manager_service) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;

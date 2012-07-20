@@ -38,8 +38,8 @@ main (int    argc,
   NSMDummyApplication        *application;
   NSMConsumerService         *consumer_service;
   GDBusConnection            *connection;
+  GMainLoop                  *main_loop;
   GError                     *error = NULL;
-  int                         exit_status;
 
   /* register the application and context in DLT */
   DLT_REGISTER_APP ("NSMD", "GENIVI Node State Manager Dummy");
@@ -89,11 +89,16 @@ main (int    argc,
       return EXIT_FAILURE;
     }
 
-  /* create and run the main application */
-  application = nsm_dummy_application_new (connection, 
-                                           consumer_service, 
+  /* create the main loop */
+  main_loop = g_main_loop_new (NULL, FALSE);
+
+  /* create the main application */
+  application = nsm_dummy_application_new (main_loop, connection, consumer_service,
                                            lifecycle_control_service);
-  exit_status = g_application_run (G_APPLICATION (application), 0, NULL);
+
+  /* run the main loop */
+  g_main_loop_run (main_loop);
+  g_main_loop_unref (main_loop);
 
   /* release allocated objects */
   g_object_unref (application);
@@ -105,5 +110,5 @@ main (int    argc,
   DLT_UNREGISTER_CONTEXT (nsm_dummy_context);
   DLT_UNREGISTER_APP ();
 
-  return exit_status;
+  return EXIT_SUCCESS;
 }

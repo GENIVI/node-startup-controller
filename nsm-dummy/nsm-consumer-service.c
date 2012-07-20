@@ -35,7 +35,7 @@ enum
 
 
 
-typedef struct _NSMShutdownClient       NSMShutdownClient;
+typedef struct _NSMShutdownClient NSMShutdownClient;
 
 
 
@@ -354,10 +354,10 @@ nsm_shutdown_client_release (NSMShutdownClient *shutdown_client)
 
 
 void
-nsm_shutdown_consumers (NSMConsumerService *service)
+nsm_consumer_service_shutdown_consumers (NSMConsumerService *service)
 {
-  ShutdownConsumer *proxy               = NULL;
-  GError           *error               = NULL;
+  ShutdownConsumer *proxy = NULL;
+  GError           *error = NULL;
   gchar            *message;
   GList            *clients;
   GList            *shutdown_consumers;

@@ -27,7 +27,8 @@ typedef struct _NSMDummyApplication      NSMDummyApplication;
 
 GType                nsm_dummy_application_get_type (void) G_GNUC_CONST;
 
-NSMDummyApplication *nsm_dummy_application_new      (GDBusConnection            *connection,
+NSMDummyApplication *nsm_dummy_application_new      (GMainLoop                  *main_loop,
+                                                     GDBusConnection            *connection,
                                                      NSMConsumerService         *consumer_service,
                                                      NSMLifecycleControlService *lifecycle_control_service) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
 

@@ -3,7 +3,7 @@
 systemd_servicedir = /lib/systemd/system
 
 systemd_service_in_files =							\
-	com.contiautomotive.NodeStateManager.service.in
+	nsm-dummy.service.in
 
 systemd_service_DATA = $(systemd_service_in_files:.service.in=.service)
 
