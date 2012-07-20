@@ -8,7 +8,7 @@
                         "com.conti.NodeStateManager.LifecycleControl" using
                         only the methods needed to test Boot Manager.
   -->
-  <interface name="com.conti.NodeStateManager.Consumer">
+  <interface name="com.contiautomotive.NodeStateManager.Consumer">
     <!--
       RegisterShutdownClient:
       @BusName: Bus name of remote application.
@@ -51,6 +51,20 @@
       <arg name="BusName" direction="in" type="s"/>
       <arg name="ObjName" direction="in" type="s"/>
       <arg name="ShutdownMode" direction="in" type="i"/>
+      <arg name="ErrorCode" direction="out" type="i"/>
+    </method>
+
+    <!--    
+        LifecycleRequestComplete:
+        @RequestId: The request Id of the called life cycle client. The value has been passed when "LifecycleRequest" was called.
+        @Status:    The result of the call to "LifecycleRequest". NsmErrorStatus_Ok: Request successfully processed. NsmErrorStatus_Error: An error occured while processing the "LifecycleRequest".
+        @ErrorCode: Return value passed to the caller, based upon NsmErrorStatus_e.
+        
+        The function has to be called by a "asynchrounous" lifecycle client, when he processed the "LifecycleRequest".
+    --> 
+    <method name="LifecycleRequestComplete">
+      <arg name="RequestId" direction="in" type="u"/>
+      <arg name="Status"    direction="in" type="i"/>
       <arg name="ErrorCode" direction="out" type="i"/>
     </method>
 

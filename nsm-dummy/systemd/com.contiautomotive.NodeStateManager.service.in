@@ -1,4 +1,4 @@
 [Service]
 Type = notify
-BusName = com.conti.NodeStateManager.service
+BusName = com.contiautomotive.NodeStateManager.service
 ExecStart = @libdir@/nsm-dummy-@BOOT_MANAGER_VERSION_API@/nsm-dummy

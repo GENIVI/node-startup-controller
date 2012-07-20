@@ -3,4 +3,4 @@
 nsm_dummy_confdir = /etc/dbus-1/system.d
 
 nsm_dummy_conf_DATA =						\
-	com.conti.NodeStateManager.conf
+	com.contiautomotive.NodeStateManager.conf

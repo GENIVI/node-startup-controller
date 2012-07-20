@@ -1,21 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <node>
   <!--
-    org.genivi.lifecycle.ShutdownConsumer1:
-    @short_description: Interface for receiving Shutdown commands from the NSM
+    com.contiautomotive.NodeStateManager.LifeCycleConsumer:
+    @short_description: Interface for receiving LifecycleRequest commands from the NSM
 
-    Shutdown Consumers are D-Bus object which are created to shut down apps
-    which do not have a Shutdown() D-Bus method to call. These are registered
-    with the Node State Manager (NSM) instead of the apps and shut down those
-    apps when Shutdown() is called on the Shutdown Consumer.
+    Lifecycle Consumers are D-Bus object which are created to shut down apps
+    which do not have a LifecycleRequest() D-Bus method to call. These are registered
+    with the Node State Manager (NSM) instead of the apps and respond to any 
+    LifecycleRequest() in the app's place.
   -->
-  <interface name="org.genivi.BootManager1.ShutdownConsumer">
+  <interface name="com.contiautomotive.NodeStateManager.LifeCycleConsumer">
     <!--
       Shutdown:
+      @Request: The code for this request, either normal, fast or runup.
+      @RequestId: A unique identifier for this lifecycle consumer, used in the 
+                  LifecycleRequestComplete signal which replies to the NSM.
 
-      Shuts down the app the ShutdownConsumer is associated with.
+      Shuts down or starts up the app the LifecycleConsumer is associated with.
     -->
-    <method name="Shutdown">
+    <method name="LifecycleRequest">
+      <arg name="Request"   direction="in"  type="u"/>
+      <arg name="RequestId" direction="in"  type="u"/>
+      <arg name="ErrorCode" direction="out" type="i"/>
       <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
     </method>
 

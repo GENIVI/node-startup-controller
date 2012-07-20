@@ -8,7 +8,7 @@
                         "com.conti.NodeStateManager.LifecycleControl" using
                         only the methods needed to test Boot Manager.
   -->
-  <interface name="com.conti.NodeStateManager.LifecycleControl">
+  <interface name="com.contiautomotive.NodeStateManager.LifecycleControl">
     <!--
       SetNodeState:
       @NodeStateId: The passed value will be based upon the enum

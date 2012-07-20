@@ -245,6 +245,6 @@ nsm_lifecycle_control_service_start (NSMLifecycleControlService *service,
   /* announce the LifecycleControl service on the bus */
   return g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (service->interface),
                                            service->connection,
-                                           "/com/conti/NodeStateManager/LifecycleControl",
+                                           "/com/contiautomotive/NodeStateManager/LifecycleControl",
                                            error);
 }

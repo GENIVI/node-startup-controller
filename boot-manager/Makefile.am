@@ -35,8 +35,6 @@ boot_manager_SOURCES =							\
 	la-handler-service.h						\
 	luc-starter.c							\
 	luc-starter.h							\
-	shutdown-consumer-service.c					\
-	shutdown-consumer-service.h					\
 	target-startup-monitor.c					\
 	target-startup-monitor.h					\
 	main.c								\

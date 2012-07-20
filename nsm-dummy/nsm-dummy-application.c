@@ -186,7 +186,8 @@ nsm_dummy_application_constructed (GObject *object)
 
   /* get a bus name on the given connection */
   application->bus_name_id =
-    g_bus_own_name_on_connection (application->connection, "com.conti.NodeStateManager",
+    g_bus_own_name_on_connection (application->connection,
+                                  "com.contiautomotive.NodeStateManager",
                                   G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
 }
 
@@ -285,7 +286,7 @@ nsm_dummy_application_new (GDBusConnection            *connection,
   g_return_val_if_fail (NSM_LIFECYCLE_CONTROL_IS_SERVICE (lifecycle_control_service), NULL);
 
   return g_object_new (NSM_DUMMY_TYPE_APPLICATION,
-                       "application-id", "com.conti.NodeStateManager",
+                       "application-id", "com.contiautomotive.NodeStateManager",
                        "flags", G_APPLICATION_IS_SERVICE,
                        "connection", connection,
                        "nsm-consumer-service", consumer_service,

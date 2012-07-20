@@ -332,7 +332,7 @@ nsm_consumer_service_start (NSMConsumerService *service,
   /* announce the Consumer service on the bus */
   return g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (service->interface),
                                            service->connection,
-                                           "/com/conti/NodeStateManager/Consumer",
+                                           "/com/contiautomotive/NodeStateManager/Consumer",
                                            error);
 }
 
@@ -361,6 +361,7 @@ nsm_shutdown_consumers (NSMConsumerService *service)
   gchar            *message;
   GList            *clients;
   GList            *shutdown_consumers;
+  gint              error_code;
 
   g_return_if_fail (NSM_CONSUMER_IS_SERVICE (service));
 
@@ -390,8 +391,9 @@ nsm_shutdown_consumers (NSMConsumerService *service)
           g_error_free (error);
         }
 
-      /* call the shutdown method */
-      shutdown_consumer_call_shutdown_sync (proxy, NULL, &error);
+      /* call the shutdown method (temporarily using bald numbers instead of enums) */
+      shutdown_consumer_call_lifecycle_request_sync (proxy, 1, 1234, &error_code, NULL,
+                                                     &error);
       if (error != NULL)
         {
           message = 

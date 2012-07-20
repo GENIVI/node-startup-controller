@@ -51,18 +51,18 @@ BUILT_SOURCES =								\
 
 nsm-consumer-dbus.h: nsm-consumer-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)							\
-	    --interface-prefix com.conti.NodeStateManager				\
+	    --interface-prefix com.contiautomotive.NodeStateManager			\
 	    --c-namespace ""								\
 	    --generate-c-code nsm-consumer-dbus						\
-	    --annotate com.conti.NodeStateManager.Consumer org.gtk.GDBus.C.Name		\
+	    --annotate com.contiautomotive.NodeStateManager.Consumer org.gtk.GDBus.C.Name	\
 	      NSM_Consumer $<
 
 nsm-lifecycle-control-dbus.h: nsm-lifecycle-control-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)							\
-	    --interface-prefix com.conti.NodeStateManager				\
+	    --interface-prefix com.contiautomotive.NodeStateManager			\
 	    --c-namespace ""								\
 	    --generate-c-code nsm-lifecycle-control-dbus				\
-	    --annotate com.conti.NodeStateManager.LifecycleControl org.gtk.GDBus.C.Name	\
+	    --annotate com.contiautomotive.NodeStateManager.LifecycleControl org.gtk.GDBus.C.Name	\
 	      NSM_Lifecycle_Control $<
 
 shutdown-consumer-dbus.h: shutdown-consumer-dbus.xml Makefile
@@ -70,5 +70,5 @@ shutdown-consumer-dbus.h: shutdown-consumer-dbus.xml Makefile
 	    --interface-prefix org.genivi				\
 	    --c-namespace ""						\
 	    --generate-c-code shutdown-consumer-dbus			\
-	    --annotate org.genivi.BootManager1.ShutdownConsumer org.gtk.GDBus.C.Name	\
+	    --annotate com.contiautomotive.NodeStateManager.LifeCycleConsumer org.gtk.GDBus.C.Name	\
 	      Shutdown_Consumer $<
