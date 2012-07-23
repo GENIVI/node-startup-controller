@@ -11,20 +11,16 @@ boot_manager_PROGRAMS =							\
 
 boot_manager_built_headers =						\
 	boot-manager-dbus.h						\
-	la-handler-dbus.h						\
 	systemd-manager-dbus.h
 
 boot_manager_built_sources =						\
 	boot-manager-dbus.c						\
-	la-handler-dbus.c						\
 	systemd-manager-dbus.c						\
 	$(boot_manager_built_headers)
 
 boot_manager_SOURCES =							\
 	boot-manager-application.c					\
 	boot-manager-application.h					\
-	boot-manager-command-line.c					\
-	boot-manager-command-line.h					\
 	boot-manager-service.c						\
 	boot-manager-service.h						\
 	glib-extensions.c						\
@@ -95,7 +91,6 @@ CLEANFILES =								\
 
 EXTRA_DIST =								\
 	boot-manager-dbus.xml						\
-	la-handler-dbus.xml						\
 	systemd-manager-dbus.xml					\
 	$(dbus_service_in_files)					\
 	$(systemd_service_in_files)
@@ -113,14 +108,6 @@ boot-manager-dbus.h: boot-manager-dbus.xml Makefile
 	    --generate-c-code boot-manager-dbus				\
 	    --annotate org.genivi.BootManager1.BootManager org.gtk.GDBus.C.Name	\
 	      Boot_Manager $<
-
-la-handler-dbus.h: la-handler-dbus.xml Makefile
-	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
-	    --interface-prefix org.genivi				\
-	    --c-namespace ""						\
-	    --generate-c-code la-handler-dbus				\
-	    --annotate org.genivi.BootManager1.LegacyAppHandler org.gtk.GDBus.C.Name	\
-	      LA_Handler $<
 
 systemd-manager-dbus.h: systemd-manager-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\

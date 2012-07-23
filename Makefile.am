@@ -3,6 +3,7 @@
 SUBDIRS =								\
 	common								\
 	boot-manager							\
+	legacy-app-handler						\
 	nsm-dummy							\
 	tests
 

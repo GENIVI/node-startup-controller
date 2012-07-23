@@ -21,7 +21,6 @@
 #include <dlt/dlt.h>
 
 #include <boot-manager/boot-manager-application.h>
-#include <boot-manager/boot-manager-command-line.h>
 #include <boot-manager/boot-manager-dbus.h>
 #include <boot-manager/boot-manager-service.h>
 #include <boot-manager/la-handler-service.h>
@@ -58,7 +57,6 @@ main (int    argc,
   JobManager             *job_manager;
   GMainLoop              *main_loop;
   GError                 *error = NULL;
-  gint                    exit_status;
 
   /* register the application and context in DLT */
   DLT_REGISTER_APP ("BMGR", "GENIVI Boot Manager");
@@ -85,15 +83,6 @@ main (int    argc,
       g_error_free (error);
 
       return EXIT_FAILURE;
-    }
-
-  /* Parse and react to the command-line arguments instead of starting the application
-   * if any arguments are given */
-  if (argc > 1)
-    {
-      exit_status = boot_manager_handle_command_line (argc, argv, connection);
-      g_object_unref (connection);
-      return exit_status;
     }
 
   /* attempt to connect to the systemd manager */

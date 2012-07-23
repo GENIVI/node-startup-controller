@@ -26,19 +26,8 @@
     <method name="Register">
       <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
       <arg name="unit" type="s" direction="in"/>
-      <arg name="mode" type="s" direction="in"/>
+      <arg name="mode" type="i" direction="in"/>
       <arg name="timeout" type="u" direction="in"/>
-    </method>
-
-    <!--
-      Deregister:
-      @unit: An application unit filename.
-
-      Removes the shutdown consumer for an app from the NSM.
-    -->
-    <method name="Deregister">
-      <annotation name="org.freedesktop.DBus.GLib.Async" value="true"/>
-      <arg name="unit" type="s" direction="in"/>
     </method>
   </interface>
 </node>

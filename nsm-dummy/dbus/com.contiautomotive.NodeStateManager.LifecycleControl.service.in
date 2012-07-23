@@ -1,4 +1,4 @@
 [D-BUS Service]
 Name=com.contiautomotive.NodeStateManager
 SystemdService = nsm-dummy.service
-Exec=@libdir@/nsm-dummy-@BOOT_MANAGER_VERSION_API@/nsm-dummy
+Exec=@libdir@/boot-manager-@BOOT_MANAGER_VERSION_API@/nsm-dummy

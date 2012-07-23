@@ -1,0 +1,4 @@
+[Service]
+ExecStart = @libdir@/boot-manager-@BOOT_MANAGER_VERSION_API@/legacy-app-handler-test Test2
+ExecStartPost = @libdir@/boot-manager-@BOOT_MANAGER_VERSION_API@/legacy-app-handler \
+                --register --unit=legacy-app-handler-test2.service

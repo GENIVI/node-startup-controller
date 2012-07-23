@@ -1,21 +1,21 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
-testscriptdir = /usr/bin
+testscriptdir = $(libdir)/boot-manager-$(BOOT_MANAGER_VERSION_API)
 
 testscript_DATA =							\
-	org-genivi-LegacyAppHandler1-test-service.py
+	legacy-app-handler-test
 
-testconfdir = /etc/dbus-1/system.d
+testconfdir = $(sysconfdir)/dbus-1/system.d
 
 testconf_DATA =								\
-	org.genivi.LegacyAppHandler1.test.conf
+	legacy-app-handler-test.conf
 
-servicedir = /lib/systemd/system
+servicedir = $(libdir)/systemd/system
 
 service_in_files =							\
-	org.genivi.LegacyAppHandler1.test1.service.in				\
-	org.genivi.LegacyAppHandler1.test2.service.in				\
-	org.genivi.LegacyAppHandler1.test3.service.in
+	legacy-app-handler-test1.service.in				\
+	legacy-app-handler-test2.service.in				\
+	legacy-app-handler-test3.service.in
 
 service_DATA = $(service_in_files:.service.in=.service)
 
@@ -24,9 +24,7 @@ service_DATA = $(service_in_files:.service.in=.service)
 	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
 
 CLEANFILES =								\
-	$(service_DATA)							\
-	$(testconf_DATA)						\
-	$(testscript_DATA)
+	$(service_DATA)
 
 EXTRA_DIST =								\
 	$(service_in_files)						\

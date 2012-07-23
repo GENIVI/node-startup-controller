@@ -16,11 +16,12 @@
 
 #include <dlt/dlt.h>
 
+#include <common/la-handler-dbus.h>
 #include <common/nsm-consumer-dbus.h>
+#include <common/nsm-enum-types.h>
 #include <common/shutdown-consumer-dbus.h>
 
 #include <boot-manager/job-manager.h>
-#include <boot-manager/la-handler-dbus.h>
 #include <boot-manager/la-handler-service.h>
 
 
@@ -56,7 +57,7 @@ static void                  la_handler_service_set_property                    
 static gboolean              la_handler_service_handle_register                          (LAHandler             *interface,
                                                                                           GDBusMethodInvocation *invocation,
                                                                                           const gchar           *unit,
-                                                                                          const gchar           *mode,
+                                                                                          NSMShutdownType        mode,
                                                                                           guint                  timeout,
                                                                                           LAHandlerService      *service);
 static void                  la_handler_service_handle_register_finish                   (GObject               *object,
@@ -286,7 +287,7 @@ static gboolean
 la_handler_service_handle_register (LAHandler             *interface,
                                     GDBusMethodInvocation *invocation,
                                     const gchar           *unit,
-                                    const gchar           *mode,
+                                    NSMShutdownType        mode,
                                     guint                  timeout,
                                     LAHandlerService      *service)
 {
@@ -298,7 +299,6 @@ la_handler_service_handle_register (LAHandler             *interface,
   g_return_val_if_fail (IS_LA_HANDLER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (unit != NULL && *unit != '\0', FALSE);
-  g_return_val_if_fail (mode != NULL && *mode != '\0', FALSE);
   g_return_val_if_fail (LA_HANDLER_IS_SERVICE (service), FALSE);
 
   /* find out if this unit is already registered with a shutdown consumer */
@@ -327,9 +327,8 @@ la_handler_service_handle_register (LAHandler             *interface,
                                     service->connection, object_path, &error);
   if (error != NULL)
     {
-      log_text =
-        g_strdup_printf ("Failed to export shutdown consumer on the bus: %s",
-                         error->message);
+      log_text = g_strdup_printf ("Failed to export shutdown consumer on the bus: %s",
+                                  error->message);
       DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
       g_error_free (error);
@@ -341,8 +340,8 @@ la_handler_service_handle_register (LAHandler             *interface,
 
   /* register the shutdown consumer with the NSM Consumer */
   nsm_consumer_call_register_shutdown_client (service->nsm_consumer,
-                                              "org.genivi.BootManager1", object_path, 0,
-                                              timeout, NULL,
+                                              "org.genivi.BootManager1", object_path,
+                                              mode, timeout, NULL,
                                               la_handler_service_handle_register_finish,
                                               invocation);
 
