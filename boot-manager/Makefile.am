@@ -80,7 +80,7 @@ dbus_service_DATA = $(dbus_service_in_files:.service.in=.service)
 	sed -e "s,\@libdir\@,$(libdir),g"				\
 	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
 
-systemd_servicedir = /lib/systemd/system
+systemd_servicedir = $(libdir)/systemd/system
 
 systemd_service_in_files =						\
 	boot-manager.service.in
