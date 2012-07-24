@@ -19,6 +19,8 @@
 
 #include <dlt/dlt.h>
 
+#include <common/nsm-enum-types.h>
+#include <common/shutdown-consumer-dbus.h>
 #include <common/watchdog-client.h>
 
 #include <boot-manager/boot-manager-application.h>
@@ -48,17 +50,21 @@ enum
 
 
 
-static void     boot_manager_application_finalize       (GObject                *object);
-static void     boot_manager_application_constructed    (GObject                *object);
-static void     boot_manager_application_get_property   (GObject                *object,
-                                                         guint                   prop_id,
-                                                         GValue                 *value,
-                                                         GParamSpec             *pspec);
-static void     boot_manager_application_set_property   (GObject                *object,
-                                                         guint                   prop_id,
-                                                         const GValue           *value,
-                                                         GParamSpec             *pspec);
-static gboolean boot_manager_application_sigint_handler (BootManagerApplication *application);
+static void     boot_manager_application_finalize                 (GObject                *object);
+static void     boot_manager_application_constructed              (GObject                *object);
+static void     boot_manager_application_get_property             (GObject                *object,
+                                                                   guint                   prop_id,
+                                                                   GValue                 *value,
+                                                                   GParamSpec             *pspec);
+static void     boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *interface,
+                                                                   GDBusMethodInvocation  *invocation,
+                                                                   NSMShutdownType         request,
+                                                                   guint                   request_id,
+                                                                   BootManagerApplication *application);
+static void     boot_manager_application_set_property             (GObject                *object,
+                                                                   guint                   prop_id,
+                                                                   const GValue           *value,
+                                                                   GParamSpec             *pspec);
 
 
 
@@ -87,17 +93,17 @@ struct _BootManagerApplication
   /* LUC starter to restore the LUC */
   LUCStarter         *luc_starter;
 
-  /* signal handler IDs */
-  guint               sigint_id;
-
   /* Legacy App Handler to register apps with the Node State Manager */
   LAHandlerService   *la_handler;
 
   /* the application's main loop */
   GMainLoop          *main_loop;
 
-  /* Identifier for the registered bus name */
+  /* identifier for the registered bus name */
   guint               bus_name_id;
+
+  /* shutdown consumer for the boot manager itself */
+  ShutdownConsumer   *consumer;
 };
 
 
@@ -185,11 +191,6 @@ boot_manager_application_init (BootManagerApplication *application)
 {
   /* update systemd's watchdog timestamp every 120 seconds */
   application->watchdog_client = watchdog_client_new (120);
-
-  /* install the signal handler */
-  application->sigint_id =
-    g_unix_signal_add (SIGINT, (GSourceFunc) boot_manager_application_sigint_handler,
-                       application);
 }
 
 
@@ -199,15 +200,17 @@ boot_manager_application_finalize (GObject *object)
 {
   BootManagerApplication *application = BOOT_MANAGER_APPLICATION (object);
 
+  /* release the shutdown consumer */
+  g_signal_handlers_disconnect_matched (application->consumer, G_SIGNAL_MATCH_DATA,
+                                        0, 0, NULL, NULL, application);
+  g_object_unref (application->consumer);
+
   /* release the bus name */
   g_bus_unown_name (application->bus_name_id);
 
   /* release the D-Bus connection object */
   if (application->connection != NULL)
     g_object_unref (application->connection);
-
-  /* release the signal handler */
-  g_source_remove (application->sigint_id);
 
   /* release the watchdog client */
   g_object_unref (application->watchdog_client);
@@ -255,6 +258,7 @@ boot_manager_application_constructed (GObject *object)
                                   error->message);
       DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
+      g_clear_error (&error);
     }
 
   /* restore the LUC if desired */
@@ -267,10 +271,54 @@ boot_manager_application_constructed (GObject *object)
                                   error->message);
       DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
+      g_clear_error (&error);
+    }
+
+  /* create a shutdown consumer and implement its LifecycleRequest method */
+  application->consumer = shutdown_consumer_skeleton_new ();
+  g_signal_connect (application->consumer, "handle-lifecycle-request",
+                    G_CALLBACK (boot_manager_application_handle_lifecycle_request),
+                    application);
+
+  /* export the shutdown consumer on the bus */
+  if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (application->consumer),
+                                         application->connection,
+                                         "/org/genivi/BootManager1/ShutdownConsumer/0",
+                                         &error))
+    {
+      log_text = g_strdup_printf ("Failed to export shutdown consumer on the bus: %s",
+                                  error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_clear_error (&error);
     }
 
   /* inform systemd that this process has started */
   sd_notify (0, "READY=1");
+}
+
+
+
+static void
+boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consumer,
+                                                   GDBusMethodInvocation  *invocation,
+                                                   NSMShutdownType         request,
+                                                   guint                   request_id,
+                                                   BootManagerApplication *application)
+{
+  g_return_if_fail (IS_SHUTDOWN_CONSUMER (consumer));
+  g_return_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation));
+  g_return_if_fail (BOOT_MANAGER_IS_APPLICATION (application));
+
+  /* cancel the LUC startup */
+  luc_starter_cancel (application->luc_starter);
+
+  /* let the NSM know that we have handled the lifecycle request */
+  shutdown_consumer_complete_lifecycle_request (consumer, invocation,
+                                                NSM_ERROR_STATUS_OK);
+
+  /* quit the application */
+  g_main_loop_quit (application->main_loop);
 }
 
 
@@ -339,20 +387,6 @@ boot_manager_application_set_property (GObject      *object,
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
     }
-}
-
-
-
-static gboolean
-boot_manager_application_sigint_handler (BootManagerApplication *application)
-{
-  /* cancel the LUC startup */
-  luc_starter_cancel (application->luc_starter);
-
-  /* quit the application */
-  g_main_loop_quit (application->main_loop);
-
-  return FALSE;
 }
 
 
