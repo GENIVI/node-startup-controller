@@ -13,7 +13,7 @@ noinst_PROGRAMS =							\
 	gvariant-writer
 
 gvariant_writer_SOURCES =						\
-	gvariant_writer.c
+	gvariant-writer.c
 
 gvariant_writer_CFLAGS =						\
 	-DG_LOG_DOMAIN=\"gvariant-writer\"				\
