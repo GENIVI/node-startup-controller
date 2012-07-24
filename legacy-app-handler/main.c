@@ -33,8 +33,8 @@ static gchar *shutdown_mode = NULL;
 
 static GOptionEntry entries[] =
 {
-  { "unit", 'u', 0, G_OPTION_ARG_STRING, &unit, "Legacy application unit", NULL },
-  { "timeout", 't', 0, G_OPTION_ARG_INT, &timeout, "Shutdown timeout in seconds", NULL },
+  { "unit",          'u', 0, G_OPTION_ARG_STRING, &unit,          "Legacy application unit",            NULL },
+  { "timeout",       't', 0, G_OPTION_ARG_INT,    &timeout,       "Shutdown timeout in milliseconds",   NULL },
   { "shutdown-mode", 'm', 0, G_OPTION_ARG_STRING, &shutdown_mode, "Shutdown mode (none, normal, fast)", NULL },
   { NULL },
 };

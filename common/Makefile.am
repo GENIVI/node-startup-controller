@@ -16,6 +16,8 @@ libcommon_la_built_sources =						\
 	$(libcommon_la_built_headers)
 
 libcommon_la_SOURCES =							\
+	nsm-enum-types.c						\
+	nsm-enum-types.h						\
 	shutdown-client.c						\
 	shutdown-client.h						\
 	watchdog-client.c						\

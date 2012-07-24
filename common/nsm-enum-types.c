@@ -25,7 +25,7 @@ nsm_shutdown_type_get_type (void)
 
   if (G_UNLIKELY (type == G_TYPE_INVALID))
     {
-      static const GEnumValue vaules[] =
+      static const GEnumValue values[] =
       {
         { NSM_SHUTDOWN_TYPE_NOT,    "NSM_SHUTDOWN_TYPE_NOT",    N_ ("No shutdown"),        },
         { NSM_SHUTDOWN_TYPE_NORMAL, "NSM_SHUTDOWN_TYPE_NORMAL", N_ ("Normal shutdown"),    },
@@ -48,7 +48,7 @@ nsm_error_status_get_type (void)
 
   if (G_UNLIKELY (type == G_TYPE_INVALID))
     {
-      static const GEnumValue vaules[] =
+      static const GEnumValue values[] =
       {
         { NSM_ERROR_STATUS_NOT_SET,          "NSM_ERROR_STATUS_NOT_SET",          N_ ("Error not set"),           },
         { NSM_ERROR_STATUS_OK,               "NSM_ERROR_STATUS_OK",               N_ ("No error"),                },
