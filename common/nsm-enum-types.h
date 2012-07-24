@@ -14,7 +14,7 @@
 
 G_BEGIN_DECLS
 
-#define NSM_SHUTDOWN_TYPE (nsm_shutdown_type_get_type ())
+#define TYPE_NSM_SHUTDOWN_TYPE (nsm_shutdown_type_get_type ())
 
 typedef enum /*< enum >*/
 {
@@ -30,7 +30,7 @@ typedef enum /*< enum >*/
 
 GType nsm_shutdown_type_get_type (void);
 
-#define NSM_ERROR_STATUS (nsm_error_status_get_type ())
+#define TYPE_NSM_ERROR_STATUS (nsm_error_status_get_type ())
 
 typedef enum /*< enum >*/
 {

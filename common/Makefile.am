@@ -16,6 +16,8 @@ libcommon_la_built_sources =						\
 	$(libcommon_la_built_headers)
 
 libcommon_la_SOURCES =							\
+	shutdown-client.c						\
+	shutdown-client.h						\
 	watchdog-client.c						\
 	watchdog-client.h						\
 	$(libcommon_la_built_sources)
