@@ -537,7 +537,7 @@ la_handler_service_new (GDBusConnection *connection,
 
 gboolean
 la_handler_service_start (LAHandlerService *service,
-                           GError           **error)
+                           GError         **error)
 {
   g_return_val_if_fail (LA_HANDLER_IS_SERVICE (service), FALSE);
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);

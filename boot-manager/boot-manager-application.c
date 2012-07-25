@@ -242,37 +242,17 @@ boot_manager_application_constructed (GObject *object)
   GError                 *error = NULL;
   gchar                  *log_text;
 
-  /* get a bus name on the given connection */
-  application->bus_name_id =
-    g_bus_own_name_on_connection (application->connection, "org.genivi.BootManager1",
-                                  G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
-
   /* instantiate the LUC starter */
   application->luc_starter = luc_starter_new (application->job_manager,
                                               application->boot_manager_service);
 
-  /* attempt to start the boot manager service */
-  if (!boot_manager_service_start_up (application->boot_manager_service, &error))
-    {
-      log_text = g_strdup_printf ("Failed to start the boot manager service: %s",
-                                  error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
-      g_clear_error (&error);
-    }
-
   /* restore the LUC if desired */
   luc_starter_start_groups (application->luc_starter);
 
-  /* start the legacy app handler */
-  if (!la_handler_service_start (application->la_handler, &error))
-    {
-      log_text = g_strdup_printf ("Failed to start the legacy app handler service: %s",
-                                  error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
-      g_clear_error (&error);
-    }
+  /* get a bus name on the given connection */
+  application->bus_name_id =
+    g_bus_own_name_on_connection (application->connection, "org.genivi.BootManager1",
+                                  G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
 
   /* create a shutdown consumer and implement its LifecycleRequest method */
   application->consumer = shutdown_consumer_skeleton_new ();

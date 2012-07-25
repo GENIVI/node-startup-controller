@@ -57,6 +57,7 @@ main (int    argc,
   JobManager             *job_manager;
   GMainLoop              *main_loop;
   GError                 *error = NULL;
+  gchar                  *msg;
 
   /* register the application and context in DLT */
   DLT_REGISTER_APP ("BMGR", "GENIVI Boot Manager");
@@ -77,7 +78,9 @@ main (int    argc,
   connection = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
   if (connection == NULL)
     {
-      g_warning ("Failed to connect to the system bus: %s", error->message);
+      msg = g_strdup_printf ("Failed to connect to the system bus: %s", error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_FATAL, DLT_STRING (msg));
+      g_free (msg);
 
       /* clean up */
       g_error_free (error);
@@ -94,7 +97,10 @@ main (int    argc,
                                             NULL, &error);
   if (systemd_manager == NULL)
     {
-      g_warning ("Failed to connect to the systemd manager: %s", error->message);
+      msg = g_strdup_printf ("Failed to connect to the systemd manager: %s",
+                             error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_FATAL, DLT_STRING (msg));
+      g_free (msg);
 
       /* clean up */
       g_error_free (error);
@@ -106,7 +112,10 @@ main (int    argc,
   /* subscribe to the systemd manager */
   if (!systemd_manager_call_subscribe_sync (systemd_manager, NULL, &error))
     {
-      g_warning ("Failed to subscribe to the systemd manager: %s", error->message);
+      msg = g_strdup_printf ("Failed to subscribe to the systemd manager: %s",
+                             error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_FATAL, DLT_STRING (msg));
+      g_free (msg);
 
       /* clean up */
       g_error_free (error);
@@ -118,17 +127,53 @@ main (int    argc,
   /* instantiate the boot manager service implementation */
   boot_manager_service = boot_manager_service_new (connection);
 
+  /* attempt to start the boot manager service */
+  if (!boot_manager_service_start_up (boot_manager_service, &error))
+    {
+      msg = g_strdup_printf ("Failed to start the boot manager service: %s",
+                             error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (msg));
+      g_free (msg);
+
+      /* clean up */
+      g_error_free (error);
+      g_object_unref (boot_manager_service);
+      g_object_unref (systemd_manager);
+      g_object_unref (connection);
+
+      return EXIT_FAILURE;
+    }
+
   /* instantiate the job manager */
   job_manager = job_manager_new (connection, systemd_manager);
-
-  /* start up the target startup monitor */
-  target_startup_monitor = target_startup_monitor_new (systemd_manager);
 
   /* instantiate the legacy app handler */
   la_handler_service = la_handler_service_new (connection, job_manager);
 
+  /* start the legacy app handler */
+  if (!la_handler_service_start (la_handler_service, &error))
+    {
+      msg = g_strdup_printf ("Failed to start the legacy app handler service: %s",
+                             error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (msg));
+      g_free (msg);
+
+      /* clean up */
+      g_clear_error (&error);
+      g_object_unref (la_handler_service);
+      g_object_unref (job_manager);
+      g_object_unref (boot_manager_service);
+      g_object_unref (systemd_manager);
+      g_object_unref (connection);
+
+      return EXIT_FAILURE;
+    }
+
   /* create the main loop */
   main_loop = g_main_loop_new (NULL, FALSE);
+
+  /* create the target startup monitor */
+  target_startup_monitor = target_startup_monitor_new (systemd_manager);
 
   /* create and run the main application */
   application = boot_manager_application_new (main_loop, connection, job_manager,
