@@ -38,17 +38,18 @@ enum
 };
 
 
-static void     nsm_dummy_application_constructed  (GObject             *object);
-static void     nsm_dummy_application_finalize     (GObject             *object);
-static void     nsm_dummy_application_get_property (GObject             *object,
-                                                    guint                prop_id,
-                                                    GValue              *value,
-                                                    GParamSpec          *pspec);
-static void     nsm_dummy_application_set_property (GObject             *object,
-                                                    guint                prop_id,
-                                                    const GValue        *value,
-                                                    GParamSpec          *pspec);
-static gboolean nsm_dummy_application_int_handler  (NSMDummyApplication *application);
+
+static void     nsm_dummy_application_constructed   (GObject      *object);
+static void     nsm_dummy_application_finalize      (GObject      *object);
+static void     nsm_dummy_application_get_property  (GObject      *object,
+                                                     guint         prop_id,
+                                                     GValue       *value,
+                                                     GParamSpec   *pspec);
+static void     nsm_dummy_application_set_property  (GObject      *object,
+                                                     guint         prop_id,
+                                                     const GValue *value,
+                                                     GParamSpec   *pspec);
+static gboolean nsm_dummy_application_handle_sighup (gpointer      user_data);
 
 
 
@@ -76,7 +77,7 @@ struct _NSMDummyApplication
   GMainLoop                  *main_loop;
 
   /* signal handler IDs */
-  guint                       sigint_id;
+  guint                       sighup_id;
 
   /* Identifier for the registered bus name */
   guint                       bus_name_id;
@@ -148,9 +149,8 @@ nsm_dummy_application_init (NSMDummyApplication *application)
   application->watchdog_client = watchdog_client_new (120);
 
   /* install the signal handler */
-  application->sigint_id =
-    g_unix_signal_add (SIGINT, (GSourceFunc) nsm_dummy_application_int_handler,
-                       application);
+  application->sighup_id = g_unix_signal_add (SIGHUP, nsm_dummy_application_handle_sighup,
+                                              application);
 }
 
 
@@ -168,7 +168,7 @@ nsm_dummy_application_finalize (GObject *object)
   g_bus_unown_name (application->bus_name_id);
 
   /* release the signal handler */
-  g_source_remove (application->sigint_id);
+  g_source_remove (application->sighup_id);
 
   /* release the watchdog client */
   g_object_unref (application->watchdog_client);
