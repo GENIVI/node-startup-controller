@@ -266,15 +266,14 @@ nsm_dummy_application_set_property (GObject      *object,
 
 
 static gboolean
-nsm_dummy_application_int_handler (NSMDummyApplication *application)
+nsm_dummy_application_handle_sighup (gpointer user_data)
 {
+  NSMDummyApplication *application = NSM_DUMMY_APPLICATION (user_data);
+
   /* call the shutdown consumer method */
   nsm_consumer_service_shutdown_consumers (application->consumer_service);
 
-  /* quit the application */
-  g_main_loop_quit (application->main_loop);
-
-  return FALSE;
+  return TRUE;
 }
 
 
