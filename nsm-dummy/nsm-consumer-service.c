@@ -60,6 +60,11 @@ static gboolean nsm_consumer_service_handle_unregister_shutdown_client (NSMConsu
                                                                         const gchar           *object_path,
                                                                         NSMShutdownType        shutdown_mode,
                                                                         NSMConsumerService    *service);
+static gboolean nsm_consumer_service_handle_lifecycle_request_complete (NSMConsumer           *object,
+                                                                        GDBusMethodInvocation *invocation,
+                                                                        guint                  request_id,
+                                                                        NSMErrorStatus         status,
+                                                                        NSMConsumerService    *service);
 
 
 
@@ -117,14 +122,19 @@ nsm_consumer_service_init (NSMConsumerService *service)
 
   service->interface = nsm_consumer_skeleton_new ();
 
-  /* implement the RegisterShutdownClient() handler */
+  /* implement the RegisterShutdownClient method */
   g_signal_connect (service->interface, "handle-register-shutdown-client",
                     G_CALLBACK (nsm_consumer_service_handle_register_shutdown_client),
                     service);
 
-  /* implement the UnRegisterShutdownClient() handler */
+  /* implement the UnRegisterShutdownClient method */
   g_signal_connect (service->interface, "handle-un-register-shutdown-client",
                     G_CALLBACK (nsm_consumer_service_handle_unregister_shutdown_client),
+                    service);
+
+  /* implement the LifecycleRequestComplete method */
+  g_signal_connect (service->interface, "handle-lifecycle-request-complete",
+                    G_CALLBACK (nsm_consumer_service_handle_lifecycle_request_complete),
                     service);
 }
 
@@ -322,6 +332,32 @@ nsm_consumer_service_handle_unregister_shutdown_client (NSMConsumer           *o
       /* notify the caller that we could not handle the unregister request properly */
       nsm_consumer_complete_un_register_shutdown_client (object, invocation, -1);
     }
+
+  return TRUE;
+}
+
+
+
+static gboolean
+nsm_consumer_service_handle_lifecycle_request_complete (NSMConsumer           *object,
+                                                        GDBusMethodInvocation *invocation,
+                                                        guint                  request_id,
+                                                        NSMErrorStatus         status,
+                                                        NSMConsumerService    *service)
+{
+  gchar *message;
+
+  g_return_val_if_fail (IS_NSM_CONSUMER (object), FALSE);
+  g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
+  g_return_val_if_fail (NSM_CONSUMER_IS_SERVICE (service), FALSE);
+
+  message = g_strdup_printf ("Finished to shut down a client: "
+                             "request id %d, status %d", request_id, status);
+  DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+  g_free (message);
+
+  nsm_consumer_complete_lifecycle_request_complete (object, invocation,
+                                                    NSM_ERROR_STATUS_OK);
 
   return TRUE;
 }
