@@ -401,13 +401,9 @@ nsm_consumer_service_shutdown_consumers (NSMConsumerService *service)
   GError           *error = NULL;
   gchar            *message;
   GList            *lp;
-  GList            *shutdown_clients;
   gint              error_code;
 
   g_return_if_fail (NSM_CONSUMER_IS_SERVICE (service));
-
-  /* reverse the list of registered shutdown clients */
-  shutdown_clients = g_list_reverse (service->shutdown_clients);
 
   /* shutdown mode after mode (fast first, then normal) */
   for (current_mode = NSM_SHUTDOWN_TYPE_FAST;
@@ -415,7 +411,7 @@ nsm_consumer_service_shutdown_consumers (NSMConsumerService *service)
        current_mode--)
     {
       /* shut down all registered clients in reverse order of registration */
-      for (lp = shutdown_clients; lp != NULL; lp = lp->next)
+      for (lp = g_list_last (service->shutdown_clients); lp != NULL; lp = lp->prev)
         {
           shutdown_client = SHUTDOWN_CLIENT (lp->data);
 
@@ -442,19 +438,29 @@ nsm_consumer_service_shutdown_consumers (NSMConsumerService *service)
               g_free (message);
               g_error_free (error);
             }
-          else if (error_code != NSM_ERROR_STATUS_OK)
-            {
-              message = g_strdup_printf ("Failed to shut down client %s: "
-                                         "error status = %d", object_path, error_code);
-              DLT_LOG (nsm_dummy_context, DLT_LOG_ERROR, DLT_STRING (message));
-              g_free (message);
-            }
-          else
+          else if (error_code == NSM_ERROR_STATUS_OK)
             {
               message = g_strdup_printf ("Shutdown client shut down: bus name %s, "
                                          "object path %s, shutdown mode: %d",
                                          bus_name, object_path, current_mode);
               DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+              g_free (message);
+            }
+          else if (error_code == NSM_ERROR_STATUS_RESPONSE_PENDING)
+            {
+              message = g_strdup_printf ("Started to shut down a client: "
+                                         "request id: %d, bus name %s, "
+                                         "object path %s, shutdown mode: %d",
+                                         service->request_id-1, bus_name, object_path,
+                                         current_mode);
+              DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+              g_free (message);
+            }
+          else
+            {
+              message = g_strdup_printf ("Failed to shut down client %s: "
+                                         "error status = %d", object_path, error_code);
+              DLT_LOG (nsm_dummy_context, DLT_LOG_ERROR, DLT_STRING (message));
               g_free (message);
             }
         }
