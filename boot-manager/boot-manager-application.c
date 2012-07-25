@@ -19,7 +19,9 @@
 
 #include <dlt/dlt.h>
 
+#include <common/nsm-consumer-dbus.h>
 #include <common/nsm-enum-types.h>
+#include <common/shutdown-client.h>
 #include <common/shutdown-consumer-dbus.h>
 #include <common/watchdog-client.h>
 
@@ -52,6 +54,7 @@ enum
 
 static void     boot_manager_application_finalize                 (GObject                *object);
 static void     boot_manager_application_constructed              (GObject                *object);
+static void     boot_manager_application_deregister_consumers     (BootManagerApplication *application);
 static void     boot_manager_application_get_property             (GObject                *object,
                                                                    guint                   prop_id,
                                                                    GValue                 *value,
@@ -102,8 +105,8 @@ struct _BootManagerApplication
   /* identifier for the registered bus name */
   guint               bus_name_id;
 
-  /* shutdown consumer for the boot manager itself */
-  ShutdownConsumer   *consumer;
+  /* shutdown client for the boot manager itself */
+  ShutdownClient     *client;
 };
 
 
@@ -199,11 +202,15 @@ static void
 boot_manager_application_finalize (GObject *object)
 {
   BootManagerApplication *application = BOOT_MANAGER_APPLICATION (object);
+  ShutdownConsumer       *consumer;
 
-  /* release the shutdown consumer */
-  g_signal_handlers_disconnect_matched (application->consumer, G_SIGNAL_MATCH_DATA,
-                                        0, 0, NULL, NULL, application);
-  g_object_unref (application->consumer);
+  /* disconnect from the shutdown consumer */
+  consumer = shutdown_client_get_consumer (application->client);
+  g_signal_handlers_disconnect_matched (consumer, G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL,
+                                        application);
+
+  /* release the shutdown client */
+  g_object_unref (application->client);
 
   /* release the bus name */
   g_bus_unown_name (application->bus_name_id);
@@ -239,8 +246,15 @@ static void
 boot_manager_application_constructed (GObject *object)
 {
   BootManagerApplication *application = BOOT_MANAGER_APPLICATION (object);
+  ShutdownConsumer       *consumer;
+  NSMShutdownType         shutdown_mode;
+  NSMConsumer            *nsm_consumer;
   GError                 *error = NULL;
+  gchar                  *bus_name = "org.genivi.BootManager1";
   gchar                  *log_text;
+  gchar                  *object_path;
+  gint                    error_code = NSM_ERROR_STATUS_OK;
+  gint                    timeout;
 
   /* instantiate the LUC starter */
   application->luc_starter = luc_starter_new (application->job_manager,
@@ -254,17 +268,23 @@ boot_manager_application_constructed (GObject *object)
     g_bus_own_name_on_connection (application->connection, "org.genivi.BootManager1",
                                   G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
 
+  /* create a shutdown client for the boot manager itself */
+  object_path = "/org/genivi/BootManager1/ShutdownConsumer/0";
+  shutdown_mode = NSM_SHUTDOWN_TYPE_NORMAL;
+  timeout = 1000;
+  application->client = shutdown_client_new (bus_name, object_path, shutdown_mode,
+                                             timeout);
+
   /* create a shutdown consumer and implement its LifecycleRequest method */
-  application->consumer = shutdown_consumer_skeleton_new ();
-  g_signal_connect (application->consumer, "handle-lifecycle-request",
+  consumer = shutdown_consumer_skeleton_new ();
+  shutdown_client_set_consumer (application->client, consumer);
+  g_signal_connect (consumer, "handle-lifecycle-request",
                     G_CALLBACK (boot_manager_application_handle_lifecycle_request),
                     application);
 
   /* export the shutdown consumer on the bus */
-  if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (application->consumer),
-                                         application->connection,
-                                         "/org/genivi/BootManager1/ShutdownConsumer/0",
-                                         &error))
+  if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (consumer),
+                                         application->connection, object_path, &error))
     {
       log_text = g_strdup_printf ("Failed to export shutdown consumer on the bus: %s",
                                   error->message);
@@ -273,8 +293,26 @@ boot_manager_application_constructed (GObject *object)
       g_clear_error (&error);
     }
 
+  /* register boot manager as a shutdown consumer */
+  nsm_consumer = la_handler_service_get_nsm_consumer (application->la_handler);
+  if (!nsm_consumer_call_register_shutdown_client_sync (nsm_consumer, bus_name,
+                                                        object_path, shutdown_mode,
+                                                        timeout, &error_code,
+                                                        NULL, &error))
+    {
+      log_text = g_strdup_printf ("Failed register boot manager as a shutdown "
+                                  "consumer: %s", error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_clear_error (&error);
+    }
+
+
   /* inform systemd that this process has started */
   sd_notify (0, "READY=1");
+
+  /* release the shutdown consumer */
+  g_object_unref (consumer);
 }
 
 
@@ -293,12 +331,66 @@ boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consu
   /* cancel the LUC startup */
   luc_starter_cancel (application->luc_starter);
 
+  /* deregister the shutdown consumers */
+  boot_manager_application_deregister_consumers (application);
+
   /* let the NSM know that we have handled the lifecycle request */
   shutdown_consumer_complete_lifecycle_request (consumer, invocation,
                                                 NSM_ERROR_STATUS_OK);
 
   /* quit the application */
   g_main_loop_quit (application->main_loop);
+}
+
+
+
+static void
+boot_manager_application_deregister_consumers (BootManagerApplication * application)
+{
+  NSMConsumer *nsm_consumer = NULL;
+  const gchar *bus_name;
+  const gchar *object_path;
+  GError      *error = NULL;
+  GList       *consumers = NULL;
+  gchar       *log_text;
+  gint         error_code;
+  gint         shutdown_mode;
+
+  g_return_if_fail (BOOT_MANAGER_IS_APPLICATION (application));
+
+  /* get the nsm consumer interface */
+  nsm_consumer = la_handler_service_get_nsm_consumer (application->la_handler);
+
+  /* get the list of shutdown consumer and deregister one by one */
+  for (consumers = la_handler_service_get_clients (application->la_handler);
+       consumers != NULL;
+       consumers = consumers->next)
+    {
+      /* call NSM deregister method */
+      bus_name = shutdown_client_get_bus_name (consumers->data);
+      object_path = shutdown_client_get_object_path (consumers->data);
+      shutdown_mode = shutdown_client_get_shutdown_mode (consumers->data);
+      nsm_consumer_call_un_register_shutdown_client_sync (nsm_consumer, bus_name,
+                                                          object_path, shutdown_mode,
+                                                          &error_code, NULL, &error);
+
+      /* check if deregister method fails */
+      if (error != NULL)
+      {
+        log_text = g_strdup_printf ("Failed to deregister the consumer: %s",
+                                    error->message);
+        DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+        g_free (log_text);
+        g_error_free (error);
+      }
+    }
+
+    /* release the list of consumers */
+    g_object_unref (consumers);
+
+    /* release the nsm consumer interface */
+    if (nsm_consumer != NULL)
+      g_object_unref (nsm_consumer);
 }
 
 

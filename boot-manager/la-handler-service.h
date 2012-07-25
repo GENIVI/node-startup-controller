@@ -12,6 +12,8 @@
 
 #include <gio/gio.h>
 
+#include <common/nsm-consumer-dbus.h>
+
 #include <boot-manager/job-manager.h>
 
 G_BEGIN_DECLS
@@ -26,18 +28,20 @@ G_BEGIN_DECLS
 typedef struct _LAHandlerServiceClass LAHandlerServiceClass;
 typedef struct _LAHandlerService      LAHandlerService;
 
-GType             la_handler_service_get_type (void) G_GNUC_CONST;
+GType             la_handler_service_get_type         (void) G_GNUC_CONST;
 
-LAHandlerService *la_handler_service_new      (GDBusConnection    *connection,
-                                               JobManager         *job_manager) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
-gboolean          la_handler_service_start    (LAHandlerService   *service,
-                                               GError            **error);
-void              la_handler_service_register (LAHandlerService   *service,
-                                               const gchar        *unit,
-                                               const gchar        *mode,
-                                               guint               timeout,
-                                               GAsyncReadyCallback callback,
-                                               gpointer            user_data);
+GList            *la_handler_service_get_clients      (LAHandlerService   *service);
+NSMConsumer      *la_handler_service_get_nsm_consumer (LAHandlerService   *service);
+LAHandlerService *la_handler_service_new              (GDBusConnection    *connection,
+                                                       JobManager         *job_manager) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
+gboolean          la_handler_service_start            (LAHandlerService   *service,
+                                                       GError            **error);
+void              la_handler_service_register         (LAHandlerService   *service,
+                                                       const gchar        *unit,
+                                                       const gchar        *mode,
+                                                       guint               timeout,
+                                                       GAsyncReadyCallback callback,
+                                                       gpointer            user_data);
 
 G_END_DECLS
 

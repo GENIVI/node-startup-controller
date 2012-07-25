@@ -259,7 +259,7 @@ nsm_consumer_service_handle_register_shutdown_client (NSMConsumer           *obj
   g_free (message);
 
   /* notify the caller that we have handled the register request */
-  nsm_consumer_complete_register_shutdown_client (object, invocation, 0);
+  nsm_consumer_complete_register_shutdown_client (object, invocation, NSM_ERROR_STATUS_OK);
   return TRUE;
 }
 
@@ -436,7 +436,7 @@ nsm_consumer_service_shutdown_consumers (NSMConsumerService *service)
                                          object_path, error->message);
               DLT_LOG (nsm_dummy_context, DLT_LOG_ERROR, DLT_STRING (message));
               g_free (message);
-              g_error_free (error);
+              g_clear_error (&error);
             }
           else if (error_code == NSM_ERROR_STATUS_OK)
             {
