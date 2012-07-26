@@ -100,14 +100,14 @@ shutdown_client_class_init (ShutdownClientClass *klass)
 
   g_object_class_install_property (gobject_class,
                                    PROP_SHUTDOWN_MODE,
-                                   g_param_spec_enum ("shutdown-mode",
-                                                      "shutdown-mode",
-                                                      "shutdown-mode",
-                                                      TYPE_NSM_SHUTDOWN_TYPE,
-                                                      NSM_SHUTDOWN_TYPE_NOT,
-                                                      G_PARAM_READWRITE |
-                                                      G_PARAM_CONSTRUCT_ONLY |
-                                                      G_PARAM_STATIC_STRINGS));
+                                   g_param_spec_flags ("shutdown-mode",
+                                                       "shutdown-mode",
+                                                       "shutdown-mode",
+                                                       TYPE_NSM_SHUTDOWN_TYPE,
+                                                       NSM_SHUTDOWN_TYPE_NOT,
+                                                       G_PARAM_READWRITE |
+                                                       G_PARAM_CONSTRUCT_ONLY |
+                                                       G_PARAM_STATIC_STRINGS));
 
   g_object_class_install_property (gobject_class,
                                    PROP_TIMEOUT,
@@ -174,7 +174,7 @@ shutdown_client_get_property (GObject    *object,
       g_value_set_string (value, client->object_path);
       break;
     case PROP_SHUTDOWN_MODE:
-      g_value_set_enum (value, client->shutdown_mode);
+      g_value_set_flags (value, client->shutdown_mode);
       break;
     case PROP_TIMEOUT:
       g_value_set_uint (value, client->timeout);
@@ -207,7 +207,7 @@ shutdown_client_set_property (GObject      *object,
       client->object_path = g_value_dup_string (value);
       break;
     case PROP_SHUTDOWN_MODE:
-      client->shutdown_mode = g_value_get_enum (value);
+      client->shutdown_mode = g_value_get_flags (value);
       break;
     case PROP_TIMEOUT:
       client->timeout = g_value_get_uint (value);

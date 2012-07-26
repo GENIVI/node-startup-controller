@@ -25,7 +25,7 @@ nsm_shutdown_type_get_type (void)
 
   if (G_UNLIKELY (type == G_TYPE_INVALID))
     {
-      static const GEnumValue values[] =
+      static const GFlagsValue values[] =
       {
         { NSM_SHUTDOWN_TYPE_NOT,    "NSM_SHUTDOWN_TYPE_NOT",    N_ ("No shutdown"),        },
         { NSM_SHUTDOWN_TYPE_NORMAL, "NSM_SHUTDOWN_TYPE_NORMAL", N_ ("Normal shutdown"),    },
@@ -34,7 +34,7 @@ nsm_shutdown_type_get_type (void)
         { 0 ,                       NULL,                       NULL,                      },
       };
 
-      type = g_enum_register_static ("NSMShutdownType", values); 
+      type = g_flags_register_static ("NSMShutdownType", values); 
     }
   return type;
 }
