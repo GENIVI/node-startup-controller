@@ -240,10 +240,6 @@ nsm_consumer_service_handle_register_shutdown_client (NSMConsumer           *obj
       current_bus_name = shutdown_client_get_bus_name (current_client);
       current_object_path = shutdown_client_get_object_path (current_client);
 
-      g_debug ("compare %s <=> %s and %s <=> %s",
-               current_bus_name, bus_name,
-               current_object_path, object_path);
-
       if (g_strcmp0 (current_bus_name, bus_name) == 0
           && g_strcmp0 (current_object_path, object_path) == 0)
         {
@@ -254,8 +250,6 @@ nsm_consumer_service_handle_register_shutdown_client (NSMConsumer           *obj
   /* check if we already have this shutdown client registered */
   if (shutdown_client != NULL)
     {
-      g_debug ("reregistration");
-
       /* update the client's shutdown mode */
       current_shutdown_mode = shutdown_client_get_shutdown_mode (shutdown_client);
       shutdown_client_set_shutdown_mode (shutdown_client,
@@ -277,8 +271,6 @@ nsm_consumer_service_handle_register_shutdown_client (NSMConsumer           *obj
     }
   else
     {
-      g_debug ("new registration");
-
       /* this is a new registration, create a proxy for this new shutdown consumer */
       consumer = shutdown_consumer_proxy_new_sync (service->connection,
                                                    G_DBUS_PROXY_FLAGS_NONE,
