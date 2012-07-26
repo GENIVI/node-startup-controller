@@ -236,28 +236,6 @@ la_handler_service_finalize (GObject *object)
 
 
 
-GList*
-la_handler_service_get_clients (LAHandlerService *service)
-{
-  g_return_val_if_fail (LA_HANDLER_IS_SERVICE (service), NULL);
-  
-  /* return the client's list from clients_to_units */
-  return g_hash_table_get_keys (service->clients_to_units);
-}
-
-
-
-NSMConsumer*
-la_handler_service_get_nsm_consumer (LAHandlerService *service)
-{
-  g_return_val_if_fail (LA_HANDLER_IS_SERVICE (service), NULL);
-
-  /* return the conection with NSM consumer interface */
-  return service->nsm_consumer;
-}
-
-
-
 static void
 la_handler_service_get_property (GObject    *object,
                                  guint       prop_id,
@@ -613,4 +591,65 @@ la_handler_service_start (LAHandlerService *service,
                                            service->connection,
                                            "/org/genivi/BootManager1/LegacyAppHandler",
                                            error);
+}
+
+
+
+NSMConsumer *
+la_handler_service_get_nsm_consumer (LAHandlerService *service)
+{
+  g_return_val_if_fail (LA_HANDLER_IS_SERVICE (service), NULL);
+
+  return service->nsm_consumer;
+}
+
+
+
+void
+la_handler_service_deregister_consumers (LAHandlerService *service)
+{
+  GHashTableIter  iter;
+  ShutdownClient *client;
+  const gchar    *bus_name;
+  const gchar    *object_path;
+  const gchar    *unit;
+  GError         *error = NULL;
+  gchar          *log_text;
+  gint            error_code;
+  gint            shutdown_mode;
+
+  g_return_if_fail (LA_HANDLER_IS_SERVICE (service));
+
+  g_hash_table_iter_init (&iter, service->clients_to_units);
+  while (g_hash_table_iter_next (&iter, (gpointer *)&client, (gpointer *)&unit))
+    {
+      /* extract data from the current client */
+      bus_name = shutdown_client_get_bus_name (client);
+      object_path = shutdown_client_get_object_path (client);
+      shutdown_mode = shutdown_client_get_shutdown_mode (client);
+
+      /* unregister the shutdown client */
+      nsm_consumer_call_un_register_shutdown_client_sync (service->nsm_consumer,
+                                                          bus_name, object_path,
+                                                          shutdown_mode, &error_code,
+                                                          NULL, &error);
+
+      if (error != NULL)
+        {
+          log_text = g_strdup_printf ("Failed to unregister shutdown client %s "
+                                      "for unit %s: %s", object_path, unit,
+                                      error->message);
+          DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+          g_free (log_text);
+          g_error_free (error);
+        }
+      else if (error_code != NSM_ERROR_STATUS_OK)
+        {
+          log_text = g_strdup_printf ("Failed to unregister shutdown client %s "
+                                      "for unit %s: error code %d", object_path, unit,
+                                      error_code);
+          DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+          g_free (log_text);
+        }
+    }
 }

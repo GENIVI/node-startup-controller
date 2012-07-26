@@ -54,7 +54,6 @@ enum
 
 static void     boot_manager_application_finalize                 (GObject                *object);
 static void     boot_manager_application_constructed              (GObject                *object);
-static void     boot_manager_application_deregister_consumers     (BootManagerApplication *application);
 static void     boot_manager_application_get_property             (GObject                *object,
                                                                    guint                   prop_id,
                                                                    GValue                 *value,
@@ -332,7 +331,7 @@ boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consu
   luc_starter_cancel (application->luc_starter);
 
   /* deregister the shutdown consumers */
-  boot_manager_application_deregister_consumers (application);
+  la_handler_service_deregister_consumers (application->la_handler);
 
   /* let the NSM know that we have handled the lifecycle request */
   shutdown_consumer_complete_lifecycle_request (consumer, invocation,
@@ -340,57 +339,6 @@ boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consu
 
   /* quit the application */
   g_main_loop_quit (application->main_loop);
-}
-
-
-
-static void
-boot_manager_application_deregister_consumers (BootManagerApplication * application)
-{
-  NSMConsumer *nsm_consumer = NULL;
-  const gchar *bus_name;
-  const gchar *object_path;
-  GError      *error = NULL;
-  GList       *consumers = NULL;
-  gchar       *log_text;
-  gint         error_code;
-  gint         shutdown_mode;
-
-  g_return_if_fail (BOOT_MANAGER_IS_APPLICATION (application));
-
-  /* get the nsm consumer interface */
-  nsm_consumer = la_handler_service_get_nsm_consumer (application->la_handler);
-
-  /* get the list of shutdown consumer and deregister one by one */
-  for (consumers = la_handler_service_get_clients (application->la_handler);
-       consumers != NULL;
-       consumers = consumers->next)
-    {
-      /* call NSM deregister method */
-      bus_name = shutdown_client_get_bus_name (consumers->data);
-      object_path = shutdown_client_get_object_path (consumers->data);
-      shutdown_mode = shutdown_client_get_shutdown_mode (consumers->data);
-      nsm_consumer_call_un_register_shutdown_client_sync (nsm_consumer, bus_name,
-                                                          object_path, shutdown_mode,
-                                                          &error_code, NULL, &error);
-
-      /* check if deregister method fails */
-      if (error != NULL)
-      {
-        log_text = g_strdup_printf ("Failed to deregister the consumer: %s",
-                                    error->message);
-        DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-        g_free (log_text);
-        g_error_free (error);
-      }
-    }
-
-    /* release the list of consumers */
-    g_object_unref (consumers);
-
-    /* release the nsm consumer interface */
-    if (nsm_consumer != NULL)
-      g_object_unref (nsm_consumer);
 }
 
 
