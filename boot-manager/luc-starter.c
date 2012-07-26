@@ -20,6 +20,8 @@
 
 #include <dlt/dlt.h>
 
+#include <common/nsm-lifecycle-control-dbus.h>
+
 #include <boot-manager/boot-manager-service.h>
 #include <boot-manager/job-manager.h>
 #include <boot-manager/luc-starter.h>
@@ -39,31 +41,34 @@ enum
 };
 
 
-
-static void luc_starter_constructed       (GObject      *object);
-static void luc_starter_finalize          (GObject      *object);
-static void luc_starter_get_property      (GObject      *object,
-                                           guint         prop_id,
-                                           GValue       *value,
-                                           GParamSpec   *pspec);
-static void luc_starter_set_property      (GObject      *object,
-                                           guint         prop_id,
-                                           const GValue *value,
-                                           GParamSpec   *pspec);
-static gint luc_starter_compare_luc_types (gconstpointer a,
-                                           gconstpointer b,
-                                           gpointer      user_data);
-static void luc_starter_start_next_group  (LUCStarter   *starter);
-static void luc_starter_start_app         (const gchar  *app,
-                                           LUCStarter   *starter);
-static void luc_starter_start_app_finish  (JobManager   *manager,
-                                           const gchar  *unit,
-                                           const gchar  *result,
-                                           GError       *error,
-                                           gpointer      user_data);
-static void luc_starter_cancel_start      (const gchar  *app,
-                                           GCancellable *cancellable,
-                                           gpointer      user_data);
+static void luc_starter_constructed               (GObject      *object);
+static void luc_starter_finalize                  (GObject      *object);
+static void luc_starter_get_property              (GObject      *object,
+                                                   guint         prop_id,
+                                                   GValue       *value,
+                                                   GParamSpec   *pspec);
+static void luc_starter_set_property              (GObject      *object,
+                                                   guint         prop_id,
+                                                   const GValue *value,
+                                                   GParamSpec   *pspec);
+static gint luc_starter_compare_luc_types         (gconstpointer a,
+                                                   gconstpointer b,
+                                                   gpointer      user_data);
+static void luc_starter_start_next_group          (LUCStarter   *starter);
+static void luc_starter_start_app                 (const gchar  *app,
+                                                   LUCStarter   *starter);
+static void luc_starter_start_app_finish          (JobManager   *manager,
+                                                   const gchar  *unit,
+                                                   const gchar  *result,
+                                                   GError       *error,
+                                                   gpointer      user_data);
+static void luc_starter_cancel_start              (const gchar  *app,
+                                                   GCancellable *cancellable,
+                                                   gpointer      user_data);
+static void luc_starter_check_luc_required_finish (GObject      *object,
+                                                   GAsyncResult *res,
+                                                   gpointer      user_data);
+static void luc_starter_start_groups_for_real     (LUCStarter   *starter);
 
 
 
@@ -74,17 +79,18 @@ struct _LUCStarterClass
 
 struct _LUCStarter
 {
-  GObject             __parent__;
+  GObject              __parent__;
 
-  JobManager         *job_manager;
-  BootManagerService *boot_manager_service;
+  JobManager          *job_manager;
+  BootManagerService  *boot_manager_service;
+  NSMLifecycleControl *nsm_lifecycle_control;
 
-  GArray             *prioritised_types;
+  GArray              *prioritised_types;
 
-  GArray             *start_order;
-  GHashTable         *start_groups;
+  GArray              *start_order;
+  GHashTable          *start_groups;
 
-  GHashTable         *cancellables;
+  GHashTable          *cancellables;
 };
 
 
@@ -147,9 +153,27 @@ static void
 luc_starter_constructed (GObject *object)
 {
   LUCStarter *starter = LUC_STARTER (object);
+  GError     *error = NULL;
   gchar     **types;
+  gchar      *log_text;
   guint       n;
   gint        type;
+
+  /* connect to the node state manager */
+  starter->nsm_lifecycle_control =
+    nsm_lifecycle_control_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
+                                                  G_DBUS_PROXY_FLAGS_NONE,
+                                                  "com.contiautomotive.NodeStateManager",
+                                                  "/com/contiautomotive/NodeStateManager/LifecycleControl",
+                                                  NULL, &error);
+  if (error != NULL)
+    {
+      log_text = g_strdup_printf ("Failed to connect to the NSM lifecycle control: %s",
+                                  error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_error_free (error);
+    }
 
   /* parse the prioritised LUC types defined at build-time */
   types = g_strsplit (PRIORITISED_LUC_TYPES, ",", -1);
@@ -168,6 +192,10 @@ static void
 luc_starter_finalize (GObject *object)
 {
   LUCStarter *starter = LUC_STARTER (object);
+
+  /* release NSMLifecycleControl */
+  if (starter->nsm_lifecycle_control != NULL)
+    g_object_unref (starter->nsm_lifecycle_control);
 
   /* release start order, and groups */
   g_array_free (starter->start_order, TRUE);
@@ -412,23 +440,61 @@ luc_starter_cancel_start (const gchar  *app,
 
 
 
-LUCStarter *
-luc_starter_new (JobManager         *job_manager,
-                 BootManagerService *boot_manager_service)
+static void
+luc_starter_check_luc_required_finish (GObject      *object,
+                                       GAsyncResult *res,
+                                       gpointer      user_data)
 {
-  g_return_val_if_fail (IS_JOB_MANAGER (job_manager), NULL);
-  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (boot_manager_service), NULL);
+  NSMLifecycleControl *nsm_lifecycle_control = NSM_LIFECYCLE_CONTROL (object);
+  LUCStarter          *starter = LUC_STARTER (user_data);
+  gboolean             luc_required = TRUE;
+  GError              *error = NULL;
+  gchar               *log_text;
 
-  return g_object_new (TYPE_LUC_STARTER,
-                       "job-manager", job_manager,
-                       "boot-manager-service", boot_manager_service,
-                       NULL);
+  g_return_if_fail (IS_NSM_LIFECYCLE_CONTROL (nsm_lifecycle_control));
+  g_return_if_fail (G_IS_ASYNC_RESULT (res));
+  g_return_if_fail (IS_LUC_STARTER (starter));
+
+  /* finish the checking for reloading the LUC */
+  if (!nsm_lifecycle_control_call_check_luc_required_finish (nsm_lifecycle_control,
+                                                             &luc_required, res, &error))
+    {
+      log_text = g_strdup_printf ("Failed checking whether the LUC is required: %s",
+                                  error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_clear_error (&error);
+
+      DLT_LOG (boot_manager_context, DLT_LOG_INFO,
+               DLT_STRING ("Assuming that we should start the LUC"));
+
+      /* start all the LUC groups now */
+      luc_starter_start_groups_for_real (starter);
+    }
+  else
+    {
+      /* check whether we need to start the LUC or not */
+      if (luc_required)
+        {
+          DLT_LOG (boot_manager_context, DLT_LOG_INFO,
+                   DLT_STRING ("LUC is required, starting it now"));
+
+          /* start all the LUC groups now */
+          luc_starter_start_groups_for_real (starter);
+        }
+      else
+        {
+          /* LUC is not required, log this information */
+          DLT_LOG (boot_manager_context, DLT_LOG_INFO,
+                   DLT_STRING ("LUC is not required"));
+        }
+    }
 }
 
 
 
-void
-luc_starter_start_groups (LUCStarter *starter)
+static void
+luc_starter_start_groups_for_real (LUCStarter *starter)
 {
   GVariantIter iter;
   GPtrArray   *group_apps;
@@ -442,6 +508,9 @@ luc_starter_start_groups (LUCStarter *starter)
   gint         group;
   gint         type;
 
+  g_return_if_fail (IS_LUC_STARTER (starter));
+
+  /* to load the LUC is required */
   g_debug ("prioritised types:");
   for (n = 0; n < starter->prioritised_types->len; n++)
     g_debug ("  %i", g_array_index (starter->prioritised_types, gint, n));
@@ -507,6 +576,46 @@ luc_starter_start_groups (LUCStarter *starter)
 
   if (starter->start_order->len > 0)
     luc_starter_start_next_group (starter);
+}
+
+
+
+LUCStarter *
+luc_starter_new (JobManager         *job_manager,
+                 BootManagerService *boot_manager_service)
+{
+  g_return_val_if_fail (IS_JOB_MANAGER (job_manager), NULL);
+  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (boot_manager_service), NULL);
+
+  return g_object_new (TYPE_LUC_STARTER,
+                       "job-manager", job_manager,
+                       "boot-manager-service", boot_manager_service,
+                       NULL);
+}
+
+
+
+void
+luc_starter_start_groups (LUCStarter *starter)
+{
+  g_return_if_fail (IS_LUC_STARTER (starter));
+
+  /* check whether the NSMLifecycleProxy is available or not */
+  if (starter->nsm_lifecycle_control != NULL)
+    {
+      /* check with NSM whether to load the LUC */
+      nsm_lifecycle_control_call_check_luc_required (starter->nsm_lifecycle_control, NULL,
+                                                     luc_starter_check_luc_required_finish,
+                                                     starter);
+    }
+  else
+    {
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR,
+               DLT_STRING ("NSM unavailable, starting the LUC unconditionally"));
+
+      /* start all the LUC groups now */
+      luc_starter_start_groups_for_real (starter);
+    }
 }
 
 
