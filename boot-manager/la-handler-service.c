@@ -317,6 +317,8 @@ la_handler_service_handle_register (LAHandler             *interface,
   ShutdownConsumer *consumer;
   ShutdownClient   *client;
   GError           *error = NULL;
+  const gchar      *existing_bus_name;
+  const gchar      *existing_object_path;
   gchar            *bus_name;
   gchar            *log_text;
   gchar            *object_path;
@@ -326,66 +328,85 @@ la_handler_service_handle_register (LAHandler             *interface,
   g_return_val_if_fail (unit != NULL && *unit != '\0', FALSE);
   g_return_val_if_fail (LA_HANDLER_IS_SERVICE (service), FALSE);
 
-  /* find out if this unit is already registered with a shutdown client */
-  if (g_hash_table_lookup (service->units_to_clients, unit))
-   {
-      /* there already is a shutdown client for the unit, so ignore this request */
-      la_handler_complete_register (interface, invocation);
-      return TRUE;
-   }
-
-  /* create a new ShutdownClient, associate its ShutdownConsumer and
-     implement its LifecycleRequest method */
-  bus_name = "org.genivi.BootManager1";
-  object_path = g_strdup_printf ("%s/%u", service->prefix, service->index);
-  client = shutdown_client_new (bus_name, object_path, shutdown_mode, timeout);
-  consumer = shutdown_consumer_skeleton_new ();
-  shutdown_client_set_consumer (client, consumer);
-
-  /* remember the service as part of the shutdown client */
-  g_object_set_data_full (G_OBJECT (client), "la-handler-service",
-                          g_object_ref (service), (GDestroyNotify) g_object_unref);
-
-  g_signal_connect (consumer, "handle-lifecycle-request",
-                    G_CALLBACK (la_handler_service_handle_consumer_lifecycle_request),
-                    client);
-
-  /* associate the shutdown client with the unit name */
-  g_hash_table_insert (service->units_to_clients, g_strdup (unit),
-                       g_object_ref (client));
-  g_hash_table_insert (service->clients_to_units, g_object_ref (client),
-                       g_strdup (unit));
-
-  /* export the shutdown consumer on the bus */
-  g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (consumer),
-                                    service->connection, object_path, &error);
-  if (error != NULL)
+  /* find out if we have a shutdown client for this unit already */
+  client = g_hash_table_lookup (service->units_to_clients, unit);
+  if (client != NULL)
     {
-      log_text = g_strdup_printf ("Failed to export shutdown consumer on the bus: %s",
-                                  error->message);
-      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
-      g_error_free (error);
+      /* there already is a shutdown client for the unit, so simply
+       * re-register its client with the new shutdown mode and timeout */
+
+      /* extract information from the client */
+      consumer = shutdown_client_get_consumer (client);
+      existing_bus_name = shutdown_client_get_bus_name (client);
+      existing_object_path = shutdown_client_get_object_path (client);
+
+      /* temporarily store a reference to the legacy app handler service object
+       * in the invocation object */
+      g_object_set_data_full (G_OBJECT (invocation), "la-handler-service",
+                              g_object_ref (service), (GDestroyNotify) g_object_unref);
+
+      /* re-register the shutdown consumer with the NSM Consumer */
+      nsm_consumer_call_register_shutdown_client (service->nsm_consumer,
+                                                  existing_bus_name, existing_object_path,
+                                                  shutdown_mode, timeout, NULL,
+                                                  la_handler_service_handle_register_finish,
+                                                  invocation);
     }
+  else
+    {
+      /* create a new shutdown client and consumer for the unit */
+      bus_name = "org.genivi.BootManager1";
+      object_path = g_strdup_printf ("%s/%u", service->prefix, service->index);
+      client = shutdown_client_new (bus_name, object_path, shutdown_mode, timeout);
+      consumer = shutdown_consumer_skeleton_new ();
+      shutdown_client_set_consumer (client, consumer);
 
-  /* temporarily store a reference to the LAHandlerService in the invocation object */
-  g_object_set_data_full (G_OBJECT (invocation), "la-handler-service",
-                          g_object_ref (service), (GDestroyNotify) g_object_unref);
+      /* remember the legacy app handler service object in shutdown client */
+      g_object_set_data_full (G_OBJECT (client), "la-handler-service",
+                              g_object_ref (service), (GDestroyNotify) g_object_unref);
 
-  /* register the shutdown consumer with the NSM Consumer */
-  nsm_consumer_call_register_shutdown_client (service->nsm_consumer,
-                                              bus_name, object_path,
-                                              shutdown_mode, timeout, NULL,
-                                              la_handler_service_handle_register_finish,
-                                              invocation);
+      /* implement the LifecycleRequest method of the shutdown consumer */
+      g_signal_connect (consumer, "handle-lifecycle-request",
+                        G_CALLBACK (la_handler_service_handle_consumer_lifecycle_request),
+                        client);
 
-  g_free (object_path);
+      /* associate the shutdown client with the unit name */
+      g_hash_table_insert (service->units_to_clients, g_strdup (unit),
+                           g_object_ref (client));
+      g_hash_table_insert (service->clients_to_units, g_object_ref (client),
+                           g_strdup (unit));
 
-  /* release the shutdown consumer */
-  g_object_unref (consumer);
+      /* export the shutdown consumer on the bus */
+      g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (consumer),
+                                        service->connection, object_path, &error);
+      if (error != NULL)
+        {
+          log_text = g_strdup_printf ("Failed to export shutdown consumer on the bus: %s",
+                                      error->message);
+          DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+          g_free (log_text);
+          g_error_free (error);
+        }
 
-  /* increment the counter for our shutdown consumer object paths */
-  service->index++;
+      /* temporarily store a reference to the legacy app handler service object
+       * in the invocation object */
+      g_object_set_data_full (G_OBJECT (invocation), "la-handler-service",
+                              g_object_ref (service), (GDestroyNotify) g_object_unref);
+
+      /* register the shutdown consumer with the NSM Consumer */
+      nsm_consumer_call_register_shutdown_client (service->nsm_consumer,
+                                                  bus_name, object_path,
+                                                  shutdown_mode, timeout, NULL,
+                                                  la_handler_service_handle_register_finish,
+                                                  invocation);
+
+      /* free strings and release the shutdown consumer */
+      g_free (object_path);
+      g_object_unref (consumer);
+
+      /* increment the counter for our shutdown consumer object paths */
+      service->index++;
+    }
 
   return TRUE;
 }
