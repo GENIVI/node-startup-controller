@@ -52,24 +52,24 @@ enum
 
 
 
-static void boot_manager_application_finalize                 (GObject                *object);
-static void boot_manager_application_constructed              (GObject                *object);
-static void boot_manager_application_get_property             (GObject                *object,
-                                                               guint                   prop_id,
-                                                               GValue                 *value,
-                                                               GParamSpec             *pspec);
-static void boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *interface,
-                                                               GDBusMethodInvocation  *invocation,
-                                                               NSMShutdownType         request,
-                                                               guint                   request_id,
-                                                               BootManagerApplication *application);
-static void boot_manager_application_handle_register_finish   (GObject                *object,
-                                                               GAsyncResult           *res,
-                                                               gpointer                user_data);
-static void boot_manager_application_set_property             (GObject                *object,
-                                                               guint                   prop_id,
-                                                               const GValue           *value,
-                                                               GParamSpec             *pspec);
+static void boot_manager_application_finalize                     (GObject                *object);
+static void boot_manager_application_constructed                  (GObject                *object);
+static void boot_manager_application_get_property                 (GObject                *object,
+                                                                   guint                   prop_id,
+                                                                   GValue                 *value,
+                                                                   GParamSpec             *pspec);
+static gboolean boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *interface,
+                                                                   GDBusMethodInvocation  *invocation,
+                                                                   NSMShutdownType         request,
+                                                                   guint                   request_id,
+                                                                   BootManagerApplication *application);
+static void boot_manager_application_handle_register_finish       (GObject                *object,
+                                                                   GAsyncResult           *res,
+                                                                   gpointer                user_data);
+static void boot_manager_application_set_property                 (GObject                *object,
+                                                                   guint                   prop_id,
+                                                                   const GValue           *value,
+                                                                   GParamSpec             *pspec);
 
 
 
@@ -351,16 +351,16 @@ boot_manager_application_handle_register_finish (GObject      *object,
 
 
 
-static void
+static gboolean
 boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consumer,
                                                    GDBusMethodInvocation  *invocation,
                                                    NSMShutdownType         request,
                                                    guint                   request_id,
                                                    BootManagerApplication *application)
 {
-  g_return_if_fail (IS_SHUTDOWN_CONSUMER (consumer));
-  g_return_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation));
-  g_return_if_fail (BOOT_MANAGER_IS_APPLICATION (application));
+  g_return_val_if_fail (IS_SHUTDOWN_CONSUMER (consumer), FALSE);
+  g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
+  g_return_val_if_fail (BOOT_MANAGER_IS_APPLICATION (application), FALSE);
 
   /* cancel the LUC startup */
   luc_starter_cancel (application->luc_starter);
@@ -374,6 +374,8 @@ boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consu
 
   /* quit the application */
   g_main_loop_quit (application->main_loop);
+
+  return TRUE;
 }
 
 
