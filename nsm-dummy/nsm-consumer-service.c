@@ -38,6 +38,10 @@ enum
 
 
 
+typedef struct _ShutdownQueue ShutdownQueue;
+
+
+
 static void     nsm_consumer_service_finalize                          (GObject               *object);
 static void     nsm_consumer_service_get_property                      (GObject               *object,
                                                                         guint                  prop_id,
@@ -65,6 +69,11 @@ static gboolean nsm_consumer_service_handle_lifecycle_request_complete (NSMConsu
                                                                         guint                  request_id,
                                                                         NSMErrorStatus         status,
                                                                         NSMConsumerService    *service);
+static void     nsm_consumer_service_shut_down_next_client_in_queue    (NSMConsumerService    *service);
+static void     nsm_consumer_service_lifecycle_request_finish          (GObject               *object,
+                                                                        GAsyncResult          *res,
+                                                                        gpointer               user_data);
+static gboolean nsm_consumer_service_shut_down_client_timeout          (gpointer               user_data);
 
 
 
@@ -81,7 +90,17 @@ struct _NSMConsumerService
   GDBusConnection *connection;
 
   GList           *shutdown_clients;
-  guint            request_id;
+
+  ShutdownQueue   *shutdown_queue;
+};
+
+struct _ShutdownQueue
+{
+  NSMConsumerService *service;
+  NSMShutdownType     current_mode;
+  GList              *remaining_clients;
+  guint               timeout_id;
+  guint               timeout_request;
 };
 
 
@@ -228,8 +247,6 @@ nsm_consumer_service_handle_register_shutdown_client (NSMConsumer           *obj
   g_return_val_if_fail (IS_NSM_CONSUMER (object), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (NSM_CONSUMER_IS_SERVICE (service), FALSE);
-
-  g_debug ("handle register shutdown client");
 
   /* try to find this shutdown client in the list of registered clients */
   for (lp = service->shutdown_clients;
@@ -416,7 +433,7 @@ nsm_consumer_service_handle_lifecycle_request_complete (NSMConsumer           *o
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (NSM_CONSUMER_IS_SERVICE (service), FALSE);
 
-  message = g_strdup_printf ("Finished to shut down a client: "
+  message = g_strdup_printf ("Finished shutting down a client: "
                              "request id %d, status %d", request_id, status);
   DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
   g_free (message);
@@ -424,7 +441,320 @@ nsm_consumer_service_handle_lifecycle_request_complete (NSMConsumer           *o
   nsm_consumer_complete_lifecycle_request_complete (object, invocation,
                                                     NSM_ERROR_STATUS_OK);
 
+  /* check if we are currently processing the shutdown queue */
+  if (service->shutdown_queue != NULL)
+    {
+      /* check if we have been waiting for a LifecycleRequestComplete call */
+      if (service->shutdown_queue->timeout_id > 0)
+        {
+          /* check if we have waited for this client */
+          if (request_id == service->shutdown_queue->timeout_request)
+            {
+              /* remove the client we just finished shutting down from the queue */
+              service->shutdown_queue->remaining_clients =
+                g_list_delete_link (service->shutdown_queue->remaining_clients,
+                                    service->shutdown_queue->remaining_clients);
+
+              /* drop the coresponding wait time out */
+              g_source_remove (service->shutdown_queue->timeout_id);
+              service->shutdown_queue->timeout_id = 0;
+              service->shutdown_queue->timeout_request = 0;
+
+              /* continue shutting down the next client */
+              nsm_consumer_service_shut_down_next_client_in_queue (service);
+            }
+          else
+            {
+              /* no we haven't; log this as a warning */
+              message = g_strdup_printf ("Waiting for lifecycle request %d to be "
+                                         "completed but received completion of %d "
+                                         "instead",
+                                         service->shutdown_queue->timeout_request,
+                                         request_id);
+              DLT_LOG (nsm_dummy_context, DLT_LOG_WARN, DLT_STRING (message));
+              g_free (message);
+            }
+        }
+      else
+        {
+          /* the timeout is no longer active, we might have missed
+           * the time window; log this now */
+          message = g_strdup_printf ("Lifecycle request %d completed too late",
+                                     request_id);
+          DLT_LOG (nsm_dummy_context, DLT_LOG_WARN, DLT_STRING (message));
+          g_free (message);
+        }
+    }
+
   return TRUE;
+}
+
+
+
+static void
+nsm_consumer_service_shut_down_next_client_in_queue (NSMConsumerService *service)
+{
+  ShutdownConsumer *consumer;
+  ShutdownClient   *client;
+  gchar            *message;
+
+  g_return_if_fail (NSM_CONSUMER_IS_SERVICE (service));
+  g_return_if_fail (service->shutdown_queue != NULL);
+
+  DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
+           DLT_STRING ("Shutting down next client in queue"));
+
+  /* check if we have processed all clients in the queue */
+  if (service->shutdown_queue->remaining_clients == NULL)
+    {
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
+               DLT_STRING ("Processed all items in the queue for this mode"));
+
+      /* check if we have processed all shutdown modes */
+      if (service->shutdown_queue->current_mode == NSM_SHUTDOWN_TYPE_NORMAL)
+        {
+          DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
+                   DLT_STRING ("All clients have been shut down"));
+
+          /* fast and normal have been processed, we are finished */
+          g_slice_free (ShutdownQueue, service->shutdown_queue);
+          service->shutdown_queue = NULL;
+
+          /* release the reference on the service to allow it to be destroyed */
+          g_object_unref (service);
+
+          return;
+        }
+      else if (service->shutdown_queue->current_mode == NSM_SHUTDOWN_TYPE_FAST)
+        {
+          DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
+                   DLT_STRING ("Transitioning to normal shutdown mode"));
+
+          /* move on to normal shutdown mode and reset clients to be processed */
+          service->shutdown_queue->current_mode = NSM_SHUTDOWN_TYPE_NORMAL;
+          service->shutdown_queue->remaining_clients =
+            g_list_reverse (g_list_copy (service->shutdown_clients));
+        }
+      else
+        {
+          /* this point will only be reached if the transition from
+           * fast to normal shutdown modes is implemented incorrectly */
+          g_assert_not_reached ();
+        }
+    }
+
+  /* get the current client from the queue */
+  client =
+    SHUTDOWN_CLIENT (g_list_first (service->shutdown_queue->remaining_clients)->data);
+
+  /* check if it is registered for the current shutdown mode */
+  if ((shutdown_client_get_shutdown_mode (client)
+       & service->shutdown_queue->current_mode) != 0)
+    {
+      message = g_strdup_printf ("Shutting down a client: "
+                                 "bus name %s, object path %s, "
+                                 "shutdown mode %d, timeout %d, "
+                                 "request id %d",
+                                 shutdown_client_get_bus_name (client),
+                                 shutdown_client_get_object_path (client),
+                                 shutdown_client_get_shutdown_mode (client),
+                                 shutdown_client_get_timeout (client),
+                                 (guint) client);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+
+      /* get the consumer associated with the shutdown client */
+      consumer = shutdown_client_get_consumer (client);
+
+      /* call the shutdown method */
+      shutdown_consumer_call_lifecycle_request (consumer,
+                                                service->shutdown_queue->current_mode,
+                                                (guint) client,
+                                                NULL,
+                                                nsm_consumer_service_lifecycle_request_finish,
+                                                service);
+    }
+  else
+    {
+      message = g_strdup_printf ("Skipping %s: it is not registered for this "
+                                 "shutdown mode",
+                                 shutdown_client_get_object_path (client));
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+
+      /* it isn't, so remove it from the queue */
+      service->shutdown_queue->remaining_clients =
+        g_list_delete_link (service->shutdown_queue->remaining_clients,
+                            service->shutdown_queue->remaining_clients);
+
+      /* continue with the next client */
+      nsm_consumer_service_shut_down_next_client_in_queue (service);
+    }
+}
+
+
+
+static void
+nsm_consumer_service_lifecycle_request_finish (GObject      *object,
+                                               GAsyncResult *res,
+                                               gpointer      user_data)
+{
+  NSMConsumerService *service = NSM_CONSUMER_SERVICE (user_data);
+  ShutdownConsumer   *consumer = SHUTDOWN_CONSUMER (object);
+  ShutdownClient     *client;
+  NSMErrorStatus      error_code;
+  GError             *error = NULL;
+  gchar              *message;
+
+  g_return_if_fail (IS_SHUTDOWN_CONSUMER (consumer));
+  g_return_if_fail (G_IS_ASYNC_RESULT (res));
+  g_return_if_fail (NSM_CONSUMER_IS_SERVICE (service));
+
+  /* get the current client from the queue */
+  client =
+    SHUTDOWN_CLIENT (g_list_first (service->shutdown_queue->remaining_clients)->data);
+
+  if (!shutdown_consumer_call_lifecycle_request_finish (consumer, (gint *)&error_code,
+                                                        res, &error))
+    {
+      /* log the error */
+      message = g_strdup_printf ("Failed to shut down client %s: %s",
+                                 shutdown_client_get_object_path (client),
+                                 error->message);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_ERROR, DLT_STRING (message));
+      g_free (message);
+      g_clear_error (&error);
+
+      /* remove the client it from the shutdown queue */
+      service->shutdown_queue->remaining_clients =
+        g_list_delete_link (service->shutdown_queue->remaining_clients,
+                            service->shutdown_queue->remaining_clients);
+
+      /* continue shutting down the next client */
+      nsm_consumer_service_shut_down_next_client_in_queue (service);
+    }
+  else if (error_code == NSM_ERROR_STATUS_OK)
+    {
+      /* log the successful shutdown */
+      message = g_strdup_printf ("Client shut down successfully: bus name %s, "
+                                 "object path %s, shutdown mode: %d",
+                                 shutdown_client_get_bus_name (client),
+                                 shutdown_client_get_object_path (client),
+                                 service->shutdown_queue->current_mode);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+
+      /* remove the client it from the shutdown queue */
+      service->shutdown_queue->remaining_clients =
+        g_list_delete_link (service->shutdown_queue->remaining_clients,
+                            service->shutdown_queue->remaining_clients);
+
+      /* continue shutting down the next client */
+      nsm_consumer_service_shut_down_next_client_in_queue (service);
+    }
+  else if (error_code == NSM_ERROR_STATUS_RESPONSE_PENDING)
+    {
+      /* log that we are waiting for the client to finish its shutdown */
+      message = g_strdup_printf ("Waiting for client to shut down: "
+                                 "request id: %d, bus name %s, "
+                                 "object path %s, shutdown mode: %d",
+                                 (guint) client,
+                                 shutdown_client_get_bus_name (client),
+                                 shutdown_client_get_object_path (client),
+                                 service->shutdown_queue->current_mode);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+
+      /* start a timeout to wait for LifecycleComplete to be called by the
+       * client we just asked to shut down */
+      g_assert (service->shutdown_queue->timeout_id == 0);
+      service->shutdown_queue->timeout_request = (guint) client;
+      service->shutdown_queue->timeout_id =
+        g_timeout_add_full (G_PRIORITY_DEFAULT,
+                            shutdown_client_get_timeout (client),
+                            nsm_consumer_service_shut_down_client_timeout,
+                            g_object_ref (service),
+                            (GDestroyNotify) g_object_unref);
+    }
+  else
+    {
+      /* log that shutting down this client failed */
+      message = g_strdup_printf ("Failed shutting down a client: "
+                                 "request id: %d, bus name %s, "
+                                 "object path %s, shutdown mode: %d, "
+                                 "error status %d",
+                                 (guint) client,
+                                 shutdown_client_get_bus_name (client),
+                                 shutdown_client_get_object_path (client),
+                                 service->shutdown_queue->current_mode,
+                                 error_code);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+
+      /* remove the client it from the shutdown queue */
+      service->shutdown_queue->remaining_clients =
+        g_list_delete_link (service->shutdown_queue->remaining_clients,
+                            service->shutdown_queue->remaining_clients);
+
+      /* continue shutting down the next client */
+      nsm_consumer_service_shut_down_next_client_in_queue (service);
+    }
+}
+
+
+
+static gboolean
+nsm_consumer_service_shut_down_client_timeout (gpointer user_data)
+{
+  NSMConsumerService *service = NSM_CONSUMER_SERVICE (user_data);
+  ShutdownClient     *client;
+  gchar              *message;
+
+  g_return_val_if_fail (NSM_CONSUMER_IS_SERVICE (service), FALSE);
+
+  /* drop the timeout if we have finished to process the shutdown
+   * queue in the meantime */
+  if (service->shutdown_queue == NULL)
+    return FALSE;
+
+  /* drop the timeout if there are no further clients to process
+   * at the moment; this is rarely going to happen */
+  if (service->shutdown_queue->remaining_clients == NULL)
+    return FALSE;
+
+  /* get the current/next client in the queue */
+  client = SHUTDOWN_CLIENT (service->shutdown_queue->remaining_clients->data);
+
+  /* check if this still is the client we are currently waiting
+   * for to shut down */
+  if (service->shutdown_queue->timeout_request == (guint) client)
+    {
+      message = g_strdup_printf ("Received timeout while shutting down a client: "
+                                 "bus name %s, object path %s, shutdown mode %d, "
+                                 "timeout %d, request id %d",
+                                 shutdown_client_get_bus_name (client),
+                                 shutdown_client_get_object_path (client),
+                                 shutdown_client_get_shutdown_mode (client),
+                                 shutdown_client_get_timeout (client),
+                                 service->shutdown_queue->timeout_request);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+
+      /* it is, so we haven't receive da reply in time; drop the
+       * client from the queue and continue with the next right
+       * immediately */
+      service->shutdown_queue->remaining_clients =
+        g_list_delete_link (service->shutdown_queue->remaining_clients,
+                            service->shutdown_queue->remaining_clients);
+
+      /* reset the timeout information */
+      service->shutdown_queue->timeout_request = 0;
+      service->shutdown_queue->timeout_id = 0;
+
+      /* continue shutting down the next client in the queue */
+      nsm_consumer_service_shut_down_next_client_in_queue (service);
+    }
+
+  return FALSE;
 }
 
 
@@ -457,77 +787,30 @@ nsm_consumer_service_start (NSMConsumerService *service,
 void
 nsm_consumer_service_shutdown_consumers (NSMConsumerService *service)
 {
-  ShutdownConsumer *consumer;
-  NSMShutdownType   current_mode;
-  NSMShutdownType   shutdown_mode;
-  ShutdownClient   *shutdown_client;
-  const gchar      *bus_name;
-  const gchar      *object_path;
-  GError           *error = NULL;
-  gchar            *message;
-  GList            *lp;
-  gint              error_code;
-
   g_return_if_fail (NSM_CONSUMER_IS_SERVICE (service));
 
-  /* shutdown mode after mode (fast first, then normal) */
-  for (current_mode = NSM_SHUTDOWN_TYPE_FAST;
-       current_mode >= NSM_SHUTDOWN_TYPE_NORMAL;
-       current_mode--)
-    {
-      /* shut down all registered clients in reverse order of registration */
-      for (lp = g_list_last (service->shutdown_clients); lp != NULL; lp = lp->prev)
-        {
-          shutdown_client = SHUTDOWN_CLIENT (lp->data);
+  /* do nothing if there already is a shutdown queue */
+  if (service->shutdown_queue != NULL)
+    return;
 
-          /* extract information from the shutdown client */
-          consumer = shutdown_client_get_consumer (shutdown_client);
-          bus_name = shutdown_client_get_bus_name (shutdown_client);
-          object_path = shutdown_client_get_object_path (shutdown_client);
-          shutdown_mode = shutdown_client_get_shutdown_mode (shutdown_client);
+  /* do nothing if there are no shutdown clients at all */
+  if (service->shutdown_clients == NULL)
+    return;
 
-          /* skip the shutdown consumer if it is not registered for this mode */
-          if ((shutdown_mode & current_mode) == 0)
-            continue;
+  /* grab a reference on the service; this is to avoid that the service object
+   * is destroyed while we are processing the shutdown queue */
+  g_object_ref (service);
 
-          /* call the shutdown method */
-          shutdown_consumer_call_lifecycle_request_sync (consumer,
-                                                         current_mode,
-                                                         service->request_id++,
-                                                         &error_code, NULL, &error);
-          if (error != NULL)
-            {
-              message = g_strdup_printf ("Failed to shut down client %s: %s",
-                                         object_path, error->message);
-              DLT_LOG (nsm_dummy_context, DLT_LOG_ERROR, DLT_STRING (message));
-              g_free (message);
-              g_clear_error (&error);
-            }
-          else if (error_code == NSM_ERROR_STATUS_OK)
-            {
-              message = g_strdup_printf ("Shutdown client shut down: bus name %s, "
-                                         "object path %s, shutdown mode: %d",
-                                         bus_name, object_path, current_mode);
-              DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
-              g_free (message);
-            }
-          else if (error_code == NSM_ERROR_STATUS_RESPONSE_PENDING)
-            {
-              message = g_strdup_printf ("Started to shut down a client: "
-                                         "request id: %d, bus name %s, "
-                                         "object path %s, shutdown mode: %d",
-                                         service->request_id-1, bus_name, object_path,
-                                         current_mode);
-              DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
-              g_free (message);
-            }
-          else
-            {
-              message = g_strdup_printf ("Failed to shut down client %s: "
-                                         "error status = %d", object_path, error_code);
-              DLT_LOG (nsm_dummy_context, DLT_LOG_ERROR, DLT_STRING (message));
-              g_free (message);
-            }
-        }
-    }
+  /* allocate a new shutdown queue */
+  service->shutdown_queue = g_slice_new0 (ShutdownQueue);
+
+  /* start with the fast shutdown clients */
+  service->shutdown_queue->current_mode = NSM_SHUTDOWN_TYPE_FAST;
+
+  /* reset shutdown clients to be processed */
+  service->shutdown_queue->remaining_clients =
+    g_list_reverse (g_list_copy (service->shutdown_clients));
+
+  /* shutdown the next client in the queue */
+  nsm_consumer_service_shut_down_next_client_in_queue (service);
 }
