@@ -559,7 +559,7 @@ nsm_consumer_service_shut_down_next_client_in_queue (NSMConsumerService *service
                                  shutdown_client_get_object_path (client),
                                  shutdown_client_get_shutdown_mode (client),
                                  shutdown_client_get_timeout (client),
-                                 (guint) client);
+                                 GPOINTER_TO_UINT (client));
       DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
       g_free (message);
 
@@ -569,7 +569,7 @@ nsm_consumer_service_shut_down_next_client_in_queue (NSMConsumerService *service
       /* call the shutdown method */
       shutdown_consumer_call_lifecycle_request (consumer,
                                                 service->shutdown_queue->current_mode,
-                                                (guint) client,
+                                                GPOINTER_TO_UINT (client),
                                                 NULL,
                                                 nsm_consumer_service_lifecycle_request_finish,
                                                 service);
@@ -658,7 +658,7 @@ nsm_consumer_service_lifecycle_request_finish (GObject      *object,
       message = g_strdup_printf ("Waiting for client to shut down: "
                                  "request id: %d, bus name %s, "
                                  "object path %s, shutdown mode: %d",
-                                 (guint) client,
+                                 GPOINTER_TO_UINT (client),
                                  shutdown_client_get_bus_name (client),
                                  shutdown_client_get_object_path (client),
                                  service->shutdown_queue->current_mode);
@@ -668,7 +668,7 @@ nsm_consumer_service_lifecycle_request_finish (GObject      *object,
       /* start a timeout to wait for LifecycleComplete to be called by the
        * client we just asked to shut down */
       g_assert (service->shutdown_queue->timeout_id == 0);
-      service->shutdown_queue->timeout_request = (guint) client;
+      service->shutdown_queue->timeout_request = GPOINTER_TO_UINT (client);
       service->shutdown_queue->timeout_id =
         g_timeout_add_full (G_PRIORITY_DEFAULT,
                             shutdown_client_get_timeout (client),
@@ -683,7 +683,7 @@ nsm_consumer_service_lifecycle_request_finish (GObject      *object,
                                  "request id: %d, bus name %s, "
                                  "object path %s, shutdown mode: %d, "
                                  "error status %d",
-                                 (guint) client,
+                                 GPOINTER_TO_UINT (client),
                                  shutdown_client_get_bus_name (client),
                                  shutdown_client_get_object_path (client),
                                  service->shutdown_queue->current_mode,
@@ -726,7 +726,7 @@ nsm_consumer_service_shut_down_client_timeout (gpointer user_data)
 
   /* check if this still is the client we are currently waiting
    * for to shut down */
-  if (service->shutdown_queue->timeout_request == (guint) client)
+  if (service->shutdown_queue->timeout_request == GPOINTER_TO_UINT (client))
     {
       message = g_strdup_printf ("Received timeout while shutting down a client: "
                                  "bus name %s, object path %s, shutdown mode %d, "
