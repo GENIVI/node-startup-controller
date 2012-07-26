@@ -214,9 +214,9 @@ la_handler_service_finalize (GObject *object)
   /* release the bus name */
   g_bus_unown_name (service->bus_name_id);
 
-  /* release the D-Bus connection object */
-  if (service->connection != NULL)
-    g_object_unref (service->connection);
+  /* release the NSM consumer service object, if there is one */
+  if (service->nsm_consumer != NULL)
+    g_object_unref (service->nsm_consumer);
 
   /* release the interface skeleton */
   g_signal_handlers_disconnect_matched (service->interface,
@@ -226,6 +226,10 @@ la_handler_service_finalize (GObject *object)
 
   /* release the job manager skeleton */
   g_object_unref (service->job_manager);
+
+  /* release the D-Bus connection object */
+  if (service->connection != NULL)
+    g_object_unref (service->connection);
 
   /* release the shutdown clients */
   g_hash_table_unref (service->units_to_clients);
