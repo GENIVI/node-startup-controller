@@ -52,21 +52,24 @@ enum
 
 
 
-static void     boot_manager_application_finalize                 (GObject                *object);
-static void     boot_manager_application_constructed              (GObject                *object);
-static void     boot_manager_application_get_property             (GObject                *object,
-                                                                   guint                   prop_id,
-                                                                   GValue                 *value,
-                                                                   GParamSpec             *pspec);
-static void     boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *interface,
-                                                                   GDBusMethodInvocation  *invocation,
-                                                                   NSMShutdownType         request,
-                                                                   guint                   request_id,
-                                                                   BootManagerApplication *application);
-static void     boot_manager_application_set_property             (GObject                *object,
-                                                                   guint                   prop_id,
-                                                                   const GValue           *value,
-                                                                   GParamSpec             *pspec);
+static void boot_manager_application_finalize                 (GObject                *object);
+static void boot_manager_application_constructed              (GObject                *object);
+static void boot_manager_application_get_property             (GObject                *object,
+                                                               guint                   prop_id,
+                                                               GValue                 *value,
+                                                               GParamSpec             *pspec);
+static void boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *interface,
+                                                               GDBusMethodInvocation  *invocation,
+                                                               NSMShutdownType         request,
+                                                               guint                   request_id,
+                                                               BootManagerApplication *application);
+static void boot_manager_application_handle_register_finish   (GObject                *object,
+                                                               GAsyncResult           *res,
+                                                               gpointer                user_data);
+static void boot_manager_application_set_property             (GObject                *object,
+                                                               guint                   prop_id,
+                                                               const GValue           *value,
+                                                               GParamSpec             *pspec);
 
 
 
@@ -252,7 +255,6 @@ boot_manager_application_constructed (GObject *object)
   gchar                  *bus_name = "org.genivi.BootManager1";
   gchar                  *log_text;
   gchar                  *object_path;
-  gint                    error_code = NSM_ERROR_STATUS_OK;
   gint                    timeout;
 
   /* instantiate the LUC starter */
@@ -294,24 +296,57 @@ boot_manager_application_constructed (GObject *object)
 
   /* register boot manager as a shutdown consumer */
   nsm_consumer = la_handler_service_get_nsm_consumer (application->la_handler);
-  if (!nsm_consumer_call_register_shutdown_client_sync (nsm_consumer, bus_name,
-                                                        object_path, shutdown_mode,
-                                                        timeout, &error_code,
-                                                        NULL, &error))
-    {
-      log_text = g_strdup_printf ("Failed register boot manager as a shutdown "
-                                  "consumer: %s", error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
-      g_clear_error (&error);
-    }
-
+  nsm_consumer_call_register_shutdown_client (nsm_consumer, bus_name, object_path,
+                                              shutdown_mode, timeout, NULL,
+                                              boot_manager_application_handle_register_finish,
+                                              NULL);
 
   /* inform systemd that this process has started */
   sd_notify (0, "READY=1");
 
   /* release the shutdown consumer */
   g_object_unref (consumer);
+}
+
+
+
+static void
+boot_manager_application_handle_register_finish (GObject      *object,
+                                                 GAsyncResult *res,
+                                                 gpointer      user_data)
+{
+  NSMConsumer *nsm_consumer = NSM_CONSUMER (object);
+  GError      *error = NULL;
+  gchar       *log_text;
+  gint         error_code = NSM_ERROR_STATUS_OK;
+
+  g_return_if_fail (IS_NSM_CONSUMER (nsm_consumer));
+  g_return_if_fail (G_IS_ASYNC_RESULT (res));
+
+  /* finish registering boot manager as a shutdown client */
+  if (!nsm_consumer_call_register_shutdown_client_finish (nsm_consumer, &error_code, res,
+                                                          &error))
+    {
+      log_text = g_strdup_printf ("Failed to register the boot manager as a shutdown "
+                                  "consumer: %s", error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_error_free (error);
+    }
+  else if (error_code == NSM_ERROR_STATUS_OK)
+    {
+      log_text = g_strdup_printf ("The boot manager has registered as a shutdown "
+                                  "consumer");
+      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (log_text));
+      g_free (log_text);
+    }
+  else
+    {
+      log_text = g_strdup_printf ("Failed to register the boot manager as a shutdown "
+                                  "consumer: error status %d", error_code);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+    }
 }
 
 
