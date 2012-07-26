@@ -266,11 +266,49 @@ shutdown_client_get_shutdown_mode (ShutdownClient *client)
 
 
 
+void
+shutdown_client_set_shutdown_mode (ShutdownClient *client,
+                                   NSMShutdownType shutdown_mode)
+{
+  g_return_if_fail (IS_SHUTDOWN_CLIENT (client));
+
+  /* do nothing if the shutdown_mode value is not changing */
+  if (client->shutdown_mode == shutdown_mode)
+    return;
+
+  /* update the shutdown_mode property */
+  client->shutdown_mode = shutdown_mode;
+
+  /* notify the callers that this property has changed */
+  g_object_notify (G_OBJECT (client), "shutdown-mode");
+}
+
+
+
 guint
 shutdown_client_get_timeout (ShutdownClient *client)
 {
   g_return_val_if_fail (IS_SHUTDOWN_CLIENT (client), 0);
   return client->timeout;
+}
+
+
+
+void
+shutdown_client_set_timeout (ShutdownClient *client,
+                             guint           timeout)
+{
+  g_return_if_fail (IS_SHUTDOWN_CLIENT (client));
+
+  /* do nothing if the timeout value is not changing */
+  if (client->timeout == timeout)
+    return;
+
+  /* update the timeout property */
+  client->timeout = timeout;
+
+  /* notify the callers that this property has changed */
+  g_object_notify (G_OBJECT (client), "timeout");
 }
 
 

@@ -216,50 +216,115 @@ nsm_consumer_service_handle_register_shutdown_client (NSMConsumer           *obj
                                                       NSMConsumerService    *service)
 {
   ShutdownConsumer *consumer;
-  ShutdownClient   *shutdown_client;
+  NSMShutdownType   current_shutdown_mode;
+  ShutdownClient   *current_client = NULL;
+  ShutdownClient   *shutdown_client = NULL;
+  const gchar      *current_bus_name;
+  const gchar      *current_object_path;
   GError           *error = NULL;
+  GList            *lp;
   gchar            *message;
 
   g_return_val_if_fail (IS_NSM_CONSUMER (object), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (NSM_CONSUMER_IS_SERVICE (service), FALSE);
 
-  /* create a proxy for the shutdown consumer to be registered */
-  consumer = shutdown_consumer_proxy_new_sync (service->connection,
-                                               G_DBUS_PROXY_FLAGS_NONE,
-                                               bus_name, object_path,
-                                               NULL, &error);
-  if (error != NULL)
-    {
-      /* log the error */
-      message = g_strdup_printf ("Failed to register shutdown client %s: %s",
-                                 object_path, error->message);
-      DLT_LOG (nsm_dummy_context, DLT_LOG_ERROR, DLT_STRING (message));
-      g_free (message);
-      g_error_free (error);
+  g_debug ("handle register shutdown client");
 
-      /* report the error back to the caller */
-      nsm_consumer_complete_register_shutdown_client (object, invocation,
-                                                      NSM_ERROR_STATUS_ERROR);
-      return TRUE;
+  /* try to find this shutdown client in the list of registered clients */
+  for (lp = service->shutdown_clients;
+       shutdown_client == NULL && lp != NULL;
+       lp = lp->next)
+    {
+      current_client = SHUTDOWN_CLIENT (lp->data);
+      current_bus_name = shutdown_client_get_bus_name (current_client);
+      current_object_path = shutdown_client_get_object_path (current_client);
+
+      g_debug ("compare %s <=> %s and %s <=> %s",
+               current_bus_name, bus_name,
+               current_object_path, object_path);
+
+      if (g_strcmp0 (current_bus_name, bus_name) == 0
+          && g_strcmp0 (current_object_path, object_path) == 0)
+        {
+          shutdown_client = current_client;
+        }
     }
 
-  /* create the shutdown client */
-  shutdown_client = shutdown_client_new (bus_name, object_path, shutdown_mode, timeout);
-  shutdown_client_set_consumer (shutdown_client, consumer);
+  /* check if we already have this shutdown client registered */
+  if (shutdown_client != NULL)
+    {
+      g_debug ("reregistration");
 
-  /* register the shutdown client */
-  service->shutdown_clients = g_list_append (service->shutdown_clients, shutdown_client);
+      /* update the client's shutdown mode */
+      current_shutdown_mode = shutdown_client_get_shutdown_mode (shutdown_client);
+      shutdown_client_set_shutdown_mode (shutdown_client,
+                                         current_shutdown_mode | shutdown_mode);
 
-  /* log the registered shutdown client */
-  message = g_strdup_printf ("Shutdown client registered: bus name %s, "
-                             "object path %s, shutdown mode: %d, timeout: %d",
-                             bus_name, object_path, shutdown_mode, timeout);
-  DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
-  g_free (message);
+      /* update the client's timeout */
+      shutdown_client_set_timeout (shutdown_client, timeout);
+      consumer = shutdown_client_get_consumer (shutdown_client);
+      g_dbus_proxy_set_default_timeout (G_DBUS_PROXY (consumer), timeout);
+
+      /* log information about the re-registration */
+      message = g_strdup_printf ("Re-registered shutdown client: bus name %s, "
+                                 "object path %s, new shutdown mode %d, new timeout %d",
+                                 bus_name, object_path,
+                                 shutdown_client_get_shutdown_mode (shutdown_client),
+                                 shutdown_client_get_timeout (shutdown_client));
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+    }
+  else
+    {
+      g_debug ("new registration");
+
+      /* this is a new registration, create a proxy for this new shutdown consumer */
+      consumer = shutdown_consumer_proxy_new_sync (service->connection,
+                                                   G_DBUS_PROXY_FLAGS_NONE,
+                                                   bus_name, object_path,
+                                                   NULL, &error);
+      if (error != NULL)
+        {
+          /* log the error */
+          message = g_strdup_printf ("Failed to register shutdown client %s: %s",
+                                     object_path, error->message);
+          DLT_LOG (nsm_dummy_context, DLT_LOG_ERROR, DLT_STRING (message));
+          g_free (message);
+          g_error_free (error);
+
+          /* report the error back to the caller */
+          nsm_consumer_complete_register_shutdown_client (object, invocation,
+                                                          NSM_ERROR_STATUS_DBUS);
+          return TRUE;
+        }
+
+      /* create the shutdown client */
+      shutdown_client = shutdown_client_new (bus_name, object_path,
+                                             shutdown_mode, timeout);
+      shutdown_client_set_consumer (shutdown_client, consumer);
+
+      /* set the D-Bus timeout for the interaction with the shutdown consumer */
+      g_dbus_proxy_set_default_timeout (G_DBUS_PROXY (consumer), timeout);
+
+      /* add the client to the list of registered clients */
+      service->shutdown_clients = g_list_append (service->shutdown_clients,
+                                                 shutdown_client);
+
+      /* log the registered shutdown client */
+      message = g_strdup_printf ("Shutdown client registered: bus name %s, "
+                                 "object path %s, shutdown mode: %d, timeout: %d",
+                                 bus_name, object_path, shutdown_mode, timeout);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+
+      /* release the consumer proxy; the client owns it now */
+      g_object_unref (consumer);
+    }
 
   /* notify the caller that we have handled the register request */
-  nsm_consumer_complete_register_shutdown_client (object, invocation, NSM_ERROR_STATUS_OK);
+  nsm_consumer_complete_register_shutdown_client (object, invocation,
+                                                  NSM_ERROR_STATUS_OK);
   return TRUE;
 }
 
@@ -273,12 +338,12 @@ nsm_consumer_service_handle_unregister_shutdown_client (NSMConsumer           *o
                                                         NSMShutdownType        shutdown_mode,
                                                         NSMConsumerService    *service)
 {
-  NSMShutdownType client_shutdown_mode;
+  NSMShutdownType current_shutdown_mode;
   ShutdownClient *current_client;
   ShutdownClient *shutdown_client = NULL;
   GList          *lp;
-  const gchar    *client_bus_name;
-  const gchar    *client_object_path;
+  const gchar    *current_bus_name;
+  const gchar    *current_object_path;
   gchar          *message;
 
   g_return_val_if_fail (IS_NSM_CONSUMER (object), FALSE);
@@ -293,39 +358,47 @@ nsm_consumer_service_handle_unregister_shutdown_client (NSMConsumer           *o
       current_client = SHUTDOWN_CLIENT (lp->data);
 
       /* extract information from the current client */
-      client_bus_name = shutdown_client_get_bus_name (current_client);
-      client_object_path = shutdown_client_get_object_path (current_client);
-      client_shutdown_mode = shutdown_client_get_shutdown_mode (current_client);
+      current_bus_name = shutdown_client_get_bus_name (current_client);
+      current_object_path = shutdown_client_get_object_path (current_client);
 
       /* check whether this is the client corresponding to the unregister request */
-      if (g_strcmp0 (client_bus_name, bus_name) == 0
-          && g_strcmp0 (client_object_path, object_path) == 0
-          && client_shutdown_mode == shutdown_mode)
+      if (g_strcmp0 (current_bus_name, bus_name) == 0
+          && g_strcmp0 (current_object_path, object_path) == 0)
         {
           /* yes, this is the client we have been looking for */
           shutdown_client = current_client;
         }
     }
 
-  /* unregister the shutdown client now */
+  /* if we have a shutdown client, unregister it for the requested shutdown modes */
   if (shutdown_client != NULL)
     {
-      /* log the unregistered shutdown client */
-      message = g_strdup_printf ("Shutdown client unregistered: bus name %s, "
-                                 "object path %s, shutdown mode: %d",
-                                 bus_name, object_path, shutdown_mode);
-      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
-      g_free (message);
+      /* remove the shutdown modes to unregister from the shutdown client */
+      current_shutdown_mode = shutdown_client_get_shutdown_mode (shutdown_client);
+      shutdown_client_set_shutdown_mode (shutdown_client,
+                                         current_shutdown_mode & ~(shutdown_mode));
 
-      /* remove the client from the list of registered clients */
-      service->shutdown_clients = g_list_remove (service->shutdown_clients,
-                                                 shutdown_client);
+      /* unregister only if the client is not registered for any modes anymore */
+      if (shutdown_client_get_shutdown_mode (shutdown_client) == 0)
+        {
+          /* log the unregistration now */
+          message = g_strdup_printf ("Shutdown client unregistered: "
+                                     "bus name %s, object path %s",
+                                     bus_name, object_path);
+          DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+          g_free (message);
 
-      /* release the client and free its resources */
-      g_object_unref (shutdown_client);
+          /* remove the client from the list of registered clients */
+          service->shutdown_clients = g_list_remove (service->shutdown_clients,
+                                                     shutdown_client);
+
+          /* release the client and free its resources */
+          g_object_unref (shutdown_client);
+        }
 
       /* notify the caller that we have handled the unregister request successfully */
-      nsm_consumer_complete_un_register_shutdown_client (object, invocation, 0);
+      nsm_consumer_complete_un_register_shutdown_client (object, invocation,
+                                                         NSM_ERROR_STATUS_OK);
     }
   else
     {

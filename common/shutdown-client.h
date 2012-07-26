@@ -35,7 +35,11 @@ ShutdownClient   *shutdown_client_new               (const gchar      *bus_name,
 const gchar      *shutdown_client_get_bus_name      (ShutdownClient   *client);
 const gchar      *shutdown_client_get_object_path   (ShutdownClient   *client);
 NSMShutdownType   shutdown_client_get_shutdown_mode (ShutdownClient   *client);
+void              shutdown_client_set_shutdown_mode (ShutdownClient   *client,
+                                                     NSMShutdownType   shutdown_mode);
 guint             shutdown_client_get_timeout       (ShutdownClient   *client);
+void              shutdown_client_set_timeout       (ShutdownClient   *client,
+                                                     guint             timeout);
 ShutdownConsumer *shutdown_client_get_consumer      (ShutdownClient   *client);
 void              shutdown_client_set_consumer      (ShutdownClient   *client,
                                                      ShutdownConsumer *consumer);
