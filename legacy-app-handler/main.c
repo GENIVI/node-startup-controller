@@ -25,9 +25,9 @@
 
 
 
-static gchar *unit = NULL;
-static gint   timeout = 0;
-static gchar *shutdown_mode = NULL;
+static gchar          *unit = NULL;
+static gint            timeout = 1000;
+static NSMShutdownType shutdown_mode = NSM_SHUTDOWN_TYPE_NOT;
 
 
 
@@ -35,7 +35,7 @@ static GOptionEntry entries[] =
 {
   { "unit",          'u', 0, G_OPTION_ARG_STRING, &unit,          "Legacy application unit",            NULL },
   { "timeout",       't', 0, G_OPTION_ARG_INT,    &timeout,       "Shutdown timeout in milliseconds",   NULL },
-  { "shutdown-mode", 'm', 0, G_OPTION_ARG_STRING, &shutdown_mode, "Shutdown mode (none, normal, fast)", NULL },
+  { "shutdown-mode", 'm', 0, G_OPTION_ARG_INT,    &shutdown_mode, "Shutdown mode",                      NULL },
   { NULL },
 };
 
@@ -54,40 +54,11 @@ unregister_dlt (void)
 
 
 
-static gboolean
-translate_shutdown_mode (const gchar     *str,
-                         NSMShutdownType *mode)
-{
-  g_return_val_if_fail (mode != NULL, FALSE);
-
-  /* try parsing the shutdown mode option into the NSMShutdownType enum */
-  if (g_strcmp0 (str, "none") == 0)
-    {
-      *mode = NSM_SHUTDOWN_TYPE_NOT;
-      return TRUE;
-    }
-  else if (g_strcmp0 (str, "normal") == 0)
-    {
-      *mode = NSM_SHUTDOWN_TYPE_NORMAL;
-      return TRUE;
-    }
-  else if (g_strcmp0 (str, "fast") == 0)
-    {
-      *mode = NSM_SHUTDOWN_TYPE_FAST;
-      return TRUE;
-    }
-
-  return FALSE;
-}
-
-
-
 int
 main (int    argc,
       char **argv)
 {
   GOptionContext *context;
-  NSMShutdownType real_shutdown_mode;
   LAHandler      *service;
   GError         *error = NULL;
   gchar          *msg;
@@ -120,7 +91,6 @@ main (int    argc,
       g_option_context_free (context);
       g_error_free (error);
       g_free (unit);
-      g_free (shutdown_mode);
 
       return EXIT_FAILURE;
     }
@@ -134,22 +104,22 @@ main (int    argc,
 
       /* free command line options */
       g_free (unit);
-      g_free (shutdown_mode);
 
       return EXIT_FAILURE;
     }
 
   /* validate the shutdown mode */
-  if (!translate_shutdown_mode (shutdown_mode, &real_shutdown_mode))
+  if (shutdown_mode == NSM_SHUTDOWN_TYPE_NOT
+      || ((shutdown_mode & NSM_SHUTDOWN_TYPE_NORMAL) == 0
+          && (shutdown_mode & NSM_SHUTDOWN_TYPE_FAST) == 0))
     {
       msg = g_strdup_printf ("Failed to register legacy application: "
-                             "invalid shutdown mode \"%s\"", shutdown_mode);
+                             "invalid shutdown mode \"0x%x\"", shutdown_mode);
       DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (msg));
       g_free (msg);
 
       /* free command line options */
       g_free (unit);
-      g_free (shutdown_mode);
 
       return EXIT_FAILURE;
     }
@@ -163,7 +133,6 @@ main (int    argc,
 
       /* free command line options */
       g_free (unit);
-      g_free (shutdown_mode);
 
       return EXIT_FAILURE;
     }
@@ -188,13 +157,12 @@ main (int    argc,
 
       /* free command line options */
       g_free (unit);
-      g_free (shutdown_mode);
 
       return EXIT_FAILURE;
     }
 
   /* forward the register request to the legacy app handler D-Bus service */
-  if (!la_handler_call_register_sync (service, unit, real_shutdown_mode, timeout,
+  if (!la_handler_call_register_sync (service, unit, shutdown_mode, timeout,
                                       NULL, &error))
     {
       msg = g_strdup_printf ("Failed to register legacy application: %s", error->message);
@@ -207,7 +175,6 @@ main (int    argc,
 
       /* free command line options */
       g_free (unit);
-      g_free (shutdown_mode);
 
       return EXIT_FAILURE;
     }
@@ -217,7 +184,6 @@ main (int    argc,
 
   /* free command line options */
   g_free (unit);
-  g_free (shutdown_mode);
 
   return EXIT_SUCCESS;
 }
