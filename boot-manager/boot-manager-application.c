@@ -66,6 +66,9 @@ static gboolean boot_manager_application_handle_lifecycle_request (ShutdownConsu
 static void boot_manager_application_handle_register_finish       (GObject                *object,
                                                                    GAsyncResult           *res,
                                                                    gpointer                user_data);
+static void boot_manager_application_handle_unregister_finish     (GObject                *object,
+                                                                   GAsyncResult           *res,
+                                                                   gpointer                user_data);
 static void boot_manager_application_set_property                 (GObject                *object,
                                                                    guint                   prop_id,
                                                                    const GValue           *value,
@@ -351,6 +354,52 @@ boot_manager_application_handle_register_finish (GObject      *object,
 
 
 
+static void
+boot_manager_application_handle_unregister_finish (GObject      *object,
+                                                   GAsyncResult *res,
+                                                   gpointer      user_data)
+{
+  BootManagerApplication *application = BOOT_MANAGER_APPLICATION (user_data);
+  NSMConsumer            *nsm_consumer = NSM_CONSUMER (object);
+  GError                 *error = NULL;
+  gchar                  *log_text;
+  gint                    error_code = NSM_ERROR_STATUS_OK;
+
+  g_return_if_fail (IS_NSM_CONSUMER (nsm_consumer));
+  g_return_if_fail (BOOT_MANAGER_IS_APPLICATION (application));
+  g_return_if_fail (G_IS_ASYNC_RESULT (res));
+
+  /* finish unregistering boot manager as a shutdown client */
+  if (!nsm_consumer_call_un_register_shutdown_client_finish (nsm_consumer, &error_code,
+                                                             res, &error))
+    {
+      log_text = g_strdup_printf ("Failed to unregister the boot manager as a shutdown "
+                                  "consumer: %s", error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_error_free (error);
+    }
+  else if (error_code == NSM_ERROR_STATUS_OK)
+    {
+      log_text = g_strdup_printf ("The boot manager has unregistered as a shutdown "
+                                  "consumer");
+      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (log_text));
+      g_free (log_text);
+    }
+  else
+    {
+      log_text = g_strdup_printf ("Failed to unregister the boot manager as a shutdown "
+                                  "consumer: error status %d", error_code);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+    }
+
+  /* quit the application */
+  g_main_loop_quit (application->main_loop);
+}
+
+
+
 static gboolean
 boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consumer,
                                                    GDBusMethodInvocation  *invocation,
@@ -358,6 +407,11 @@ boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consu
                                                    guint                   request_id,
                                                    BootManagerApplication *application)
 {
+  NSMConsumer *nsm_consumer;
+  const gchar *bus_name;
+  const gchar *object_path;
+  gint         shutdown_mode;
+
   g_return_val_if_fail (IS_SHUTDOWN_CONSUMER (consumer), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_APPLICATION (application), FALSE);
@@ -372,9 +426,15 @@ boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consu
   shutdown_consumer_complete_lifecycle_request (consumer, invocation,
                                                 NSM_ERROR_STATUS_OK);
 
-  /* quit the application */
-  g_main_loop_quit (application->main_loop);
-
+  /* deregister the boot manager as a shutdown client itself */
+  nsm_consumer = la_handler_service_get_nsm_consumer (application->la_handler);
+  bus_name = shutdown_client_get_bus_name (application->client);
+  object_path = shutdown_client_get_object_path (application->client);
+  shutdown_mode = shutdown_client_get_shutdown_mode (application->client);
+  nsm_consumer_call_un_register_shutdown_client (nsm_consumer, bus_name,
+                                                 object_path, shutdown_mode, NULL,
+                                                 boot_manager_application_handle_unregister_finish,
+                                                 application);
   return TRUE;
 }
 
