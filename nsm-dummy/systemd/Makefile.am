@@ -1,8 +1,8 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
-systemd_servicedir = /lib/systemd/system
+systemd_servicedir = $(libdir)/systemd/system
 
-systemd_service_in_files =							\
+systemd_service_in_files =						\
 	nsm-dummy.service.in
 
 systemd_service_DATA = $(systemd_service_in_files:.service.in=.service)
