@@ -17,6 +17,8 @@
 
 #include <systemd/sd-daemon.h>
 
+#include <dlt/dlt.h>
+
 #include <common/nsm-consumer-dbus.h>
 #include <common/nsm-lifecycle-control-dbus.h>
 #include <common/watchdog-client.h>
@@ -24,6 +26,10 @@
 #include <nsm-dummy/nsm-consumer-service.h>
 #include <nsm-dummy/nsm-dummy-application.h>
 #include <nsm-dummy/nsm-lifecycle-control-service.h>
+
+
+
+DLT_IMPORT_CONTEXT (nsm_dummy_context);
 
 
 
@@ -145,8 +151,33 @@ nsm_dummy_application_class_init (NSMDummyApplicationClass *klass)
 static void
 nsm_dummy_application_init (NSMDummyApplication *application)
 {
-  /* update systemd's watchdog timestamp every 120 seconds */
-  application->watchdog_client = watchdog_client_new (120);
+  const gchar *watchdog_str;
+  guint64      watchdog_usec = 0;
+  guint        watchdog_sec = 0;
+  gchar       *message;
+
+  /* read the WATCHDOG_USEC environment variable and parse it
+   * into an unsigned integer */
+  watchdog_str = g_getenv ("WATCHDOG_USEC");
+  if (watchdog_str != NULL)
+    watchdog_usec = g_ascii_strtoull (watchdog_str, NULL, 10);
+
+  /* only create the watchdog client if a timeout was specified */
+  if (watchdog_usec > 0)
+    {
+      /* halve the watchdog timeout because we need to notify systemd
+       * twice in every interval; also, convert it to seconds */
+      watchdog_sec = (guint) ((watchdog_usec / 2) / 1000000);
+
+      /* update systemd's watchdog timestamp in regular intervals */
+      application->watchdog_client = watchdog_client_new (watchdog_sec);
+
+      /* log information about the watchdog timeout using DLT */
+      message = g_strdup_printf ("Updating systemd's watchdog timestamp every %d seconds",
+                                 watchdog_sec);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+    }
 
   /* install the signal handler */
   application->sighup_id = g_unix_signal_add (SIGHUP, nsm_dummy_application_handle_sighup,
@@ -171,7 +202,8 @@ nsm_dummy_application_finalize (GObject *object)
   g_source_remove (application->sighup_id);
 
   /* release the watchdog client */
-  g_object_unref (application->watchdog_client);
+  if (application->watchdog_client != NULL)
+    g_object_unref (application->watchdog_client);
 
   /* release the main loop */
   g_main_loop_unref (application->main_loop);

@@ -94,7 +94,7 @@ struct _BootManagerApplication
    * the watchdog timestamp */
   WatchdogClient     *watchdog_client;
 
-  /* internal handler of Start() and Stop() jobs */
+  /* manager of unit start and stop operations */
   JobManager         *job_manager;
 
   /* boot manager service */
@@ -199,8 +199,33 @@ boot_manager_application_class_init (BootManagerApplicationClass *klass)
 static void
 boot_manager_application_init (BootManagerApplication *application)
 {
-  /* update systemd's watchdog timestamp every 120 seconds */
-  application->watchdog_client = watchdog_client_new (120);
+  const gchar *watchdog_str;
+  guint64      watchdog_usec = 0;
+  guint        watchdog_sec = 0;
+  gchar       *message;
+
+  /* read the WATCHDOG_USEC environment variable and parse it
+   * into an unsigned integer */
+  watchdog_str = g_getenv ("WATCHDOG_USEC");
+  if (watchdog_str != NULL)
+    watchdog_usec = g_ascii_strtoull (watchdog_str, NULL, 10);
+
+  /* only create the watchdog client if a timeout was specified */
+  if (watchdog_usec > 0)
+    {
+      /* halve the watchdog timeout because we need to notify systemd
+       * twice in every interval; also, convert it to seconds */
+      watchdog_sec = (guint) ((watchdog_usec / 2) / 1000000);
+
+      /* update systemd's watchdog timestamp in regular intervals */
+      application->watchdog_client = watchdog_client_new (watchdog_sec);
+
+      /* log information about the watchdog timeout using DLT */
+      message = g_strdup_printf ("Updating systemd's watchdog timestamp every %d seconds",
+                                 watchdog_sec);
+      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+    }
 }
 
 
@@ -227,7 +252,8 @@ boot_manager_application_finalize (GObject *object)
     g_object_unref (application->connection);
 
   /* release the watchdog client */
-  g_object_unref (application->watchdog_client);
+  if (application->watchdog_client != NULL)
+    g_object_unref (application->watchdog_client);
 
   /* release the boot manager */
   g_object_unref (application->boot_manager_service);
