@@ -140,8 +140,6 @@ boot-manager/busconf/Makefile
 boot-manager/Makefile
 legacy-app-handler/Makefile
 nsm-dummy/busconf/Makefile
-nsm-dummy/dbus/Makefile
-nsm-dummy/systemd/Makefile
 nsm-dummy/Makefile
 tests/Makefile
 tests/boot-manager/Makefile

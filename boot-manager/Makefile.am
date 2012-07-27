@@ -63,6 +63,10 @@ boot_manager_LDADD =							\
 	$(SYSTEMD_DAEMON_LIBS)						\
 	$(top_builddir)/common/libcommon.la
 
+%.service: %.service.in
+	sed -e "s,\@libdir\@,$(libdir),g"				\
+	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
+
 dbus_servicedir = $(datadir)/dbus-1/system-services
 
 dbus_service_in_files =							\
@@ -70,20 +74,12 @@ dbus_service_in_files =							\
 
 dbus_service_DATA = $(dbus_service_in_files:.service.in=.service)
 
-%.service: %.service.in
-	sed -e "s,\@libdir\@,$(libdir),g"				\
-	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
-
 systemd_servicedir = $(libdir)/systemd/system
 
 systemd_service_in_files =						\
 	boot-manager.service.in
 
 systemd_service_DATA = $(systemd_service_in_files:.service.in=.service)
-
-%.service: %.service.in
-	sed -e "s,\@libdir\@,$(libdir),g"				\
-	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
 
 CLEANFILES =								\
 	$(dbus_service_DATA)						\

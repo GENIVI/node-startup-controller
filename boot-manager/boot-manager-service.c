@@ -459,16 +459,23 @@ GVariant *
 boot_manager_service_read_luc (BootManagerService *service,
                                GError            **error)
 {
-  GVariant *context;
-  GFile    *luc_file;
-  char     *data;
-  gsize     data_len;
+  const gchar *luc_path;
+  GVariant    *context;
+  GFile       *luc_file;
+  char        *data;
+  gsize        data_len;
 
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), NULL);
   g_return_val_if_fail ((error == NULL || *error == NULL), NULL);
 
+  /* check which configuration file to use; the LUC_PATH environment variable
+   * has priority over the build-time LUC_PATH definition */
+  luc_path = g_getenv ("LUC_PATH");
+  if (luc_path == NULL)
+    luc_path = LUC_PATH;
+
   /* initialize the GFile */
-  luc_file = g_file_new_for_path (LUC_PATH);
+  luc_file = g_file_new_for_path (luc_path);
 
   /* read the contents of the file */
   if (!g_file_load_contents (luc_file, NULL, &data, &data_len, NULL, error))
@@ -492,15 +499,22 @@ void
 boot_manager_service_write_luc (BootManagerService *service,
                                 GError            **error)
 {
-  GError *err = NULL;
-  GFile  *luc_file;
-  GFile  *luc_dir;
+  const gchar *luc_path;
+  GError      *err = NULL;
+  GFile       *luc_file;
+  GFile       *luc_dir;
 
   g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
   g_return_if_fail (error == NULL || *error == NULL);
 
+  /* check which configuration file to use; the LUC_PATH environment variable
+   * has priority over the build-time LUC_PATH definition */
+  luc_path = g_getenv ("LUC_PATH");
+  if (luc_path == NULL)
+    luc_path = LUC_PATH;
+
   /* initialize the GFiles */
-  luc_file = g_file_new_for_path (LUC_PATH);
+  luc_file = g_file_new_for_path (luc_path);
   luc_dir = g_file_get_parent (luc_file);
 
   /* make sure the last user context's directory exists */

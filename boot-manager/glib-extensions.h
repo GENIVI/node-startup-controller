@@ -18,7 +18,7 @@ GVariant *g_variant_lookup_value_with_int_key (GVariant           *dictionary,
                                                const gint          key,
                                                const GVariantType *expected_type);
 gboolean  g_variant_string_array_has_string   (GVariant           *array,
-		                                           const gchar         *str);
+                                               const gchar        *str);
 gint      g_int_pointer_compare               (gconstpointer       a,
                                                gconstpointer       b);
 

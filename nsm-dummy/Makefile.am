@@ -1,9 +1,7 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
 SUBDIRS =								\
-	busconf								\
-	dbus								\
-	systemd
+	busconf
 
 nsm_dummydir =								\
 	$(libdir)/boot-manager-$(BOOT_MANAGER_VERSION_API)
@@ -46,3 +44,29 @@ nsm_dummy_LDADD =							\
 	$(SYSTEMD_DAEMON_LIBS)						\
 	$(top_builddir)/common/libcommon.la
 
+%.service: %.service.in
+	sed -e "s,\@libdir\@,$(libdir),g"				\
+	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
+
+dbus_servicedir = $(datadir)/dbus-1/system-services
+
+dbus_service_in_files =							\
+	com.contiautomotive.NodeStateManager.Consumer.service.in	\
+	com.contiautomotive.NodeStateManager.LifecycleControl.service.in
+
+dbus_service_DATA = $(dbus_service_in_files:.service.in=.service)
+
+systemd_servicedir = ${libdir}/systemd/system
+
+systemd_service_in_files =						\
+	nsm-dummy.service.in
+
+systemd_service_DATA = $(systemd_service_in_files:.service.in=.service)
+
+CLEANFILES =								\
+	$(dbus_service_DATA)						\
+	$(systemd_service_DATA)
+
+EXTRA_DIST =								\
+	$(dbus_service_in_files)					\
+	$(systemd_service_in_files)
