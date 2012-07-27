@@ -66,3 +66,33 @@ nsm_error_status_get_type (void)
     }
   return type;
 }
+
+
+
+GType
+nsm_node_state_get_type (void)
+{
+  GType type = G_TYPE_INVALID;
+
+  if (G_UNLIKELY (type == G_TYPE_INVALID))
+    {
+      static const GEnumValue values[] =
+      {
+        { NSM_NODE_STATE_NOT_SET,           "NSM_NODE_STATE_NOT_SET",           N_ ("Node sate not set"),             },
+        { NSM_NODE_STATE_START_UP,          "NSM_NODE_STATE_START_UP",          N_ ("Start basic system"),            },
+        { NSM_NODE_STATE_BASE_RUNNING,      "NSM_NODE_STATE_BASE_RUNNING",      N_ ("Basic components started"),      },
+        { NSM_NODE_STATE_LUC_RUNNING,       "NSM_NODE_STATE_LUC_RUNNING",       N_ ("LUC components started"),        },
+        { NSM_NODE_STATE_FULLY_RUNNING,     "NSM_NODE_STATE_FULLY_RUNNING",     N_ ("Foreground components started"), },
+        { NSM_NODE_STATE_FULLY_OPERATIONAL, "NSM_NODE_STATE_FULLY_OPERATIONAL", N_ ("All components started"),        },
+        { NSM_NODE_STATE_SHUTTING_DOWN,     "NSM_NODE_STATE_SHUTTING_DOWN",     N_ ("Shutdown the system"),           },
+        { NSM_NODE_STATE_FAST_SHUTDOWN,     "NSM_NODE_STATE_FAST_SHUTDOWN",     N_ ("Fast shutdown active"),          },
+        { NSM_NODE_STATE_DEGRADED_POWER,    "NSM_NODE_STATE_DEGRADED_POWER",    N_ ("Power state node degraded"),     },
+        { NSM_NODE_STATE_SHUTDOWN,          "NSM_NODE_STATE_SHUTDOWN",          N_ ("Node shut down"),                },
+        { NSM_NODE_STATE_LAST,              "NSM_NODE_STATE_LAST",              N_ ("Last node state"),               },
+        { 0 ,                               NULL,                               NULL,                                 },
+      };
+
+      type = g_enum_register_static ("NSMNodeState", values);
+    }
+  return type;
+}

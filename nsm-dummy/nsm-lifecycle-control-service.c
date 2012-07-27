@@ -14,9 +14,16 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
+#include <dlt/dlt.h>
+
+#include <common/nsm-enum-types.h>
 #include <common/nsm-lifecycle-control-dbus.h>
 
 #include <nsm-dummy/nsm-lifecycle-control-service.h>
+
+
+
+DLT_IMPORT_CONTEXT (nsm_dummy_context);
 
 
 
@@ -183,20 +190,40 @@ nsm_lifecycle_control_service_handle_set_node_state (NSMLifecycleControl        
                                                      gint                        node_state_id,
                                                      NSMLifecycleControlService *service)
 {
-  gint            error_code;
+  gchar *message;
+  gint   error_code;
 
   g_return_val_if_fail (IS_NSM_LIFECYCLE_CONTROL (object), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (NSM_LIFECYCLE_CONTROL_IS_SERVICE (service), FALSE);
 
-  /* alternate return value between successful(0) and fail(-1) with every handled call.
-   * We are temporarily assuming that 0 is success and -1 is failure */
-  if (service->accept_state)
-    error_code = 0;
-  else
-    error_code = -1;
+  /* check whether this is a valid node state */
+  if (node_state_id >= NSM_NODE_STATE_NOT_SET && node_state_id <= NSM_NODE_STATE_LAST)
+    {
+      /* log how we handled the node state */
+      message = g_strdup_printf ("Applied the node state %i: %s",
+                                 node_state_id, service->accept_state ? "yes": "no");
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
 
-  service->accept_state = !service->accept_state;
+      /* alternate return value between successful(0) and fail(-1) with every handled call.
+       * We are temporarily assuming that 0 is success and -1 is failure */
+      if (service->accept_state)
+        error_code = NSM_ERROR_STATUS_OK;
+      else
+        error_code = NSM_ERROR_STATUS_ERROR;
+      service->accept_state = !service->accept_state;
+    }
+  else
+    {
+      /* log how we handled the node state */
+      message = g_strdup_printf ("Received invalid node state %i", node_state_id);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+
+      /* let the caller know that it sent an invalid parameter */
+      error_code = NSM_ERROR_STATUS_PARAMETER;
+    }
 
   /* notify the caller that we have handled the register request */
   nsm_lifecycle_control_complete_set_node_state (object, invocation, error_code);

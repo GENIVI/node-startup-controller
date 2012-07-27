@@ -72,6 +72,45 @@ typedef enum /*< enum >*/
 
 GType nsm_error_status_get_type (void) G_GNUC_CONST;
 
+
+
+#define TYPE_NSM_NODE_STATE (nsm_node_state_get_type ())
+
+/**
+ * NSMNodeState:
+ * @NSM_NODE_STATE_NOT_SET           : Initial state when node state is not set.
+ * @NSM_NODE_STATE_START_UP          : Basic system is starting up.
+ * @NSM_NODE_STATE_BASE_RUNNING      : Basic system components have been started.
+ * @NSM_NODE_STATE_LUC_RUNNING       : All 'Last User Context' components have been started.
+ * @NSM_NODE_STATE_FULLY_RUNNING     : All 'foreground' components have been started.
+ * @NSM_NODE_STATE_FULLY_OPERATIONAL : All components have been started.
+ * @NSM_NODE_STATE_SHUTTING_DOWN     : The system is shutting down.
+ * @NSM_NODE_STATE_SHUTDOWN_DELAY    : Shutdown request active. System will shutdown soon.
+ * @NSM_NODE_STATE_FAST_SHUTDOWN     : Fast shutdown active.
+ * @NSM_NODE_STATE_DEGRADED_POWER    : Node is in degraded power state.
+ * @NSM_NODE_STATE_SHUTDOWN          : Node is completely shut down.
+ * @NSM_NODE_STATE_LAST              : Last valid entry to identify valid node states.
+ *
+ * Node states supported by the Node State Manager.
+ */
+typedef enum /*< enum >*/
+{
+  NSM_NODE_STATE_NOT_SET,
+  NSM_NODE_STATE_START_UP,
+  NSM_NODE_STATE_BASE_RUNNING,
+  NSM_NODE_STATE_LUC_RUNNING,
+  NSM_NODE_STATE_FULLY_RUNNING,
+  NSM_NODE_STATE_FULLY_OPERATIONAL,
+  NSM_NODE_STATE_SHUTTING_DOWN,
+  NSM_NODE_STATE_SHUTDOWN_DELAY,
+  NSM_NODE_STATE_FAST_SHUTDOWN,
+  NSM_NODE_STATE_DEGRADED_POWER,
+  NSM_NODE_STATE_SHUTDOWN,
+  NSM_NODE_STATE_LAST,
+} NSMNodeState;
+
+GType nsm_node_state_get_type (void) G_GNUC_CONST;
+
 G_END_DECLS
 
 #endif /* !__NSM_ENUM_TYPES_H__ */

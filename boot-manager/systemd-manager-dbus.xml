@@ -31,11 +31,13 @@
     </method>
 
     <method name="Subscribe"/>
+
     <method name="Unsubscribe"/>
 
     <signal name="JobRemoved">
       <arg name="id" type="u"/>
       <arg name="job" type="o"/>
+      <arg name="unit" type="s"/>
       <arg name="result" type="s"/>
     </signal>
   </interface>

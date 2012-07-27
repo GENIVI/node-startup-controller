@@ -14,8 +14,17 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
+#include <dlt/dlt.h>
+
+#include <common/nsm-enum-types.h>
+#include <common/nsm-lifecycle-control-dbus.h>
+
 #include <boot-manager/boot-manager-dbus.h>
 #include <boot-manager/target-startup-monitor.h>
+
+
+
+DLT_IMPORT_CONTEXT (boot_manager_context);
 
 
 
@@ -28,21 +37,27 @@ enum
 
 
 
-static void target_startup_monitor_finalize     (GObject              *object);
-static void target_startup_monitor_constructed  (GObject              *object);
-static void target_startup_monitor_get_property (GObject              *object,
-                                                 guint                 prop_id,
-                                                 GValue               *value,
-                                                 GParamSpec           *pspec);
-static void target_startup_monitor_set_property (GObject              *object,
-                                                 guint                 prop_id,
-                                                 const GValue         *value,
-                                                 GParamSpec           *pspec);
-static void target_startup_monitor_job_removed  (SystemdManager       *manager,
-                                                 guint                 id,
-                                                 const gchar          *job_name,
-                                                 const gchar          *result,
-                                                 TargetStartupMonitor *monitor);
+static void target_startup_monitor_finalize              (GObject              *object);
+static void target_startup_monitor_constructed           (GObject              *object);
+static void target_startup_monitor_get_property          (GObject              *object,
+                                                          guint                 prop_id,
+                                                          GValue               *value,
+                                                          GParamSpec           *pspec);
+static void target_startup_monitor_set_property          (GObject              *object,
+                                                          guint                 prop_id,
+                                                          const GValue         *value,
+                                                          GParamSpec           *pspec);
+static void target_startup_monitor_job_removed           (SystemdManager       *manager,
+                                                          guint                 id,
+                                                          const gchar          *job_name,
+                                                          const gchar          *unit,
+                                                          const gchar          *result,
+                                                          TargetStartupMonitor *monitor);
+static void target_startup_monitor_set_node_state        (TargetStartupMonitor *monitor,
+                                                          NSMNodeState          state);
+static void target_startup_monitor_set_node_state_finish (GObject              *object,
+                                                          GAsyncResult         *res,
+                                                          gpointer              user_data);
 
 
 
@@ -53,12 +68,14 @@ struct _TargetStartupMonitorClass
 
 struct _TargetStartupMonitor
 {
-  GObject         __parent__;
+  GObject              __parent__;
 
-  SystemdManager *systemd_manager;
+  SystemdManager      *systemd_manager;
 
-  /* map of targets to their NSM states */
-  GHashTable     *watched_targets;
+  NSMLifecycleControl *nsm_lifecycle_control;
+
+  /* map of systemd targets to corresponding node states */
+  GHashTable          *watched_targets;
 };
 
 
@@ -94,11 +111,38 @@ target_startup_monitor_class_init (TargetStartupMonitorClass *klass)
 static void
 target_startup_monitor_init (TargetStartupMonitor *monitor)
 {
-  /* create the table of targets and their NSM states */
+  GError      *error = NULL;
+  gchar       *log_text;
+
+  /* create proxy to talk to the Node State Manager's lifecycle control */
+  monitor->nsm_lifecycle_control =
+    nsm_lifecycle_control_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
+                                                  G_DBUS_PROXY_FLAGS_NONE,
+                                                  "com.contiautomotive.NodeStateManager",
+                                                  "/com/contiautomotive/NodeStateManager/LifecycleControl",
+                                                  NULL, &error);
+  if (error != NULL)
+    {
+     log_text = g_strdup_printf ("Failed to connect to the NSM lifecycle control: %s",
+                                  error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_error_free (error);
+    }
+
+  /* set the initial state to base running, which means that
+   * the mandatory.target has been started (this is done before the
+   * boot manager itself is brought up) */
+  target_startup_monitor_set_node_state (monitor, NSM_NODE_STATE_BASE_RUNNING);
+
+  /* create the table of targets and their node states */
   monitor->watched_targets = g_hash_table_new (g_str_hash, g_str_equal);
-  g_hash_table_insert (monitor->watched_targets, "focussed.target", "LUC_RUNNING");
-  g_hash_table_insert (monitor->watched_targets, "unfocussed.target", "FULLY_RUNNING");
-  g_hash_table_insert (monitor->watched_targets, "lazy.target", "FULLY_OPERATIONAL");
+  g_hash_table_insert (monitor->watched_targets, "focussed.target",
+                       GINT_TO_POINTER (NSM_NODE_STATE_LUC_RUNNING));
+  g_hash_table_insert (monitor->watched_targets, "unfocussed.target",
+                       GINT_TO_POINTER (NSM_NODE_STATE_FULLY_RUNNING));
+  g_hash_table_insert (monitor->watched_targets, "lazy.target",
+                       GINT_TO_POINTER (NSM_NODE_STATE_FULLY_OPERATIONAL));
 }
 
 
@@ -121,7 +165,7 @@ target_startup_monitor_finalize (GObject *object)
 {
   TargetStartupMonitor *monitor = TARGET_STARTUP_MONITOR (object);
 
-  /* release the watched_targets table */
+  /* release the mapping of systemd targets to node states */
   g_hash_table_destroy (monitor->watched_targets);
 
   /* release the systemd manager */
@@ -129,6 +173,9 @@ target_startup_monitor_finalize (GObject *object)
                                         G_SIGNAL_MATCH_DATA,
                                         0, 0, NULL, NULL, monitor);
   g_object_unref (monitor->systemd_manager);
+
+  if (monitor->nsm_lifecycle_control != NULL)
+    g_object_unref (monitor->nsm_lifecycle_control);
 
   (*G_OBJECT_CLASS (target_startup_monitor_parent_class)->finalize) (object);
 }
@@ -181,17 +228,28 @@ static void
 target_startup_monitor_job_removed (SystemdManager       *manager,
                                     guint                 id,
                                     const gchar          *job_name,
+                                    const gchar          *unit,
                                     const gchar          *result,
                                     TargetStartupMonitor *monitor)
 {
+  gpointer state;
+
   g_return_if_fail (IS_SYSTEMD_MANAGER (manager));
   g_return_if_fail (job_name != NULL && *job_name != '\0');
+  g_return_if_fail (unit != NULL && *unit != '\0');
   g_return_if_fail (result != NULL && *result != '\0');
   g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
 
-  /* TODO: The current version of systemd does not return the unit's name.
-   * later versions will, so finishing this handler is postponed until we
-   * have a newer version of systemd */
+  /* we are only interested in successful JobRemoved signals */
+  if (g_strcmp0 (result, "done") != 0)
+    return;
+
+  /* check if the unit corresponds to a node state */
+  if (g_hash_table_lookup_extended (monitor->watched_targets, unit, NULL, &state))
+    {
+      /* it does, so transition to that state now */
+      target_startup_monitor_set_node_state (monitor, GPOINTER_TO_INT (state));
+    }
 }
 
 
@@ -204,4 +262,53 @@ target_startup_monitor_new (SystemdManager *systemd_manager)
   return g_object_new (TYPE_TARGET_STARTUP_MONITOR,
                        "systemd-manager", systemd_manager,
                        NULL);
+}
+
+
+
+static void
+target_startup_monitor_set_node_state (TargetStartupMonitor *monitor,
+                                       NSMNodeState          state)
+{
+  g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
+
+  /* set node state in the Node State Manager */
+  nsm_lifecycle_control_call_set_node_state (monitor->nsm_lifecycle_control,
+                                             (gint) state, NULL,
+                                             target_startup_monitor_set_node_state_finish,
+                                             NULL);
+}
+
+
+
+static void
+target_startup_monitor_set_node_state_finish (GObject      *object,
+                                              GAsyncResult *res,
+                                              gpointer      user_data)
+{
+  NSMLifecycleControl *nsm_lifecycle_control = NSM_LIFECYCLE_CONTROL (object);
+  GError              *error = NULL;
+  gchar               *log_text;
+  NSMErrorStatus       error_code = NSM_ERROR_STATUS_OK;
+
+  g_return_if_fail (IS_NSM_LIFECYCLE_CONTROL (nsm_lifecycle_control));
+  g_return_if_fail (G_IS_ASYNC_RESULT (res));
+
+  /* finish setting the node state in the NSM */
+  if (!nsm_lifecycle_control_call_set_node_state_finish (nsm_lifecycle_control,
+                                                         (gint *) &error_code, res,
+                                                         &error))
+    {
+      log_text = g_strdup_printf ("Failed to set the node state: %s", error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+      g_error_free (error);
+    }
+  else if (error_code != NSM_ERROR_STATUS_OK)
+    {
+      log_text = g_strdup_printf ("Failed to set the node state: error code %d",
+                                  error_code);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
+    }
 }
