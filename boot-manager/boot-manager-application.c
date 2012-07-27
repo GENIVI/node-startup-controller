@@ -73,6 +73,8 @@ static void boot_manager_application_set_property                 (GObject      
                                                                    guint                   prop_id,
                                                                    const GValue           *value,
                                                                    GParamSpec             *pspec);
+static void boot_manager_application_luc_groups_started           (LUCStarter             *starter,
+                                                                   BootManagerApplication *application);
 
 
 
@@ -264,6 +266,12 @@ boot_manager_application_constructed (GObject *object)
   application->luc_starter = luc_starter_new (application->job_manager,
                                               application->boot_manager_service);
 
+  /* be notified when LUC groups have started so that we can hand
+   * control over to systemd again */
+  g_signal_connect (application->luc_starter, "luc-groups-started",
+                    G_CALLBACK (boot_manager_application_luc_groups_started),
+                    application);
+
   /* restore the LUC if desired */
   luc_starter_start_groups (application->luc_starter);
 
@@ -303,9 +311,6 @@ boot_manager_application_constructed (GObject *object)
                                               shutdown_mode, timeout, NULL,
                                               boot_manager_application_handle_register_finish,
                                               NULL);
-
-  /* inform systemd that this process has started */
-  sd_notify (0, "READY=1");
 
   /* release the shutdown consumer */
   g_object_unref (consumer);
@@ -504,6 +509,21 @@ boot_manager_application_set_property (GObject      *object,
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
     }
+}
+
+
+
+static void
+boot_manager_application_luc_groups_started (LUCStarter             *starter,
+                                             BootManagerApplication *application)
+{
+  g_return_if_fail (IS_LUC_STARTER (starter));
+  g_return_if_fail (BOOT_MANAGER_IS_APPLICATION (application));
+
+  /* notify systemd that we have finished starting the LUC and
+   * that it can take over control to start unfocused.target,
+   * lazy.target etc. */
+  sd_notify (0, "READY=1");
 }
 
 

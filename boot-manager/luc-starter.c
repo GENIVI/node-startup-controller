@@ -32,6 +32,15 @@ DLT_IMPORT_CONTEXT (boot_manager_context);
 
 
 
+/* signal identifiers */
+enum
+{
+  SIGNAL_LUC_GROUPS_STARTED,
+  LAST_SIGNAL,
+};
+
+
+
 /* property identifiers */
 enum
 {
@@ -95,6 +104,10 @@ struct _LUCStarter
 
 
 
+static guint luc_starter_signals[LAST_SIGNAL];
+
+
+
 G_DEFINE_TYPE (LUCStarter, luc_starter, G_TYPE_OBJECT);
 
 
@@ -130,6 +143,14 @@ luc_starter_class_init (LUCStarterClass *klass)
                                                         G_PARAM_READWRITE |
                                                         G_PARAM_CONSTRUCT_ONLY |
                                                         G_PARAM_STATIC_STRINGS));
+
+  luc_starter_signals[SIGNAL_LUC_GROUPS_STARTED] =
+    g_signal_new ("luc-groups-started",
+                  TYPE_LUC_STARTER,
+                  G_SIGNAL_RUN_LAST,
+                  0, NULL, NULL,
+                  g_cclosure_marshal_VOID__VOID,
+                  G_TYPE_NONE, 0);
 }
 
 
@@ -414,9 +435,18 @@ luc_starter_start_app_finish (JobManager  *manager,
           g_hash_table_remove (starter->start_groups, GINT_TO_POINTER (group));
           g_array_remove_index (starter->start_order, 0);
 
-          /* start the next group if there are any left */
+          /* check if we have more groups to start */
           if (starter->start_order->len > 0)
-            luc_starter_start_next_group (starter);
+            {
+              /* we do, so start the next group now */
+              luc_starter_start_next_group (starter);
+            }
+          else
+            {
+              /* no, we are finished; notify others */
+              g_signal_emit (starter, luc_starter_signals[SIGNAL_LUC_GROUPS_STARTED],
+                             0, NULL);
+            }
         }
     }
 
@@ -487,6 +517,12 @@ luc_starter_check_luc_required_finish (GObject      *object,
           /* LUC is not required, log this information */
           DLT_LOG (boot_manager_context, DLT_LOG_INFO,
                    DLT_STRING ("LUC is not required"));
+
+          /* notify others that we have started the LUC groups; we haven't
+           * in this case but the call of luc_starter_start_groups() may
+           * still want to be notified that the call has been processed */
+          g_signal_emit (starter, luc_starter_signals[SIGNAL_LUC_GROUPS_STARTED],
+                         0, NULL);
         }
     }
 }
