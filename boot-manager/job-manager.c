@@ -52,6 +52,7 @@ static void           job_manager_stop_unit_reply  (GObject           *object,
 static void           job_manager_job_removed      (SystemdManager    *systemd_manager,
                                                     guint              id,
                                                     const gchar       *job_name,
+                                                    const gchar       *unit,
                                                     const gchar       *result,
                                                     JobManager        *job_manager);
 static JobManagerJob *job_manager_job_new          (JobManager        *manager,
@@ -302,6 +303,7 @@ static void
 job_manager_job_removed (SystemdManager *systemd_manager,
                          guint           id,
                          const gchar    *job_name,
+                         const gchar    *unit,
                          const gchar    *result,
                          JobManager     *job_manager)
 {
@@ -310,6 +312,7 @@ job_manager_job_removed (SystemdManager *systemd_manager,
   g_return_if_fail (IS_SYSTEMD_MANAGER (systemd_manager));
   g_return_if_fail (job_name != NULL && *job_name != '\0');
   g_return_if_fail (result != NULL && *result != '\0');
+  g_return_if_fail (unit != NULL && *unit != '\0');
   g_return_if_fail (IS_JOB_MANAGER (job_manager));
 
   /* look up the remembered job for this job name */
