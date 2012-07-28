@@ -489,12 +489,19 @@ la_handler_service_handle_consumer_lifecycle_request_finish (JobManager  *manage
   LAHandlerServiceData *data = (LAHandlerServiceData *)user_data;
   GError               *err = NULL;
   gchar                *log_text;
+  gint                  error_status = NSM_ERROR_STATUS_OK;
   gint                  status = NSM_ERROR_STATUS_OK;
 
   g_return_if_fail (IS_JOB_MANAGER (manager));
   g_return_if_fail (unit != NULL && *unit != '\0');
   g_return_if_fail (result != NULL && *result != '\0');
   g_return_if_fail (data != NULL);
+
+  /* log that we are completing a lifecycle request */
+  log_text = g_strdup_printf ("Completing lifecycle request: request id %u",
+                              data->request_id);
+  DLT_LOG (la_handler_context, DLT_LOG_INFO, DLT_STRING (log_text));
+  g_free (log_text);
 
   /* log an error if shutting down the consumer has failed */
   if (error != NULL)
@@ -521,13 +528,30 @@ la_handler_service_handle_consumer_lifecycle_request_finish (JobManager  *manage
   /* let the NSM know that we have handled the lifecycle request */
   if (!nsm_consumer_call_lifecycle_request_complete_sync (data->service->nsm_consumer,
                                                           data->request_id, status,
-                                                          NULL, NULL, &err))
+                                                          &error_status, NULL, &err))
     {
       log_text = g_strdup_printf ("Failed to notify Node State Manager about completed "
-                                  "lifecycle request: %s", err->message);
+                                  "lifecycle request: request id %u: %s",
+                                  data->request_id, err->message);
       DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
       g_error_free (err);
+    }
+  else if (error_status == NSM_ERROR_STATUS_OK)
+    {
+      log_text = g_strdup_printf ("Successfully notified Node State Manager about "
+                                  "completed lifecycle request: request id %u",
+                                  data->request_id);
+      DLT_LOG (la_handler_context, DLT_LOG_INFO, DLT_STRING (log_text));
+      g_free (log_text);
+    }
+  else
+    {
+      log_text = g_strdup_printf ("Failed to notify Node State Manager about completed "
+                                  "lifecycle request: request id %u, error status %u",
+                                  data->request_id, error_status);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
     }
 
   la_handler_service_data_unref (data);
