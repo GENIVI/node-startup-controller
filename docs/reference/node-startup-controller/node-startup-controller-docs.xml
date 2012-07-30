@@ -1,0 +1,133 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+                      "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd"
+[
+  <!ENTITY % local.common.attrib "xmlns:xi  CDATA  #FIXED 'http://www.w3.org/2003/XInclude'">
+]>
+
+<book id="index" lang="en">
+  <bookinfo>
+    <title>GENIVI Node Startup Controller Reference Manual</title>
+    <releaseinfo>Version <xi:include href="version.xml" parse="text"/></releaseinfo>
+    <copyright>
+      <year>2012</year>
+      <holder>GENIVI</holder>
+    </copyright>
+    <authorgroup>
+      <author>
+        <firstname>Ben</firstname>
+        <surname>Brewer</surname>
+        <affiliation>
+          <address><email>ben.brewer@codethink.co.uk</email></address>
+        </affiliation>
+      </author>
+      <author>
+        <firstname>Francisco Redondo</firstname>
+        <surname>Marchena</surname>
+        <affiliation>
+          <address><email>francisco.marchena@codethink.co.uk</email></address>
+        </affiliation>
+      </author>
+      <author>
+        <firstname>Jannis</firstname>
+        <surname>Pohlmann</surname>
+        <affiliation>
+          <address><email>jannis.pohlmann@codethink.co.uk</email></address>
+        </affiliation>
+      </author>
+      <author>
+        <firstname>Jonathan</firstname>
+        <surname>Maw</surname>
+        <affiliation>
+          <address><email>jonathan.maw@codethink.co.uk</email></address>
+        </affiliation>
+      </author>
+    </authorgroup>
+  </bookinfo>
+
+  <chapter>
+    <title>Node Startup Controller Overview</title>
+    <sect1>
+      <title>Purpose of the Reference Manual</title>
+      <para>
+        The purpose of this reference manual is to provide documentation about the public
+        API of the Node Startup Controller as well as to give an overview of the classes
+        used in the implementation internally.
+      </para>
+      <para>
+        The intended readers of the reference manual are developers of GENIVI components
+        that interact with the Node Startup Controller and people who want to contribute
+        to the Node Startup Controller development. Reading this reference manual will
+        will help them to understand how the Node Startup Controller can be used and how
+        it is organised internally.
+      </para>
+    </sect1>
+    <sect1>
+      <title>Functional Overview</title>
+    </sect1>
+    <sect1>
+      <title>Public API Overview</title>
+    </sect1>
+    <sect1>
+      <title>Software Architecture</title>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Building, Installing and Testing the Node Startup Controller</title>
+    <sect1>
+      <title>Building</title>
+    </sect1>
+    <sect1>
+      <title>Installing</title>
+    </sect1>
+    <sect1>
+      <title>Testing</title>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Public API</title>
+    <xi:include href="../../../boot-manager/boot-manager-dbus-doc-org.genivi.BootManager1.BootManager.xml"/>
+    <xi:include href="legacy-app-handler.xml"/>
+  </chapter>
+
+  <chapter id="node-startup-controller-classes">
+    <title>Main Classes of the Node Startup Controller</title>
+    <xi:include href="xml/boot-manager-application.xml"/>
+    <xi:include href="xml/boot-manager-service.xml"/>
+    <xi:include href="xml/job-manager.xml"/>
+    <xi:include href="xml/la-handler-service.xml"/>
+    <xi:include href="xml/luc-starter.xml"/>
+    <xi:include href="xml/target-startup-monitor.xml"/>
+  </chapter>
+
+  <chapter id="common">
+    <title>Generated D-Bus Classes</title>
+    <xi:include href="xml/boot-manager-dbus.xml"/>
+    <xi:include href="xml/la-handler-dbus.xml"/>
+    <xi:include href="xml/nsm-consumer-dbus.xml"/>
+    <xi:include href="xml/nsm-lifecycle-control-dbus.xml"/>
+    <xi:include href="xml/shutdown-consumer-dbus.xml"/>
+    <xi:include href="xml/systemd-manager-dbus.xml"/>
+  </chapter>
+
+  <chapter id="utilities">
+    <title>Utilities</title>
+    <xi:include href="xml/shutdown-client.xml"/>
+    <xi:include href="xml/watchdog-client.xml"/>
+    <xi:include href="xml/glib-extensions.xml"/>
+    <xi:include href="xml/nsm-enum-types.xml"/>
+  </chapter>
+
+  <index id="api-index-full">
+    <title>API Index</title>
+    <xi:include href="xml/api-index-full.xml">
+      <xi:fallback />
+    </xi:include>
+  </index>
+
+  <xi:include href="xml/annotation-glossary.xml">
+    <xi:fallback />
+  </xi:include>
+</book>

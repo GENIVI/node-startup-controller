@@ -141,6 +141,7 @@ common/Makefile
 docs/Makefile
 docs/reference/Makefile
 docs/reference/node-startup-controller/Makefile
+docs/reference/node-startup-controller/version.xml
 legacy-app-handler/Makefile
 nsm-dummy/busconf/Makefile
 nsm-dummy/Makefile

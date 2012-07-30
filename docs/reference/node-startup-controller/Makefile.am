@@ -4,26 +4,29 @@
 AUTOMAKE_OPTIONS = 1.6
 
 # The name of the module, e.g. 'glib'.
-DOC_MODULE='node-startup-controller'
+DOC_MODULE=node-startup-controller
 
 # Uncomment for versioned docs and specify the version of the module, e.g. '2'.
 DOC_MODULE_VERSION=$(BOOT_MANAGER_VERSION)
 
 # The top-level SGML file. You can change this if you want to.
-DOC_MAIN_SGML_FILE=$(DOC_MODULE)-docs.sgml
+DOC_MAIN_SGML_FILE=$(DOC_MODULE)-docs.xml
 
 # Directories containing the source code.
 # gtk-doc will search all .c and .h files beneath these paths
 # for inline comments documenting functions and macros.
 # e.g. DOC_SOURCE_DIR=$(top_srcdir)/gtk $(top_srcdir)/gdk
-DOC_SOURCE_DIR=$(top_builddir)/boot-manager
+DOC_SOURCE_DIR =							\
+	$(top_srcdir)/boot-manager					\
+	$(top_srcdir)/common						\
+	$(top_srcdir)/legacy-app-handler
 
 # Extra options to pass to gtkdoc-scangobj. Not normally needed.
 SCANGOBJ_OPTIONS=
 
 # Extra options to supply to gtkdoc-scan.
 # e.g. SCAN_OPTIONS=--deprecated-guards="GTK_DISABLE_DEPRECATED"
-SCAN_OPTIONS=
+SCAN_OPTIONS=--rebuild-sections --rebuild-types
 
 # Extra options to supply to gtkdoc-mkdb.
 # e.g. MKDB_OPTIONS=--xml-mode --output-format=xml
@@ -43,8 +46,13 @@ FIXXREF_OPTIONS=
 # Used for dependencies. The docs will be rebuilt if any of these change.
 # e.g. HFILE_GLOB=$(top_srcdir)/gtk/*.h
 # e.g. CFILE_GLOB=$(top_srcdir)/gtk/*.c
-HFILE_GLOB=
-CFILE_GLOB=
+HFILE_GLOB =								\
+	$(top_srcdir)/boot-manager/*.h					\
+	$(top_srcdir)/common/*.h
+CFILE_GLOB =								\
+	$(top_srcdir)/boot-manager/*.c					\
+	$(top_srcdir)/common/*.c					\
+	$(top_srcdir)/legacy-app-handler/*.c
 
 # Extra header to include when scanning, which are not under DOC_SOURCE_DIR
 # e.g. EXTRA_HFILES=$(top_srcdir}/contrib/extra.h
@@ -60,7 +68,8 @@ HTML_IMAGES=
 
 # Extra SGML files that are included by $(DOC_MAIN_SGML_FILE).
 # e.g. content_files=running.sgml building.sgml changes-2.0.sgml
-content_files=
+content_files =								\
+	version.xml
 
 # SGML files where gtk-doc abbrevations (#GtkWidget) are expanded
 # These files must be listed here *and* in content_files
@@ -80,12 +89,13 @@ include $(top_srcdir)/gtk-doc.make
 
 # Other files to distribute
 # e.g. EXTRA_DIST += version.xml.in
-EXTRA_DIST +=
+EXTRA_DIST +=								\
+	version.xml.in
 
 # Files not to distribute
 # for --rebuild-types in $(SCAN_OPTIONS), e.g. $(DOC_MODULE).types
 # for --rebuild-sections in $(SCAN_OPTIONS) e.g. $(DOC_MODULE)-sections.txt
-#DISTCLEANFILES +=
+DISTCLEANFILES = $(DOC_MODULE).types $(DOC_MODULE)-sections.txt
 
 # Comment this out if you want 'make check' to test you doc status
 # and run some sanity checks
@@ -97,3 +107,6 @@ TESTS_ENVIRONMENT = cd $(srcdir) && \
 endif
 
 -include $(top_srcdir)/git.mk
+
+# Required for make distcheck
+dist-hook: all
