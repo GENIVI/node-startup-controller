@@ -9,13 +9,12 @@ boot_managerdir =							\
 boot_manager_PROGRAMS =							\
 	boot-manager
 
-boot_manager_built_headers =						\
-	boot-manager-dbus.h						\
-	systemd-manager-dbus.h
-
 boot_manager_built_sources =						\
-	$(boot_manager_built_headers)					\
-	boot-manager-dbus.c						\
+	boot-manager-dbus.h						\
+	boot-manager-dbus.c
+
+systemd_manager_built_sources =						\
+	systemd-manager-dbus.h						\
 	systemd-manager-dbus.c
 
 boot_manager_SOURCES =							\
@@ -34,7 +33,8 @@ boot_manager_SOURCES =							\
 	target-startup-monitor.c					\
 	target-startup-monitor.h					\
 	main.c								\
-	$(boot_manager_built_sources)
+	$(boot_manager_built_sources)					\
+	$(systemd_manager_built_sources)
 
 boot_manager_CFLAGS =							\
 	-DLUC_PATH=\"$(sysconfdir)/boot-manager/last-user-context\"	\
@@ -93,12 +93,14 @@ EXTRA_DIST =								\
 	$(systemd_service_in_files)
 
 DISTCLEANFILES =							\
-	$(boot_manager_built_sources)
+	$(boot_manager_built_sources)					\
+	$(systemd_manager_built_sources)
 
 BUILT_SOURCES =								\
-	$(boot_manager_built_sources)
+	$(boot_manager_built_sources)					\
+	$(systemd_manager_built_sources)
 
-boot-manager-dbus.h: boot-manager-dbus.xml Makefile
+$(boot_manager_built_sources): boot-manager-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
 	    --interface-prefix org.genivi				\
 	    --c-namespace ""						\
@@ -107,7 +109,7 @@ boot-manager-dbus.h: boot-manager-dbus.xml Makefile
 	    --annotate org.genivi.BootManager1.BootManager org.gtk.GDBus.C.Name	\
 	      Boot_Manager $<
 
-systemd-manager-dbus.h: systemd-manager-dbus.xml Makefile
+$(systemd_manager_built_sources): systemd-manager-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
 	    --interface-prefix org.freedesktop.systemd1			\
 	    --c-namespace ""						\

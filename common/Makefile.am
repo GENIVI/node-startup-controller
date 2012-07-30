@@ -2,18 +2,27 @@
 
 noinst_LTLIBRARIES = libcommon.la
 
-libcommon_la_built_headers =						\
+la_handler_built_sources =						\
 	la-handler-dbus.h						\
+	la-handler-dbus.c
+
+nsm_consumer_built_sources =						\
 	nsm-consumer-dbus.h						\
+	nsm-consumer-dbus.c
+
+nsm_lifecycle_control_built_sources =					\
 	nsm-lifecycle-control-dbus.h					\
-	shutdown-consumer-dbus.h
+	nsm-lifecycle-control-dbus.c
+
+shutdown_consumer_built_sources =					\
+	shutdown-consumer-dbus.h					\
+	shutdown-consumer-dbus.c
 
 libcommon_la_built_sources =						\
-	$(libcommon_la_built_headers)					\
-	la-handler-dbus.c						\
-	nsm-consumer-dbus.c						\
-	nsm-lifecycle-control-dbus.c					\
-	shutdown-consumer-dbus.c
+	$(la_handler_built_sources)					\
+	$(nsm_consumer_built_sources)					\
+	$(nsm_lifecycle_control_built_sources)				\
+	$(shutdown_consumer_built_sources)
 
 libcommon_la_SOURCES =							\
 	nsm-enum-types.c						\
@@ -56,7 +65,7 @@ DISTCLEANFILES =							\
 BUILT_SOURCES =								\
 	$(libcommon_la_built_headers)
 
-la-handler-dbus.h: la-handler-dbus.xml Makefile
+$(la_handler_built_sources): la-handler-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
 	    --interface-prefix org.genivi				\
 	    --c-namespace ""						\
@@ -64,7 +73,7 @@ la-handler-dbus.h: la-handler-dbus.xml Makefile
 	    --annotate org.genivi.BootManager1.LegacyAppHandler org.gtk.GDBus.C.Name \
 	      LA_Handler $<
 
-nsm-consumer-dbus.h: nsm-consumer-dbus.xml Makefile
+$(nsm_consumer_built_sources): nsm-consumer-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
 	    --interface-prefix com.contiautomotive.NodeStateManager	\
 	    --c-namespace ""						\
@@ -72,7 +81,7 @@ nsm-consumer-dbus.h: nsm-consumer-dbus.xml Makefile
 	    --annotate com.contiautomotive.NodeStateManager.Consumer	\
 	      org.gtk.GDBus.C.Name NSM_Consumer $<
 
-nsm-lifecycle-control-dbus.h: nsm-lifecycle-control-dbus.xml Makefile
+$(nsm_lifecycle_control_built_sources): nsm-lifecycle-control-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
 	    --interface-prefix com.contiautomotive.NodeStateManager	\
 	    --c-namespace ""						\
@@ -80,7 +89,7 @@ nsm-lifecycle-control-dbus.h: nsm-lifecycle-control-dbus.xml Makefile
 	    --annotate com.contiautomotive.NodeStateManager.LifecycleControl \
 	      org.gtk.GDBus.C.Name NSM_Lifecycle_Control $<
 
-shutdown-consumer-dbus.h: shutdown-consumer-dbus.xml Makefile
+$(shutdown_consumer_built_sources): shutdown-consumer-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
 	    --interface-prefix org.genivi				\
 	    --c-namespace ""						\
