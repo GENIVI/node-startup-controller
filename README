@@ -16,6 +16,26 @@ For licensing information, see the COPYING file distributed along with
 with this project.
 
 
+Build Dependencies
+------------------
+
+The following libraries need to be installed in order to be able to
+build the boot manager:
+
+  automotive-dlt >= 2.2.0
+  gio-2.0 >= 2.30.0
+  glib-2.0 >= 2.30.0
+  gobject-2.0 >= 2.30.0
+  libsystemd-daemon >= 183
+
+In addition to this, and apart from the standard tools like autoreconf,
+automake and libtool, the following command-line utilities need to be
+available for building:
+
+  gdbus-codegen
+  gtkdocize (and related GTK-Doc tools)
+
+
 Build Instructions
 ------------------
 
