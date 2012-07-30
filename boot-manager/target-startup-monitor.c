@@ -154,11 +154,11 @@ target_startup_monitor_init (TargetStartupMonitor *monitor)
   /* create the table of targets and their node states */
   monitor->watched_targets = g_hash_table_new (g_str_hash, g_str_equal);
   g_hash_table_insert (monitor->watched_targets, "focussed.target",
-                       GINT_TO_POINTER (NSM_NODE_STATE_LUC_RUNNING));
+                       GUINT_TO_POINTER (NSM_NODE_STATE_LUC_RUNNING));
   g_hash_table_insert (monitor->watched_targets, "unfocussed.target",
-                       GINT_TO_POINTER (NSM_NODE_STATE_FULLY_RUNNING));
+                       GUINT_TO_POINTER (NSM_NODE_STATE_FULLY_RUNNING));
   g_hash_table_insert (monitor->watched_targets, "lazy.target",
-                       GINT_TO_POINTER (NSM_NODE_STATE_FULLY_OPERATIONAL));
+                       GUINT_TO_POINTER (NSM_NODE_STATE_FULLY_OPERATIONAL));
 }
 
 
@@ -249,12 +249,19 @@ target_startup_monitor_job_removed (SystemdManager       *manager,
                                     TargetStartupMonitor *monitor)
 {
   gpointer state;
+  gchar   *message;
 
   g_return_if_fail (IS_SYSTEMD_MANAGER (manager));
   g_return_if_fail (job_name != NULL && *job_name != '\0');
   g_return_if_fail (unit != NULL && *unit != '\0');
   g_return_if_fail (result != NULL && *result != '\0');
   g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
+
+  message = g_strdup_printf ("A systemd job was removed: "
+                             "id %u, job name %s, unit %s, result %s",
+                             id, job_name, unit, result);
+  DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
+  g_free (message);
 
   /* we are only interested in successful JobRemoved signals */
   if (g_strcmp0 (result, "done") != 0)
