@@ -7,3 +7,67 @@ At present, all relevant documentation for this project is available
 in the GENIVI wiki on
 
   https://collab.genivi.org/wiki/display/genivi/SysInfraEGLifecycleExecPrjctBootManager
+
+
+License
+-------
+
+For licensing information, see the COPYING file distributed along with
+with this project.
+
+
+Build Instructions
+------------------
+
+In order to build the boot manager, run the following:
+
+  gtkdocize &&
+  autoreconf -ivf &&
+  ./configure [options] &&
+  make
+
+The following configure options are available apart from the standard
+choices:
+
+  --enable-debug=<yes|no>:
+
+    Enables or disables debug builds. Enabling
+    debug will cause more compiler warnings to
+    be generated that are then treated as errors
+    and make the build fail. This is useful for
+    catching problems during development.
+
+    The default is "no".
+
+  --with-prioritised-luc-types=<comma-separated integers>:
+
+    Allows to define an ordered list of LUC types to be prioritised
+    during start-up.
+
+    The default is an empty list.
+
+For more information about all available configure options, run:
+
+  ./configure --help
+
+
+Install Instructions
+--------------------
+
+To install the boot manager after having built it, run:
+
+  make install
+
+
+Testing Instructions
+--------------------
+
+To run any test suites shipped with the boot manager, run:
+
+  make check
+
+There may also be some post-install tests that can only be performed
+after installing the boot manager into the system. Those can be
+executed with:
+
+  make installcheck
