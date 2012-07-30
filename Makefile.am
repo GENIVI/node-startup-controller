@@ -1,11 +1,11 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
 SUBDIRS =								\
-	boot-manager							\
 	common								\
-	docs								\
+	boot-manager							\
 	legacy-app-handler						\
 	nsm-dummy							\
+	docs								\
 	tests
 
 .PHONY: ChangeLog

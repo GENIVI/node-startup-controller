@@ -14,9 +14,9 @@ boot_manager_built_headers =						\
 	systemd-manager-dbus.h
 
 boot_manager_built_sources =						\
+	$(boot_manager_built_headers)					\
 	boot-manager-dbus.c						\
-	systemd-manager-dbus.c						\
-	$(boot_manager_built_headers)
+	systemd-manager-dbus.c
 
 boot_manager_SOURCES =							\
 	boot-manager-application.c					\
@@ -96,7 +96,7 @@ DISTCLEANFILES =							\
 	$(boot_manager_built_sources)
 
 BUILT_SOURCES =								\
-	$(boot_manager_built_headers)
+	$(boot_manager_built_sources)
 
 boot-manager-dbus.h: boot-manager-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\

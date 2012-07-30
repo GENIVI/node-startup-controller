@@ -9,11 +9,11 @@ libcommon_la_built_headers =						\
 	shutdown-consumer-dbus.h
 
 libcommon_la_built_sources =						\
+	$(libcommon_la_built_headers)					\
 	la-handler-dbus.c						\
 	nsm-consumer-dbus.c						\
 	nsm-lifecycle-control-dbus.c					\
-	shutdown-consumer-dbus.c					\
-	$(libcommon_la_built_headers)
+	shutdown-consumer-dbus.c
 
 libcommon_la_SOURCES =							\
 	nsm-enum-types.c						\
