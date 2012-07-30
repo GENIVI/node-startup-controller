@@ -327,6 +327,7 @@ target_startup_monitor_set_state_if_is_start_job (TargetStartupMonitor *monitor,
                                                   const gchar          *job_name)
 {
   TargetStartupMonitorData *data;
+  gchar                    *message;
 
   g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
   g_return_if_fail (job_name != NULL && *job_name != '\0');
@@ -335,6 +336,11 @@ target_startup_monitor_set_state_if_is_start_job (TargetStartupMonitor *monitor,
   data->monitor = g_object_ref (monitor);
   data->state = state;
   data->job_name = g_strdup (job_name);
+
+  message = g_strdup_printf ("Querying systemd jobs to see if %s is a start job",
+                             job_name);
+  DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
+  g_free (message);
 
   /* get the list of the jobs in the system */
   systemd_manager_call_list_jobs (monitor->systemd_manager, NULL,
@@ -394,10 +400,14 @@ target_startup_monitor_set_state_if_is_start_job_finish (GObject      *object,
   while (g_variant_iter_loop (&iter, "usssoo", NULL, NULL, &job_type, NULL,
                               &job_name, NULL))
     {
+      log_text = g_strdup_printf ("  Checking job %s, type %s", job_name, job_type);
+      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (log_text));
+      g_free (log_text);
+
       /* check if the job that was removed is in this list and is
        * a start job */
       if (g_strcmp0 (job_name, data->job_name) == 0
-          && g_strcmp0 (job_type, "JOB_START"))
+          && g_strcmp0 (job_type, "start") == 0)
         {
           /* it is, so set the state now */
           target_startup_monitor_set_node_state (data->monitor, data->state);
