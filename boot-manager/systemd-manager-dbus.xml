@@ -30,6 +30,10 @@
       <arg name="units" type="a(ssssssouso)" direction="out"/>
     </method>
 
+    <method name="ListJobs">
+      <arg name="jobs" type="a(usssoo)" direction="out"/>
+    </method>
+
     <method name="Subscribe"/>
 
     <method name="Unsubscribe"/>
