@@ -17,9 +17,9 @@
 
 #include <dlt/dlt.h>
 
-#include <boot-manager/glib-extensions.h>
-#include <boot-manager/boot-manager-dbus.h>
-#include <boot-manager/boot-manager-service.h>
+#include <node-startup-controller/glib-extensions.h>
+#include <node-startup-controller/boot-manager-dbus.h>
+#include <node-startup-controller/boot-manager-service.h>
 
 
 

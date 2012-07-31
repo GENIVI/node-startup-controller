@@ -10,7 +10,7 @@
 #ifndef __TARGET_STARTUP_MONITOR_H__
 #define __TARGET_STARTUP_MONITOR_H__
 
-#include <boot-manager/systemd-manager-dbus.h>
+#include <node-startup-controller/systemd-manager-dbus.h>
 
 G_BEGIN_DECLS
 

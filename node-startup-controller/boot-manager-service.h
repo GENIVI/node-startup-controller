@@ -12,7 +12,7 @@
 
 #include <gio/gio.h>
 
-#include <boot-manager/systemd-manager-dbus.h>
+#include <node-startup-controller/systemd-manager-dbus.h>
 
 G_BEGIN_DECLS
 

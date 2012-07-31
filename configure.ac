@@ -1,17 +1,17 @@
 dnl ***************************
 dnl *** Version information ***
 dnl ***************************
-m4_define([boot_manager_version_api_major], [1])
-m4_define([boot_manager_version_major], [0])
-m4_define([boot_manager_version_minor], [1])
-m4_define([boot_manager_version_micro], [0])
-m4_define([boot_manager_version], [boot_manager_version_major().boot_manager_version_minor().boot_manager_version_micro()])
+m4_define([node_startup_controller_version_api_major], [1])
+m4_define([node_startup_controller_version_major], [0])
+m4_define([node_startup_controller_version_minor], [1])
+m4_define([node_startup_controller_version_micro], [0])
+m4_define([node_startup_controller_version], [node_startup_controller_version_major().node_startup_controller_version_minor().node_startup_controller_version_micro()])
 
 dnl ***************************
 dnl *** Initialize autoconf ***
 dnl ***************************
 AC_COPYRIGHT([Copyright (c) 2012 GENIVI <genivi-dev@mail.genivi.org>])
-AC_INIT([boot-manager], [boot_manager_version], [genivi-dev@mail.genivi.org])
+AC_INIT([node-startup-controller], [node_startup_controller_version], [genivi-dev@mail.genivi.org])
 AC_PREREQ([2.50])
 AC_CANONICAL_TARGET()
 
@@ -26,18 +26,18 @@ AM_MAINTAINER_MODE()
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 dnl **********************************
-dnl *** Subst boot-manager version ***
+dnl *** Subst node-startup-controller version ***
 dnl **********************************
-BOOT_MANAGER_VERSION_MAJOR=boot_manager_version_major()
-BOOT_MANAGER_VERSION_MINOR=boot_manager_version_minor()
-BOOT_MANAGER_VERSION_MICRO=boot_manager_version_micro()
-BOOT_MANAGER_VERSION_API_MAJOR=boot_manager_version_api_major()
-BOOT_MANAGER_VERSION_API=$BOOT_MANAGER_VERSION_API_MAJOR
-AC_SUBST([BOOT_MANAGER_VERSION_MAJOR])
-AC_SUBST([BOOT_MANAGER_VERSION_MINOR])
-AC_SUBST([BOOT_MANAGER_VERSION_MICRO])
-AC_SUBST([BOOT_MANAGER_VERSION_API_MAJOR])
-AC_SUBST([BOOT_MANAGER_VERSION_API])
+NODE_STARTUP_CONTROLLER_VERSION_MAJOR=node_startup_controller_version_major()
+NODE_STARTUP_CONTROLLER_VERSION_MINOR=node_startup_controller_version_minor()
+NODE_STARTUP_CONTROLLER_VERSION_MICRO=node_startup_controller_version_micro()
+NODE_STARTUP_CONTROLLER_VERSION_API_MAJOR=node_startup_controller_version_api_major()
+NODE_STARTUP_CONTROLLER_VERSION_API=$NODE_STARTUP_CONTROLLER_VERSION_API_MAJOR
+AC_SUBST([NODE_STARTUP_CONTROLLER_VERSION_MAJOR])
+AC_SUBST([NODE_STARTUP_CONTROLLER_VERSION_MINOR])
+AC_SUBST([NODE_STARTUP_CONTROLLER_VERSION_MICRO])
+AC_SUBST([NODE_STARTUP_CONTROLLER_VERSION_API_MAJOR])
+AC_SUBST([NODE_STARTUP_CONTROLLER_VERSION_API])
 
 dnl ********************************
 dnl *** Check for basic programs ***
@@ -135,8 +135,8 @@ AC_DEFINE_UNQUOTED([PRIORITISED_LUC_TYPES],
 
 AC_OUTPUT([
 Makefile
-boot-manager/busconf/Makefile
-boot-manager/Makefile
+node-startup-controller/busconf/Makefile
+node-startup-controller/Makefile
 common/Makefile
 docs/Makefile
 docs/reference/Makefile
@@ -146,6 +146,6 @@ legacy-app-handler/Makefile
 nsm-dummy/busconf/Makefile
 nsm-dummy/Makefile
 tests/Makefile
-tests/boot-manager/Makefile
+tests/node-startup-controller/Makefile
 tests/legacy-app-handler/Makefile
 ])

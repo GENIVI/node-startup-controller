@@ -20,12 +20,12 @@
 
 #include <dlt/dlt.h>
 
-#include <boot-manager/boot-manager-application.h>
-#include <boot-manager/boot-manager-dbus.h>
-#include <boot-manager/boot-manager-service.h>
-#include <boot-manager/la-handler-service.h>
-#include <boot-manager/systemd-manager-dbus.h>
-#include <boot-manager/target-startup-monitor.h>
+#include <node-startup-controller/boot-manager-application.h>
+#include <node-startup-controller/boot-manager-dbus.h>
+#include <node-startup-controller/boot-manager-service.h>
+#include <node-startup-controller/la-handler-service.h>
+#include <node-startup-controller/systemd-manager-dbus.h>
+#include <node-startup-controller/target-startup-monitor.h>
 
 
 

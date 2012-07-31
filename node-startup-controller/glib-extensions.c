@@ -13,7 +13,7 @@
 
 #include <glib.h>
 
-#include <boot-manager/glib-extensions.h>
+#include <node-startup-controller/glib-extensions.h>
 
 
 

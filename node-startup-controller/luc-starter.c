@@ -22,9 +22,9 @@
 
 #include <common/nsm-lifecycle-control-dbus.h>
 
-#include <boot-manager/boot-manager-service.h>
-#include <boot-manager/job-manager.h>
-#include <boot-manager/luc-starter.h>
+#include <node-startup-controller/boot-manager-service.h>
+#include <node-startup-controller/job-manager.h>
+#include <node-startup-controller/luc-starter.h>
 
 
 

@@ -2,8 +2,8 @@
 
 SUBDIRS =								\
 	common								\
-	boot-manager							\
 	legacy-app-handler						\
+	node-startup-controller						\
 	nsm-dummy							\
 	docs								\
 	tests

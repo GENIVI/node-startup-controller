@@ -88,7 +88,7 @@
 
   <chapter>
     <title>Public API</title>
-    <xi:include href="../../../boot-manager/boot-manager-dbus-doc-org.genivi.BootManager1.BootManager.xml"/>
+    <xi:include href="../../../node-startup-controller/boot-manager-dbus-doc-org.genivi.BootManager1.BootManager.xml"/>
     <xi:include href="legacy-app-handler.xml"/>
   </chapter>
 

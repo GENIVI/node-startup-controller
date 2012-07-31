@@ -14,8 +14,8 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
-#include <boot-manager/job-manager.h>
-#include <boot-manager/systemd-manager-dbus.h>
+#include <node-startup-controller/job-manager.h>
+#include <node-startup-controller/systemd-manager-dbus.h>
 
 
 

@@ -19,9 +19,9 @@
 #include <common/nsm-enum-types.h>
 #include <common/nsm-lifecycle-control-dbus.h>
 
-#include <boot-manager/boot-manager-dbus.h>
-#include <boot-manager/target-startup-monitor.h>
-#include <boot-manager/systemd-unit-dbus.h>
+#include <node-startup-controller/boot-manager-dbus.h>
+#include <node-startup-controller/target-startup-monitor.h>
+#include <node-startup-controller/systemd-unit-dbus.h>
 
 
 
@@ -324,7 +324,7 @@ target_startup_monitor_get_unit_finish (GObject      *object,
 
       /* create a proxy for this unit D-Bus object */
       systemd_unit_proxy_new (g_dbus_proxy_get_connection (G_DBUS_PROXY (data->monitor->systemd_manager)),
-                              G_DBUS_PROXY_FLAGS_GET_INVALIDATED_PROPERTIES,
+                              G_DBUS_PROXY_FLAGS_NONE,
                               "org.freedesktop.systemd1",
                               object_path,
                               NULL,

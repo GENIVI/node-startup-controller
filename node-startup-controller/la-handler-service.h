@@ -14,7 +14,7 @@
 
 #include <common/nsm-consumer-dbus.h>
 
-#include <boot-manager/job-manager.h>
+#include <node-startup-controller/job-manager.h>
 
 G_BEGIN_DECLS
 

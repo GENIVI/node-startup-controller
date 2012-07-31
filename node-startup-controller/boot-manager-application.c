@@ -25,11 +25,11 @@
 #include <common/shutdown-consumer-dbus.h>
 #include <common/watchdog-client.h>
 
-#include <boot-manager/boot-manager-application.h>
-#include <boot-manager/boot-manager-service.h>
-#include <boot-manager/job-manager.h>
-#include <boot-manager/la-handler-service.h>
-#include <boot-manager/luc-starter.h>
+#include <node-startup-controller/boot-manager-application.h>
+#include <node-startup-controller/boot-manager-service.h>
+#include <node-startup-controller/job-manager.h>
+#include <node-startup-controller/la-handler-service.h>
+#include <node-startup-controller/luc-starter.h>
 
 
 

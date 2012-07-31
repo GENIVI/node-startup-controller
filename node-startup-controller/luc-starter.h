@@ -10,10 +10,8 @@
 #ifndef __LUC_STARTER_H__
 #define __LUC_STARTER_H__
 
-#include <boot-manager/boot-manager-service.h>
-#include <boot-manager/job-manager.h>
-
-
+#include <node-startup-controller/boot-manager-service.h>
+#include <node-startup-controller/job-manager.h>
 
 G_BEGIN_DECLS
 

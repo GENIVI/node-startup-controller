@@ -22,8 +22,8 @@
 #include <common/shutdown-client.h>
 #include <common/shutdown-consumer-dbus.h>
 
-#include <boot-manager/job-manager.h>
-#include <boot-manager/la-handler-service.h>
+#include <node-startup-controller/job-manager.h>
+#include <node-startup-controller/la-handler-service.h>
 
 
 
