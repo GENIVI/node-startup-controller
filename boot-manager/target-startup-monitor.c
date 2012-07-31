@@ -391,7 +391,7 @@ target_startup_monitor_unit_properties_changed (GDBusProxy           *proxy,
   g_free (message);
 
   /* read the new state from the changed properties */
-  if (g_variant_lookup (changed_properties, "ActiveState", "%s", &state))
+  if (g_variant_lookup (changed_properties, "ActiveState", "&s", &state))
     {
       /* log the the active state has changed */
       message = g_strdup_printf ("Active state of unit \"%s\" changed to %s",
