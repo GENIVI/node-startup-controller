@@ -110,6 +110,7 @@
     <xi:include href="xml/nsm-lifecycle-control-dbus.xml"/>
     <xi:include href="xml/shutdown-consumer-dbus.xml"/>
     <xi:include href="xml/systemd-manager-dbus.xml"/>
+    <xi:include href="xml/systemd-unit-dbus.xml"/>
   </chapter>
 
   <chapter id="utilities">

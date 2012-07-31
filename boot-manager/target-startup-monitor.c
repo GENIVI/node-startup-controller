@@ -307,7 +307,7 @@ target_startup_monitor_get_unit_finish (GObject      *object,
       data->object_path = object_path;
 
       systemd_unit_proxy_new (g_dbus_proxy_get_connection (G_DBUS_PROXY (data->monitor->systemd_manager)),
-                              G_DBUS_PROXY_FLAGS_NONE,
+                              G_DBUS_PROXY_FLAGS_GET_INVALIDATED_PROPERTIES,
                               "org.freedesktop.systemd1",
                               object_path,
                               NULL,
@@ -373,21 +373,26 @@ target_startup_monitor_unit_properties_changed (GDBusProxy           *proxy,
   g_return_if_fail (changed_properties != NULL);
   g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
 
-  /* ignore this signal if no properties changed at all */
-  if (g_variant_n_children (changed_properties) == 0)
-    return;
+  /* get the name of the unit */
+  unit_name = systemd_unit_get_id (unit);
+
+  message = g_strdup_printf ("Properties of unit \"%s\" changed", unit_name);
+  DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
+  g_free (message);
 
   /* log the contents of the changed properties dict for debugging */
   message = g_variant_print (changed_properties, TRUE);
   DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
   g_free (message);
 
+  /* log the invalidated properties for debugging */
+  message = g_strjoinv (", ", (gchar **)invalidated_properties);
+  DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
+  g_free (message);
+
   /* read the new state from the changed properties */
   if (g_variant_lookup (changed_properties, "ActiveState", "%s", &state))
     {
-      /* get the name of the unit */
-      unit_name = systemd_unit_get_id (unit);
-
       /* log the the active state has changed */
       message = g_strdup_printf ("Active state of unit \"%s\" changed to %s",
                                  unit_name, state);
