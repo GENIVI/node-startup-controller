@@ -17,6 +17,10 @@ systemd_manager_built_sources =						\
 	systemd-manager-dbus.h						\
 	systemd-manager-dbus.c
 
+systemd_unit_built_sources =						\
+	systemd-unit-dbus.h						\
+	systemd-unit-dbus.c
+
 boot_manager_SOURCES =							\
 	boot-manager-application.c					\
 	boot-manager-application.h					\
@@ -34,7 +38,8 @@ boot_manager_SOURCES =							\
 	target-startup-monitor.h					\
 	main.c								\
 	$(boot_manager_built_sources)					\
-	$(systemd_manager_built_sources)
+	$(systemd_manager_built_sources)				\
+	$(systemd_unit_built_sources)
 
 boot_manager_CFLAGS =							\
 	-DLUC_PATH=\"$(sysconfdir)/boot-manager/last-user-context\"	\
@@ -94,11 +99,13 @@ EXTRA_DIST =								\
 
 DISTCLEANFILES =							\
 	$(boot_manager_built_sources)					\
-	$(systemd_manager_built_sources)
+	$(systemd_manager_built_sources)				\
+	$(systemd_unit_built_sources)
 
 BUILT_SOURCES =								\
 	$(boot_manager_built_sources)					\
-	$(systemd_manager_built_sources)
+	$(systemd_manager_built_sources)				\
+	$(systemd_unit_built_sources)
 
 $(boot_manager_built_sources): boot-manager-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
@@ -116,3 +123,11 @@ $(systemd_manager_built_sources): systemd-manager-dbus.xml Makefile
 	    --generate-c-code systemd-manager-dbus			\
 	    --annotate org.freedesktop.systemd1.Manager org.gtk.GDBus.C.Name \
 	      SystemdManager $<
+
+$(systemd_unit_built_sources): systemd-unit-dbus.xml Makefile
+	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
+	    --interface-prefix org.freedesktop.systemd1			\
+	    --c-namespace ""						\
+	    --generate-c-code systemd-unit-dbus				\
+	    --annotate org.freedesktop.systemd1.Unit org.gtk.GDBus.C.Name \
+	      SystemdUnit $<

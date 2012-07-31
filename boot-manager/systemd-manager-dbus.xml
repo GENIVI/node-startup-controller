@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <node name="/org/freedesktop/systemd1">
   <interface name="org.freedesktop.systemd1.Manager">
+    <method name="GetUnit">
+      <arg name="name" type="s" direction="in"/>
+      <arg name="unit" type="o" direction="out"/>
+    </method>
+
     <method name="StartUnit">
       <arg name="name" type="s" direction="in"/>
       <arg name="mode" type="s" direction="in"/>

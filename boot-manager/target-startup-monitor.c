@@ -21,6 +21,7 @@
 
 #include <boot-manager/boot-manager-dbus.h>
 #include <boot-manager/target-startup-monitor.h>
+#include <boot-manager/systemd-unit-dbus.h>
 
 
 
@@ -37,30 +38,35 @@ enum
 
 
 
-static void target_startup_monitor_finalize                  (GObject              *object);
-static void target_startup_monitor_constructed               (GObject              *object);
-static void target_startup_monitor_get_property              (GObject              *object,
-                                                              guint                 prop_id,
-                                                              GValue               *value,
-                                                              GParamSpec           *pspec);
-static void target_startup_monitor_set_property              (GObject              *object,
-                                                              guint                 prop_id,
-                                                              const GValue         *value,
-                                                              GParamSpec           *pspec);
-static void target_startup_monitor_job_removed               (SystemdManager       *manager,
-                                                              guint                 id,
-                                                              const gchar          *job_name,
-                                                              const gchar          *unit,
-                                                              const gchar          *result,
-                                                              TargetStartupMonitor *monitor);
-static void target_startup_monitor_set_node_state            (TargetStartupMonitor *monitor,
-                                                              NSMNodeState          state);
-static void target_startup_monitor_set_node_state_finish     (GObject              *object,
-                                                              GAsyncResult         *res,
-                                                              gpointer              user_data);
-static void target_startup_monitor_set_state_if_is_start_job (TargetStartupMonitor *monitor,
-                                                              NSMNodeState          state,
-                                                              const gchar          *job_name);
+typedef struct _GetUnitData GetUnitData;
+
+
+
+static void     target_startup_monitor_finalize                         (GObject              *object);
+static void     target_startup_monitor_constructed                      (GObject              *object);
+static void     target_startup_monitor_get_property                     (GObject              *object,
+                                                                         guint                 prop_id,
+                                                                         GValue               *value,
+                                                                         GParamSpec           *pspec);
+static void     target_startup_monitor_set_property                     (GObject              *object,
+                                                                         guint                 prop_id,
+                                                                         const GValue         *value,
+                                                                         GParamSpec           *pspec);
+static void     target_startup_monitor_get_unit_finish                  (GObject              *object,
+                                                                         GAsyncResult         *res,
+                                                                         gpointer              user_data);
+static void     target_startup_monitor_unit_proxy_new_finish            (GObject              *object,
+                                                                         GAsyncResult         *res,
+                                                                         gpointer              user_data);
+static void     target_startup_monitor_unit_active_state_changed        (GObject              *object,
+                                                                         GParamSpec           *pspec,
+                                                                         TargetStartupMonitor *monitor);
+static void     target_startup_monitor_set_node_state                   (TargetStartupMonitor *monitor,
+                                                                         NSMNodeState          state);
+static void     target_startup_monitor_set_node_state_finish            (GObject              *object,
+                                                                         GAsyncResult         *res,
+                                                                         gpointer              user_data);
+
 
 
 struct _TargetStartupMonitorClass
@@ -76,8 +82,18 @@ struct _TargetStartupMonitor
 
   NSMLifecycleControl *nsm_lifecycle_control;
 
-  /* map of systemd targets to corresponding node states */
-  GHashTable          *watched_targets;
+  /* list of systemd units for the targets we are interested in */
+  GList               *units;
+
+  /* map of systemd target names to corresponding node states */
+  GHashTable          *targets_to_states;
+};
+
+struct _GetUnitData
+{
+  TargetStartupMonitor *monitor;
+  const gchar          *unit_name;
+  gchar                *object_path;
 };
 
 
@@ -138,12 +154,12 @@ target_startup_monitor_init (TargetStartupMonitor *monitor)
   target_startup_monitor_set_node_state (monitor, NSM_NODE_STATE_BASE_RUNNING);
 
   /* create the table of targets and their node states */
-  monitor->watched_targets = g_hash_table_new (g_str_hash, g_str_equal);
-  g_hash_table_insert (monitor->watched_targets, "focussed.target",
+  monitor->targets_to_states = g_hash_table_new (g_str_hash, g_str_equal);
+  g_hash_table_insert (monitor->targets_to_states, "focussed.target",
                        GUINT_TO_POINTER (NSM_NODE_STATE_LUC_RUNNING));
-  g_hash_table_insert (monitor->watched_targets, "unfocussed.target",
+  g_hash_table_insert (monitor->targets_to_states, "unfocussed.target",
                        GUINT_TO_POINTER (NSM_NODE_STATE_FULLY_RUNNING));
-  g_hash_table_insert (monitor->watched_targets, "lazy.target",
+  g_hash_table_insert (monitor->targets_to_states, "lazy.target",
                        GUINT_TO_POINTER (NSM_NODE_STATE_FULLY_OPERATIONAL));
 }
 
@@ -153,11 +169,28 @@ static void
 target_startup_monitor_constructed (GObject *object)
 {
   TargetStartupMonitor *monitor = TARGET_STARTUP_MONITOR (object);
+  GetUnitData          *data;
 
-  /* connect to systemd's "JobRemoved" signal so that we are notified
-   * whenever a job is finished */
-  g_signal_connect (monitor->systemd_manager, "job-removed",
-                    G_CALLBACK (target_startup_monitor_job_removed), monitor);
+  data = g_slice_new0 (GetUnitData);
+  data->monitor = g_object_ref (monitor);
+  data->unit_name = "focussed.target";
+
+  systemd_manager_call_get_unit (monitor->systemd_manager, "focussed.target", NULL,
+                                 target_startup_monitor_get_unit_finish, data);
+
+  data = g_slice_new0 (GetUnitData);
+  data->monitor = g_object_ref (monitor);
+  data->unit_name = "unfocussed.target";
+
+  systemd_manager_call_get_unit (monitor->systemd_manager, "unfocussed.target", NULL,
+                                 target_startup_monitor_get_unit_finish, data);
+
+  data = g_slice_new0 (GetUnitData);
+  data->monitor = g_object_ref (monitor);
+  data->unit_name = "lazy.target";
+
+  systemd_manager_call_get_unit (monitor->systemd_manager, "lazy.target", NULL,
+                                 target_startup_monitor_get_unit_finish, data);
 }
 
 
@@ -166,9 +199,19 @@ static void
 target_startup_monitor_finalize (GObject *object)
 {
   TargetStartupMonitor *monitor = TARGET_STARTUP_MONITOR (object);
+  GList                *lp;
+
+  /* disconnect from all the unit proxies and release them */
+  for (lp = monitor->units; lp != NULL; lp = lp->next)
+    {
+      g_signal_handlers_disconnect_matched (lp->data, G_SIGNAL_MATCH_DATA,
+                                            0, 0, NULL, NULL, monitor);
+      g_object_unref (lp->data);
+    }
+  g_list_free (lp->data);
 
   /* release the mapping of systemd targets to node states */
-  g_hash_table_destroy (monitor->watched_targets);
+  g_hash_table_destroy (monitor->targets_to_states);
 
   /* release the systemd manager */
   g_signal_handlers_disconnect_matched (monitor->systemd_manager,
@@ -227,39 +270,127 @@ target_startup_monitor_set_property (GObject      *object,
 
 
 static void
-target_startup_monitor_job_removed (SystemdManager       *manager,
-                                    guint                 id,
-                                    const gchar          *job_name,
-                                    const gchar          *unit,
-                                    const gchar          *result,
-                                    TargetStartupMonitor *monitor)
+target_startup_monitor_get_unit_finish (GObject      *object,
+                                        GAsyncResult *res,
+                                        gpointer      user_data)
 {
-  gpointer state;
-  gchar   *message;
+  GetUnitData *data = user_data;
+  GError      *error = NULL;
+  gchar       *message;
+  gchar       *object_path;
 
-  g_return_if_fail (IS_SYSTEMD_MANAGER (manager));
-  g_return_if_fail (job_name != NULL && *job_name != '\0');
-  g_return_if_fail (unit != NULL && *unit != '\0');
-  g_return_if_fail (result != NULL && *result != '\0');
+  g_return_if_fail (IS_SYSTEMD_MANAGER (object));
+  g_return_if_fail (G_IS_ASYNC_RESULT (res));
+  g_return_if_fail (data != NULL);
+
+  if (!systemd_manager_call_get_unit_finish (SYSTEMD_MANAGER (object), &object_path,
+                                             res, &error))
+    {
+      message = g_strdup_printf ("Failed to get unit \"%s\" from systemd: %s",
+                                 data->unit_name, error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (message));
+      g_free (message);
+      g_error_free (error);
+
+      /* release the get unit data */
+      g_object_unref (data->monitor);
+      g_slice_free (GetUnitData, data);
+    }
+  else
+    {
+      message = g_strdup_printf ("Creating D-Bus proxy for unit \"%s\"", object_path);
+      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+
+      /* remember the object path */
+      data->object_path = object_path;
+
+      systemd_unit_proxy_new (g_dbus_proxy_get_connection (G_DBUS_PROXY (data->monitor->systemd_manager)),
+                              G_DBUS_PROXY_FLAGS_NONE,
+                              "org.freedesktop.systemd1",
+                              object_path,
+                              NULL,
+                              target_startup_monitor_unit_proxy_new_finish,
+                              data);
+    }
+}
+
+
+
+static void
+target_startup_monitor_unit_proxy_new_finish (GObject      *object,
+                                              GAsyncResult *res,
+                                              gpointer      user_data)
+{
+  GetUnitData *data = user_data;
+  SystemdUnit *unit;
+  GError      *error = NULL;
+  gchar       *message;
+
+  g_return_if_fail (G_IS_DBUS_CONNECTION (object));
+  g_return_if_fail (G_IS_ASYNC_RESULT (res));
+  g_return_if_fail (data != NULL);
+
+  unit = systemd_unit_proxy_new_finish (res, &error);
+
+  if (error != NULL)
+    {
+      message = g_strdup_printf ("Failed to create a D-Bus proxy for unit \"%s\": %s",
+                                 data->object_path, error->message);
+      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (message));
+      g_error_free (error);
+    }
+  else
+    {
+      g_signal_connect (unit, "notify::active-state",
+                        G_CALLBACK (target_startup_monitor_unit_active_state_changed),
+                        data->monitor);
+
+      data->monitor->units = g_list_append (data->monitor->units, unit);
+    }
+
+  /* free the get unit data */
+  g_object_unref (data->monitor);
+  g_free (data->object_path);
+  g_slice_free (GetUnitData, data);
+}
+
+
+
+static void
+target_startup_monitor_unit_active_state_changed (GObject              *object,
+                                                  GParamSpec           *pspec,
+                                                  TargetStartupMonitor *monitor)
+{
+  SystemdUnit *unit = SYSTEMD_UNIT (object);
+  const gchar *state;
+  const gchar *unit_name;
+  gpointer     node_state;
+  gchar       *message;
+
+  g_return_if_fail (IS_SYSTEMD_UNIT (object));
+  g_return_if_fail (G_IS_PARAM_SPEC (pspec));
   g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
 
-  message = g_strdup_printf ("A systemd job was removed: "
-                             "id %u, job name %s, unit %s, result %s",
-                             id, job_name, unit, result);
+  /* get the name and new state from the unit */
+  unit_name = systemd_unit_get_id (unit);
+  state = systemd_unit_get_active_state (unit);
+
+  message = g_strdup_printf ("Active state of unit \"%s\" changed to %s",
+                             unit_name, state);
   DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
   g_free (message);
 
-  /* we are only interested in successful JobRemoved signals */
-  if (g_strcmp0 (result, "done") != 0)
-    return;
-
-  /* check if the unit corresponds to a node state */
-  if (g_hash_table_lookup_extended (monitor->watched_targets, unit, NULL, &state))
+  /* check if the new state is active */
+  if (g_strcmp0 (state, "active") == 0)
     {
-      /* apply the state only if the job is a start job */
-      target_startup_monitor_set_state_if_is_start_job (monitor,
-                                                        GPOINTER_TO_UINT (state),
-                                                        job_name);
+      /* look up the node state corresponding to this unit, if there is one */
+      if (g_hash_table_lookup_extended (monitor->targets_to_states, unit_name,
+                                        NULL, &node_state))
+        {
+          /* we do have a state for this unit, so apply it now */
+          target_startup_monitor_set_node_state (monitor, GPOINTER_TO_UINT (node_state));
+        }
     }
 }
 
@@ -310,76 +441,6 @@ target_startup_monitor_set_node_state_finish (GObject      *object,
       DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
     }
-}
-
-
-
-static void
-target_startup_monitor_set_state_if_is_start_job (TargetStartupMonitor *monitor,
-                                                  NSMNodeState          state,
-                                                  const gchar          *job_name)
-{
-  GVariantIter  iter;
-  const gchar  *current_job_type;
-  const gchar  *current_job_name;
-  GVariant     *jobs = NULL;
-  GError       *error = NULL;
-  gchar        *message;
-
-  g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
-  g_return_if_fail (job_name != NULL && *job_name != '\0');
-
-  message = g_strdup_printf ("Querying systemd jobs to see if %s is a start job",
-                             job_name);
-  DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
-  g_free (message);
-
-  /* get the list of the jobs in the system */
-  if (!systemd_manager_call_list_jobs_sync (monitor->systemd_manager, &jobs,
-                                            NULL, &error))
-    {
-      /* log the error */
-      message = g_strdup_printf ("Failed to get the list of jobs from systemd: %s",
-                                 error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (message));
-      g_free (message);
-      g_error_free (error);
-
-      /* log that we cannot change the state because we don't know
-       * the type of the systemd job that was removed */
-      message = g_strdup_printf ("Failed to determine type of job %s: "
-                                  "will not change the node state to %u",
-                                  job_name, state);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (message));
-      g_free (message);
-
-      /* we are done here */
-      return;
-    }
-
-  /* iterate over the list of jobs */
-  g_variant_iter_init (&iter, jobs);
-  while (g_variant_iter_loop (&iter, "usssoo", NULL, NULL, &current_job_type, NULL,
-                              &current_job_name, NULL))
-    {
-      message = g_strdup_printf ("Checking job %s, type %s",
-                                 current_job_name, current_job_type);
-      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
-      g_free (message);
-
-      /* check if the job that was removed is in this list and is
-       * a start job */
-      if (g_strcmp0 (current_job_name, job_name) == 0
-          && g_strcmp0 (current_job_type, "start") == 0)
-        {
-          /* it is, so set the state now */
-          target_startup_monitor_set_node_state (monitor, state);
-          break;
-        }
-    }
-
-  /* release the variant for the array of jobs */
-  g_variant_unref (jobs);
 }
 
 

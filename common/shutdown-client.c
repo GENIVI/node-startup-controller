@@ -33,15 +33,15 @@ enum
 
 
 
-static void     shutdown_client_finalize     (GObject      *object);
-static void     shutdown_client_get_property (GObject      *object,
-                                              guint         prop_id,
-                                              GValue       *value,
-                                              GParamSpec   *pspec);
-static void     shutdown_client_set_property (GObject      *object,
-                                              guint         prop_id,
-                                              const GValue *value,
-                                              GParamSpec   *pspec);
+static void shutdown_client_finalize     (GObject      *object);
+static void shutdown_client_get_property (GObject      *object,
+                                          guint         prop_id,
+                                          GValue       *value,
+                                          GParamSpec   *pspec);
+static void shutdown_client_set_property (GObject      *object,
+                                          guint         prop_id,
+                                          const GValue *value,
+                                          GParamSpec   *pspec);
 
 
 

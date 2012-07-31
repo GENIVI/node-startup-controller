@@ -109,6 +109,7 @@ nsm_lifecycle_control_service_init (NSMLifecycleControlService *service)
   service->interface = nsm_lifecycle_control_skeleton_new ();
   service->accept_state = TRUE;
   service->luc_required = TRUE;
+
   /* implement the SetNodeState() handler */
   g_signal_connect (service->interface, "handle-set-node-state",
                     G_CALLBACK (nsm_lifecycle_control_service_handle_set_node_state),
