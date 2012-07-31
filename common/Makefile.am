@@ -63,7 +63,7 @@ DISTCLEANFILES =							\
 	$(libcommon_la_built_sources)
 
 BUILT_SOURCES =								\
-	$(libcommon_la_built_headers)
+	$(libcommon_la_built_sources)
 
 $(la_handler_built_sources): la-handler-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
