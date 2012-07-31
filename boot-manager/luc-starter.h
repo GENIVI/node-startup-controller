@@ -21,7 +21,7 @@ G_BEGIN_DECLS
 #define LUC_STARTER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), TYPE_LUC_STARTER, LUCStarter))
 #define LUC_STARTER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), TYPE_LUC_STARTER, LUCStarterClass))
 #define IS_LUC_STARTER(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), TYPE_LUC_STARTER))
-#define IS_LUC_STARTER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), TYPE_LUC_STARTER)
+#define IS_LUC_STARTER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), TYPE_LUC_STARTER))
 #define LUC_STARTER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), TYPE_LUC_STARTER, LUCStarterClass))
 
 typedef struct _LUCStarterClass LUCStarterClass;
