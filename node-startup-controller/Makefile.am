@@ -3,11 +3,11 @@
 SUBDIRS =								\
 	busconf
 
-boot_managerdir =							\
-	$(libdir)/boot-manager-$(BOOT_MANAGER_VERSION_API)
+node_startup_controllerdir =						\
+	$(libdir)/node-startup-controller-$(NODE_STARTUP_CONTROLLER_VERSION_API)
 
-boot_manager_PROGRAMS =							\
-	boot-manager
+node_startup_controller_PROGRAMS =					\
+	node-startup-controller
 
 node_startup_controller_built_sources =					\
 	node-startup-controller-dbus.h					\
@@ -21,7 +21,7 @@ systemd_unit_built_sources =						\
 	systemd-unit-dbus.h						\
 	systemd-unit-dbus.c
 
-boot_manager_SOURCES =							\
+node_startup_controller_SOURCES =					\
 	glib-extensions.c						\
 	glib-extensions.h						\
 	job-manager.c							\
@@ -41,9 +41,9 @@ boot_manager_SOURCES =							\
 	$(systemd_manager_built_sources)				\
 	$(systemd_unit_built_sources)
 
-boot_manager_CFLAGS =							\
-	-DLUC_PATH=\"$(sysconfdir)/boot-manager/last-user-context\"	\
-	-DG_LOG_DOMAIN=\"boot-manager\"					\
+node_startup_controller_CFLAGS =					\
+	-DLUC_PATH=\"$(sysconfdir)/node-startup-controller/last-user-context\"	\
+	-DG_LOG_DOMAIN=\"node-startup-controller\"			\
 	-I$(top_srcdir)							\
 	$(DLT_CFLAGS)							\
 	$(GIO_CFLAGS)							\
@@ -53,14 +53,14 @@ boot_manager_CFLAGS =							\
 	$(PLATFORM_CPPFLAGS)						\
 	$(SYSTEMD_DAEMON_CFLAGS)
 
-boot_manager_LDFLAGS =							\
+node_startup_controller_LDFLAGS =					\
 	-no-undefined							\
 	$(PLATFORM_LDFLAGS)
 
-boot_manager_DEPENDENCIES =						\
+node_startup_controller_DEPENDENCIES =					\
 	$(top_builddir)/common/libcommon.la
 
-boot_manager_LDADD =							\
+node_startup_controller_LDADD =						\
 	$(DLT_LIBS)							\
 	$(GIO_LIBS)							\
 	$(GIO_UNIX_LIBS)						\
@@ -70,19 +70,19 @@ boot_manager_LDADD =							\
 
 %.service: %.service.in
 	sed -e "s,\@libdir\@,$(libdir),g"				\
-	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
+	    -e "s,\@NODE_STARTUP_CONTROLLER_VERSION_API\@,$(NODE_STARTUP_CONTROLLER_VERSION_API),g" < $< > $@
 
 dbus_servicedir = $(datadir)/dbus-1/system-services
 
 dbus_service_in_files =							\
-	org.genivi.BootManager1.service.in
+	org.genivi.NodeStartupController1.service.in
 
 dbus_service_DATA = $(dbus_service_in_files:.service.in=.service)
 
 systemd_servicedir = $(libdir)/systemd/system
 
 systemd_service_in_files =						\
-	boot-manager.service.in
+	node-startup-controller.service.in
 
 systemd_service_DATA = $(systemd_service_in_files:.service.in=.service)
 

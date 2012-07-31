@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.genivi.NodeStartupController1
+SystemdService = node-startup-controller.service
+Exec=@libdir@/node-startup-controller-@NODE_STARTUP_CONTROLLER_VERSION_API@/node-startup-controller

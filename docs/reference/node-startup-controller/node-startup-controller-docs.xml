@@ -104,7 +104,7 @@
 
   <chapter id="common">
     <title>Generated D-Bus Classes</title>
-    <xi:include href="xml/boot-manager-dbus.xml"/>
+    <xi:include href="xml/node-startup-controller-dbus.xml"/>
     <xi:include href="xml/la-handler-dbus.xml"/>
     <xi:include href="xml/nsm-consumer-dbus.xml"/>
     <xi:include href="xml/nsm-lifecycle-control-dbus.xml"/>

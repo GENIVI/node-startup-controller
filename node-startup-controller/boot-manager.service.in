@@ -1,5 +1,0 @@
-[Service]
-Type = dbus
-BusName = org.genivi.BootManager1
-ExecStart = @libdir@/boot-manager-@BOOT_MANAGER_VERSION_API@/boot-manager
-WatchdogSec = 5
