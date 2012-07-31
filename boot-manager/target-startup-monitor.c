@@ -42,30 +42,31 @@ typedef struct _GetUnitData GetUnitData;
 
 
 
-static void     target_startup_monitor_finalize                         (GObject              *object);
-static void     target_startup_monitor_constructed                      (GObject              *object);
-static void     target_startup_monitor_get_property                     (GObject              *object,
-                                                                         guint                 prop_id,
-                                                                         GValue               *value,
-                                                                         GParamSpec           *pspec);
-static void     target_startup_monitor_set_property                     (GObject              *object,
-                                                                         guint                 prop_id,
-                                                                         const GValue         *value,
-                                                                         GParamSpec           *pspec);
-static void     target_startup_monitor_get_unit_finish                  (GObject              *object,
-                                                                         GAsyncResult         *res,
-                                                                         gpointer              user_data);
-static void     target_startup_monitor_unit_proxy_new_finish            (GObject              *object,
-                                                                         GAsyncResult         *res,
-                                                                         gpointer              user_data);
-static void     target_startup_monitor_unit_active_state_changed        (GObject              *object,
-                                                                         GParamSpec           *pspec,
-                                                                         TargetStartupMonitor *monitor);
-static void     target_startup_monitor_set_node_state                   (TargetStartupMonitor *monitor,
-                                                                         NSMNodeState          state);
-static void     target_startup_monitor_set_node_state_finish            (GObject              *object,
-                                                                         GAsyncResult         *res,
-                                                                         gpointer              user_data);
+static void     target_startup_monitor_finalize                (GObject              *object);
+static void     target_startup_monitor_constructed             (GObject              *object);
+static void     target_startup_monitor_get_property            (GObject              *object,
+                                                                guint                 prop_id,
+                                                                GValue               *value,
+                                                                GParamSpec           *pspec);
+static void     target_startup_monitor_set_property            (GObject              *object,
+                                                                guint                 prop_id,
+                                                                const GValue         *value,
+                                                                GParamSpec           *pspec);
+static void     target_startup_monitor_get_unit_finish         (GObject              *object,
+                                                                GAsyncResult         *res,
+                                                                gpointer              user_data);
+static void     target_startup_monitor_unit_proxy_new_finish   (GObject              *object,
+                                                                GAsyncResult         *res,
+                                                                gpointer              user_data);
+static void     target_startup_monitor_unit_properties_changed (GDBusProxy           *proxy,
+                                                                GVariant             *changed_properties,
+                                                                GStrv                *invalidated_properties,
+                                                                TargetStartupMonitor *monitor);
+static void     target_startup_monitor_set_node_state          (TargetStartupMonitor *monitor,
+                                                                NSMNodeState          state);
+static void     target_startup_monitor_set_node_state_finish   (GObject              *object,
+                                                                GAsyncResult         *res,
+                                                                gpointer              user_data);
 
 
 
@@ -341,8 +342,8 @@ target_startup_monitor_unit_proxy_new_finish (GObject      *object,
     }
   else
     {
-      g_signal_connect (unit, "notify::active-state",
-                        G_CALLBACK (target_startup_monitor_unit_active_state_changed),
+      g_signal_connect (unit, "g-properties-changed",
+                        G_CALLBACK (target_startup_monitor_unit_properties_changed),
                         data->monitor);
 
       data->monitor->units = g_list_append (data->monitor->units, unit);
@@ -357,38 +358,52 @@ target_startup_monitor_unit_proxy_new_finish (GObject      *object,
 
 
 static void
-target_startup_monitor_unit_active_state_changed (GObject              *object,
-                                                  GParamSpec           *pspec,
-                                                  TargetStartupMonitor *monitor)
+target_startup_monitor_unit_properties_changed (GDBusProxy           *proxy,
+                                                GVariant             *changed_properties,
+                                                GStrv                *invalidated_properties,
+                                                TargetStartupMonitor *monitor)
 {
-  SystemdUnit *unit = SYSTEMD_UNIT (object);
+  SystemdUnit *unit = SYSTEMD_UNIT (proxy);
   const gchar *state;
   const gchar *unit_name;
   gpointer     node_state;
   gchar       *message;
 
-  g_return_if_fail (IS_SYSTEMD_UNIT (object));
-  g_return_if_fail (G_IS_PARAM_SPEC (pspec));
+  g_return_if_fail (IS_SYSTEMD_UNIT (unit));
+  g_return_if_fail (changed_properties != NULL);
   g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
 
-  /* get the name and new state from the unit */
-  unit_name = systemd_unit_get_id (unit);
-  state = systemd_unit_get_active_state (unit);
+  /* ignore this signal if no properties changed at all */
+  if (g_variant_n_children (changed_properties) == 0)
+    return;
 
-  message = g_strdup_printf ("Active state of unit \"%s\" changed to %s",
-                             unit_name, state);
+  /* log the contents of the changed properties dict for debugging */
+  message = g_variant_print (changed_properties, TRUE);
   DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
   g_free (message);
 
-  /* check if the new state is active */
-  if (g_strcmp0 (state, "active") == 0)
+  /* read the new state from the changed properties */
+  if (g_variant_lookup (changed_properties, "ActiveState", "%s", &state))
     {
-      /* look up the node state corresponding to this unit, if there is one */
-      if (g_hash_table_lookup_extended (monitor->targets_to_states, unit_name,
-                                        NULL, &node_state))
+      /* get the name of the unit */
+      unit_name = systemd_unit_get_id (unit);
+
+      /* log the the active state has changed */
+      message = g_strdup_printf ("Active state of unit \"%s\" changed to %s",
+                                 unit_name, state);
+      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
+      g_free (message);
+
+      /* check if the new state is active */
+      if (g_strcmp0 (state, "active") == 0)
         {
-          /* we do have a state for this unit, so apply it now */
-          target_startup_monitor_set_node_state (monitor, GPOINTER_TO_UINT (node_state));
+          /* look up the node state corresponding to this unit, if there is one */
+          if (g_hash_table_lookup_extended (monitor->targets_to_states, unit_name,
+                                            NULL, &node_state))
+            {
+              /* we do have a state for this unit, so apply it now */
+              target_startup_monitor_set_node_state (monitor, GPOINTER_TO_UINT (node_state));
+            }
         }
     }
 }
