@@ -52,16 +52,18 @@ static void     target_startup_monitor_set_property            (GObject         
                                                                 guint                 prop_id,
                                                                 const GValue         *value,
                                                                 GParamSpec           *pspec);
+static void     target_startup_monitor_job_removed             (SystemdManager       *manager,
+                                                                guint                 id,
+                                                                const gchar          *job_name,
+                                                                const gchar          *unit,
+                                                                const gchar          *result,
+                                                                TargetStartupMonitor *monitor);
 static void     target_startup_monitor_get_unit_finish         (GObject              *object,
                                                                 GAsyncResult         *res,
                                                                 gpointer              user_data);
 static void     target_startup_monitor_unit_proxy_new_finish   (GObject              *object,
                                                                 GAsyncResult         *res,
                                                                 gpointer              user_data);
-static void     target_startup_monitor_unit_properties_changed (GDBusProxy           *proxy,
-                                                                GVariant             *changed_properties,
-                                                                GStrv                *invalidated_properties,
-                                                                TargetStartupMonitor *monitor);
 static void     target_startup_monitor_set_node_state          (TargetStartupMonitor *monitor,
                                                                 NSMNodeState          state);
 static void     target_startup_monitor_set_node_state_finish   (GObject              *object,
@@ -93,7 +95,7 @@ struct _TargetStartupMonitor
 struct _GetUnitData
 {
   TargetStartupMonitor *monitor;
-  const gchar          *unit_name;
+  gchar                *unit_name;
   gchar                *object_path;
 };
 
@@ -170,28 +172,9 @@ static void
 target_startup_monitor_constructed (GObject *object)
 {
   TargetStartupMonitor *monitor = TARGET_STARTUP_MONITOR (object);
-  GetUnitData          *data;
 
-  data = g_slice_new0 (GetUnitData);
-  data->monitor = g_object_ref (monitor);
-  data->unit_name = "focussed.target";
-
-  systemd_manager_call_get_unit (monitor->systemd_manager, "focussed.target", NULL,
-                                 target_startup_monitor_get_unit_finish, data);
-
-  data = g_slice_new0 (GetUnitData);
-  data->monitor = g_object_ref (monitor);
-  data->unit_name = "unfocussed.target";
-
-  systemd_manager_call_get_unit (monitor->systemd_manager, "unfocussed.target", NULL,
-                                 target_startup_monitor_get_unit_finish, data);
-
-  data = g_slice_new0 (GetUnitData);
-  data->monitor = g_object_ref (monitor);
-  data->unit_name = "lazy.target";
-
-  systemd_manager_call_get_unit (monitor->systemd_manager, "lazy.target", NULL,
-                                 target_startup_monitor_get_unit_finish, data);
+  g_signal_connect (monitor->systemd_manager, "job-removed",
+                    G_CALLBACK (target_startup_monitor_job_removed), monitor);
 }
 
 
@@ -271,6 +254,36 @@ target_startup_monitor_set_property (GObject      *object,
 
 
 static void
+target_startup_monitor_job_removed (SystemdManager       *manager,
+                                    guint                 id,
+                                    const gchar          *job_name,
+                                    const gchar          *unit,
+                                    const gchar          *result,
+                                    TargetStartupMonitor *monitor)
+{
+  GetUnitData *data;
+
+  g_return_if_fail (IS_SYSTEMD_MANAGER (manager));
+  g_return_if_fail (job_name != NULL && *job_name != '\0');
+  g_return_if_fail (unit != NULL && *unit != '\0');
+  g_return_if_fail (result != NULL && *result != '\0');
+  g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
+
+  /* create a temporary struct to bundle information about the unit */
+  data = g_slice_new0 (GetUnitData);
+  data->monitor = g_object_ref (monitor);
+  data->unit_name = g_strdup (unit);
+
+  /* ask systemd to return the object path for this unit */
+  systemd_manager_call_get_unit (monitor->systemd_manager, unit, NULL,
+                                 target_startup_monitor_get_unit_finish, data);
+
+
+}
+
+
+
+static void
 target_startup_monitor_get_unit_finish (GObject      *object,
                                         GAsyncResult *res,
                                         gpointer      user_data)
@@ -284,9 +297,11 @@ target_startup_monitor_get_unit_finish (GObject      *object,
   g_return_if_fail (G_IS_ASYNC_RESULT (res));
   g_return_if_fail (data != NULL);
 
+  /* finish obtaining the object path for the unit from systemd */
   if (!systemd_manager_call_get_unit_finish (SYSTEMD_MANAGER (object), &object_path,
                                              res, &error))
     {
+      /* there was an error, log it */
       message = g_strdup_printf ("Failed to get unit \"%s\" from systemd: %s",
                                  data->unit_name, error->message);
       DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (message));
@@ -295,6 +310,7 @@ target_startup_monitor_get_unit_finish (GObject      *object,
 
       /* release the get unit data */
       g_object_unref (data->monitor);
+      g_free (data->unit_name);
       g_slice_free (GetUnitData, data);
     }
   else
@@ -306,6 +322,7 @@ target_startup_monitor_get_unit_finish (GObject      *object,
       /* remember the object path */
       data->object_path = object_path;
 
+      /* create a proxy for this unit D-Bus object */
       systemd_unit_proxy_new (g_dbus_proxy_get_connection (G_DBUS_PROXY (data->monitor->systemd_manager)),
                               G_DBUS_PROXY_FLAGS_GET_INVALIDATED_PROPERTIES,
                               "org.freedesktop.systemd1",
@@ -325,16 +342,19 @@ target_startup_monitor_unit_proxy_new_finish (GObject      *object,
 {
   GetUnitData *data = user_data;
   SystemdUnit *unit;
+  const gchar *state;
+  gpointer     node_state;
   GError      *error = NULL;
   gchar       *message;
 
   g_return_if_fail (G_IS_ASYNC_RESULT (res));
   g_return_if_fail (data != NULL);
 
+  /* finish creating the proxy for this systemd unit */
   unit = systemd_unit_proxy_new_finish (res, &error);
-
   if (error != NULL)
     {
+      /* there was an error, log it */
       message = g_strdup_printf ("Failed to create a D-Bus proxy for unit \"%s\": %s",
                                  data->object_path, error->message);
       DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (message));
@@ -342,60 +362,12 @@ target_startup_monitor_unit_proxy_new_finish (GObject      *object,
     }
   else
     {
-      g_signal_connect (unit, "g-properties-changed",
-                        G_CALLBACK (target_startup_monitor_unit_properties_changed),
-                        data->monitor);
+      /* query the unit for its current active state */
+      state = systemd_unit_get_active_state (unit);
 
-      data->monitor->units = g_list_append (data->monitor->units, unit);
-    }
-
-  /* free the get unit data */
-  g_object_unref (data->monitor);
-  g_free (data->object_path);
-  g_slice_free (GetUnitData, data);
-}
-
-
-
-static void
-target_startup_monitor_unit_properties_changed (GDBusProxy           *proxy,
-                                                GVariant             *changed_properties,
-                                                GStrv                *invalidated_properties,
-                                                TargetStartupMonitor *monitor)
-{
-  SystemdUnit *unit = SYSTEMD_UNIT (proxy);
-  const gchar *state;
-  const gchar *unit_name;
-  gpointer     node_state;
-  gchar       *message;
-
-  g_return_if_fail (IS_SYSTEMD_UNIT (unit));
-  g_return_if_fail (changed_properties != NULL);
-  g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
-
-  /* get the name of the unit */
-  unit_name = systemd_unit_get_id (unit);
-
-  message = g_strdup_printf ("Properties of unit \"%s\" changed", unit_name);
-  DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
-  g_free (message);
-
-  /* log the contents of the changed properties dict for debugging */
-  message = g_variant_print (changed_properties, TRUE);
-  DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
-  g_free (message);
-
-  /* log the invalidated properties for debugging */
-  message = g_strjoinv (", ", (gchar **)invalidated_properties);
-  DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
-  g_free (message);
-
-  /* read the new state from the changed properties */
-  if (g_variant_lookup (changed_properties, "ActiveState", "&s", &state))
-    {
       /* log the the active state has changed */
       message = g_strdup_printf ("Active state of unit \"%s\" changed to %s",
-                                 unit_name, state);
+                                 data->unit_name, state);
       DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
       g_free (message);
 
@@ -403,14 +375,24 @@ target_startup_monitor_unit_properties_changed (GDBusProxy           *proxy,
       if (g_strcmp0 (state, "active") == 0)
         {
           /* look up the node state corresponding to this unit, if there is one */
-          if (g_hash_table_lookup_extended (monitor->targets_to_states, unit_name,
-                                            NULL, &node_state))
+          if (g_hash_table_lookup_extended (data->monitor->targets_to_states,
+                                            data->unit_name, NULL, &node_state))
             {
               /* we do have a state for this unit, so apply it now */
-              target_startup_monitor_set_node_state (monitor, GPOINTER_TO_UINT (node_state));
+              target_startup_monitor_set_node_state (data->monitor,
+                                                     GPOINTER_TO_UINT (node_state));
             }
         }
+
+      /* release the unit proxy */
+      g_object_unref (unit);
     }
+
+  /* free the get unit data */
+  g_object_unref (data->monitor);
+  g_free (data->unit_name);
+  g_free (data->object_path);
+  g_slice_free (GetUnitData, data);
 }
 
 
