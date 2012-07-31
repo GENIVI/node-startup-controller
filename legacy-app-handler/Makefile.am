@@ -1,7 +1,7 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
 legacy_app_handlerdir =							\
-	$(libdir)/boot-manager-$(BOOT_MANAGER_VERSION_API)
+	$(libdir)/node-startup-controller-$(NODE_STARTUP_CONTROLLER_VERSION_API)
 
 legacy_app_handler_PROGRAMS =						\
 	legacy-app-handler

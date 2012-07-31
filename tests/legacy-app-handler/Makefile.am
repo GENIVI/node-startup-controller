@@ -12,7 +12,7 @@ noinst_DATA =								\
 
 %.service: %.service.in
 	sed -e "s,\@libdir\@,$(libdir),g"				\
-	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
+	    -e "s,\@NODE_STARTUP_CONTROLLER_VERSION_API\@,$(NODE_STARTUP_CONTROLLER_VERSION_API),g" < $< > $@
 
 CLEANFILES =								\
 	*.service

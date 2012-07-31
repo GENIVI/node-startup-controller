@@ -1,13 +1,13 @@
-GENIVI Boot Manager Coding Style
-================================
+GENIVI Node Startup Controller Coding Style
+===========================================
 
 This document intends to give information about the coding style to be
-used when contributing code to the GENIVI Boot Manager. It does not
-claim to be complete. Parts of it are taken or inspired from the Clutter
-coding style document.
+used when contributing code to the GENIVI Node Startup Controller. It
+does not claim to be complete. Parts of it are taken or inspired from
+the Clutter coding style document.
 
 In the following, the most important requirements for writing consistent
-code for the GENIVI Boot Manager are explained.
+code for the GENIVI Node Startup Controller are explained.
 
 Table of Contents:
   * Copyright and License Header

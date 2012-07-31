@@ -141,8 +141,8 @@ main (int    argc,
   service =
     la_handler_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
                                        G_DBUS_PROXY_FLAGS_NONE,
-                                       "org.genivi.BootManager1",
-                                       "/org/genivi/BootManager1/LegacyAppHandler",
+                                       "org.genivi.NodeStartupController1",
+                                       "/org/genivi/NodeStartupController1/LegacyAppHandler",
                                        NULL, &error);
 
   /* abort if the proxy could not be created */

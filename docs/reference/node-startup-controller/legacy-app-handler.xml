@@ -27,10 +27,9 @@
     <title>Description</title>
     <para>
       <command>legacy-app-handler</command> is a helper binary which registers the legacy
-      app <arg>unit</arg> with the boot manager, which in turn registers a shutdown client
-      with the Node State Manager.
-      This means that during the Node State Manager's shutdown cycle, it will shut down
-      the legacy app as well.
+      app <arg>unit</arg> with the Node Startup Controller, which in turn registers a
+      shutdown client with the Node State Manager. This means that during the Node State
+      Manager's shutdown cycle, it will shut down the legacy app as well.
     </para>
     <refsect2>
       <title>Arguments</title>

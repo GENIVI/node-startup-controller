@@ -4,7 +4,7 @@ SUBDIRS =								\
 	busconf
 
 nsm_dummydir =								\
-	$(libdir)/boot-manager-$(BOOT_MANAGER_VERSION_API)
+	$(libdir)/node-startup-controller-$(NODE_STARTUP_CONTROLLER_VERSION_API)
 
 nsm_dummy_PROGRAMS =							\
 	nsm-dummy
@@ -46,7 +46,7 @@ nsm_dummy_LDADD =							\
 
 %.service: %.service.in
 	sed -e "s,\@libdir\@,$(libdir),g"				\
-	    -e "s,\@BOOT_MANAGER_VERSION_API\@,$(BOOT_MANAGER_VERSION_API),g" < $< > $@
+	    -e "s,\@NODE_STARTUP_CONTROLLER_VERSION_API\@,$(NODE_STARTUP_CONTROLLER_VERSION_API),g" < $< > $@
 
 dbus_servicedir = $(datadir)/dbus-1/system-services
 

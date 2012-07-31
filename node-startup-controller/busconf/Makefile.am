@@ -1,9 +1,9 @@
 # vi:set ts=8 sw=8 noet ai nocindent:
 
-boot_manager_confdir = $(sysconfdir)/dbus-1/system.d
+node_startup_controller_confdir = $(sysconfdir)/dbus-1/system.d
 
-boot_manager_conf_DATA =						\
-	org.genivi.BootManager1.conf
+node_startup_controller_conf_DATA =					\
+	org.genivi.NodeStartupController1.conf
 
 EXTRA_DIST =								\
-	org.genivi.BootManager1.conf
+	org.genivi.NodeStartupController1.conf

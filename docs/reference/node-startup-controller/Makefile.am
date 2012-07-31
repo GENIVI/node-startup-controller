@@ -7,7 +7,7 @@ AUTOMAKE_OPTIONS = 1.6
 DOC_MODULE=node-startup-controller
 
 # Uncomment for versioned docs and specify the version of the module, e.g. '2'.
-DOC_MODULE_VERSION=$(BOOT_MANAGER_VERSION)
+DOC_MODULE_VERSION=$(NODE_STARTUP_CONTROLLER_VERSION)
 
 # The top-level SGML file. You can change this if you want to.
 DOC_MAIN_SGML_FILE=$(DOC_MODULE)-docs.xml

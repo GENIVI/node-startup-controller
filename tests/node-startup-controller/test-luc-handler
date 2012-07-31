@@ -19,9 +19,9 @@ compare_luc()
 begin()
 {
   gdbus call --system \
-    -d org.genivi.BootManager1 \
-    -o /org/genivi/BootManager1/BootManager \
-    -m org.genivi.BootManager1.BootManager.BeginLUCRegistration \
+    -d org.genivi.NodeStartupController1 \
+    -o /org/genivi/NodeStartupController1/NodeStartupController \
+    -m org.genivi.NodeStartupController1.NodeStartupController.BeginLUCRegistration \
      &> /dev/null
 }
 
@@ -30,9 +30,9 @@ begin()
 register()
 {
   gdbus call --system \
-    -d org.genivi.BootManager1 \
-    -o /org/genivi/BootManager1/BootManager \
-    -m org.genivi.BootManager1.BootManager.RegisterWithLUC \
+    -d org.genivi.NodeStartupController1 \
+    -o /org/genivi/NodeStartupController1/NodeStartupController \
+    -m org.genivi.NodeStartupController1.NodeStartupController.RegisterWithLUC \
     "$1" &> /dev/null
 }
 
@@ -41,9 +41,9 @@ register()
 end()
 {
   gdbus call --system \
-    -d org.genivi.BootManager1 \
-    -o /org/genivi/BootManager1/BootManager \
-    -m org.genivi.BootManager1.BootManager.FinishLUCRegistration \
+    -d org.genivi.NodeStartupController1 \
+    -o /org/genivi/NodeStartupController1/NodeStartupController \
+    -m org.genivi.NodeStartupController1.NodeStartupController.FinishLUCRegistration \
      &> /dev/null
 }
 
@@ -61,17 +61,17 @@ rm -f temp
 rm -f "$LUC_PATH"
 
 
-# kill any existing instances of the boot manager
-skill -SIGKILL boot-manager 2>&1 >/dev/null
+# kill any existing instances of the Node Startup Controller
+skill -SIGKILL node-startup-controller 2>&1 >/dev/null
 
-# start the boot manager manually
-$BOOT_MANAGER_CMD &
+# start the Node Startup Controller manually
+$NODE_STARTUP_CONTROLLER_CMD &
 
-# wait for ten seconds, hoping the boot manager will become available
+# wait for ten seconds, hoping the Node Startup Controller will become available
 sleep 2
 
-# kill the boot manager when the test script exits
-trap "skill -SIGKILL boot-manager 2>&1 >/dev/null" EXIT
+# kill the Node Startup Controller when the test script exits
+trap "skill -SIGKILL node-startup-controller 2>&1 >/dev/null" EXIT
 
 
 # test a simple dictionary

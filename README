@@ -1,7 +1,8 @@
-GENIVI Boot Manager README
-==========================
+GENIVI Node Startup Controller README
+=====================================
 
-This is the official source repository of the GENIVI Boot Manager.
+This is the official source repository of the GENIVI Node Startup
+Controller.
 
 At present, all relevant documentation for this project is available
 in the GENIVI wiki on
@@ -20,7 +21,7 @@ Build Dependencies
 ------------------
 
 The following libraries need to be installed in order to be able to
-build the boot manager:
+build the Node Startup Controller:
 
   automotive-dlt >= 2.2.0
   gio-2.0 >= 2.30.0
@@ -39,7 +40,7 @@ available for building:
 Build Instructions
 ------------------
 
-In order to build the boot manager, run the following:
+In order to build the Node Startup Controller, run the following:
 
   gtkdocize &&
   autoreconf -ivf &&
@@ -74,7 +75,7 @@ For more information about all available configure options, run:
 Install Instructions
 --------------------
 
-To install the boot manager after having built it, run:
+To install the Node Startup Controller after having built it, run:
 
   make install
 
@@ -82,12 +83,12 @@ To install the boot manager after having built it, run:
 Testing Instructions
 --------------------
 
-To run any test suites shipped with the boot manager, run:
+To run any test suites shipped with the Node Startup Controller, run:
 
   make check
 
 There may also be some post-install tests that can only be performed
-after installing the boot manager into the system. Those can be
-executed with:
+after installing the Node Startup Controller into the system. Those
+can be executed with:
 
   make installcheck

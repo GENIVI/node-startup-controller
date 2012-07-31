@@ -1,5 +1,5 @@
 [Service]
 Type = dbus
 BusName = com.contiautomotive.NodeStateManager
-ExecStart = @libdir@/boot-manager-@BOOT_MANAGER_VERSION_API@/nsm-dummy
+ExecStart = @libdir@/node-startup-controller-@NODE_STARTUP_CONTROLLER_VERSION_API@/nsm-dummy
 WatchdogSec = 5

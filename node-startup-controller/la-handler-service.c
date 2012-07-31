@@ -188,7 +188,7 @@ la_handler_service_init (LAHandlerService *service)
   service->index = 1;
 
   /* the string that precedes the index in the shutdown client's object path */
-  service->prefix = "/org/genivi/BootManager1/ShutdownConsumer";
+  service->prefix = "/org/genivi/NodeStartupController1/ShutdownConsumer";
 
   /* initialize the association of shutdown client to units */
   service->units_to_clients = g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -337,7 +337,7 @@ la_handler_service_handle_register (LAHandler             *interface,
   else
     {
       /* create a new shutdown client and consumer for the unit */
-      bus_name = "org.genivi.BootManager1";
+      bus_name = "org.genivi.NodeStartupController1";
       object_path = g_strdup_printf ("%s/%u", service->prefix, service->index);
       client = shutdown_client_new (bus_name, object_path, shutdown_mode, timeout);
       consumer = shutdown_consumer_skeleton_new ();
@@ -614,10 +614,10 @@ la_handler_service_start (LAHandlerService *service,
   g_return_val_if_fail (LA_HANDLER_IS_SERVICE (service), FALSE);
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
-  /* announce the org.genivi.BootManager1.LegacyAppHandler service on the bus */
+  /* announce the org.genivi.NodeStartupController1.LegacyAppHandler service on the bus */
   return g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (service->interface),
                                            service->connection,
-                                           "/org/genivi/BootManager1/LegacyAppHandler",
+                                           "/org/genivi/NodeStartupController1/LegacyAppHandler",
                                            error);
 }
 

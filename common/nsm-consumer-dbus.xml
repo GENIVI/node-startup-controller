@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <node>
   <!--
-    com.conti.NodeStateManager.Consumer:
-    @short_description: Interface for testing the interaction between Boot
-                        Manager and Node State Manager.
-                        It is a summary of
-                        "com.conti.NodeStateManager.LifecycleControl" using
-                        only the methods needed to test Boot Manager.
+    com.contiautomotive.NodeStateManager.Consumer:
+    @short_description: Interface for testing the interaction between the
+                        Node Startup Controller and the Node State Manager.
+                        It is an excerpt of
+                        "com.contiautomotive.NodeStateManager.LifecycleControl"
+                        using only the methods needed to test the NSC.
   -->
   <interface name="com.contiautomotive.NodeStateManager.Consumer">
     <!--
@@ -24,7 +24,8 @@
       their DBUS object called NSMLifecycleRequest. This method will take one
       parameter which is the Lifecycle Request (i.e. normal shutdown, fast
       shutdown, runup). For an example of the required client interface
-      please see the Boot Manager component who will be a client of the NSM.
+      please see the Node Startup Controller, which will be a client of
+      the NSM.
     -->
     <method name="RegisterShutdownClient">
       <arg name="BusName" direction="in" type="s"/>
@@ -54,14 +55,19 @@
       <arg name="ErrorCode" direction="out" type="i"/>
     </method>
 
-    <!--    
+    <!--
         LifecycleRequestComplete:
-        @RequestId: The request Id of the called life cycle client. The value has been passed when "LifecycleRequest" was called.
-        @Status:    The result of the call to "LifecycleRequest". NsmErrorStatus_Ok: Request successfully processed. NsmErrorStatus_Error: An error occured while processing the "LifecycleRequest".
+        @RequestId: The request Id of the called life cycle client. The value
+                    has been passed when "LifecycleRequest" was called.
+        @Status:    The result of the call to "LifecycleRequest".
+                    NsmErrorStatus_Ok: Request successfully processed.
+                    NsmErrorStatus_Error: An error occured while processing
+                      the "LifecycleRequest".
         @ErrorCode: Return value passed to the caller, based upon NsmErrorStatus_e.
-        
-        The function has to be called by a "asynchrounous" lifecycle client, when he processed the "LifecycleRequest".
-    --> 
+
+        The function has to be called asynchrounously by a lifecycle client
+        when it has processed an earlier LifecycleRequest.
+    -->
     <method name="LifecycleRequestComplete">
       <arg name="RequestId" direction="in" type="u"/>
       <arg name="Status"    direction="in" type="i"/>

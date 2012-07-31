@@ -12,12 +12,13 @@ class TestService(dbus.service.Object):
 
     def __init__(self, name):
         bus_name = dbus.service.BusName(
-            'org.genivi.BootManager1.LegacyAppHandler.%s' % name,
+            'org.genivi.NodeStartupController1.LegacyAppHandler.%s' % name,
             bus=dbus.SystemBus())
-        object_path = '/org/genivi/BootManager1/LegacyAppHandler/%s' % name
-        dbus.service.Object.__init__(self, bus_name, object_path)
+        path = '/org/genivi/NodeStartupController1/LegacyAppHandler/%s' % name
+        dbus.service.Object.__init__(self, bus_name, path)
 
-    @dbus.service.method('org.genivi.BootManager1.LegacyAppHandler.Test')
+    @dbus.service.method('org.genivi.NodeStartupController1.'
+                         'LegacyAppHandler.Test')
     def hello(self):
         return "Hello World!"
 

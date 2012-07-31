@@ -566,18 +566,9 @@ luc_starter_start_groups_for_real (LUCStarter *starter)
                                                       &error);
   if (error != NULL)
     {
-      if (error->code == G_IO_ERROR_NOT_FOUND)
-        {
-          DLT_LOG (controller_context, DLT_LOG_INFO,
-                   DLT_STRING ("Boot manager could not find the last user context"));
-        }
-      else
-        {
-          log_text = g_strdup_printf ("Error reading last user context: %s",
-                                      error->message);
-          DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-          g_free (log_text);
-        }
+      log_text = g_strdup_printf ("Error reading last user context: %s", error->message);
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      g_free (log_text);
       g_error_free (error);
       return;
     }

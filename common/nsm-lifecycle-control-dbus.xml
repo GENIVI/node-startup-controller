@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <node>
   <!--
-    com.conti.NodeStateManager.LifecycleControl:
-    @short_description: Interface for testing the interaction between Boot
-                        Manager and Node State Manager.
-                        It is a summary of
-                        "com.conti.NodeStateManager.LifecycleControl" using
-                        only the methods needed to test Boot Manager.
+    com.contiautomotive.NodeStateManager.LifecycleControl:
+    @short_description: Interface for testing the interaction between the
+                        Node Startup Controller and the Node State Manager.
+                        It is an excerpt of
+                        "com.conti.NodeStateManager.LifecycleControl"
+                        using only the methods needed to test the NSC.
   -->
   <interface name="com.contiautomotive.NodeStateManager.LifecycleControl">
     <!--
       SetNodeState:
       @NodeStateId: The passed value will be based upon the enum
                     NSM_NodeState_e
-      @ErrorCode
+      @ErrorCode:
 
       The method is used by other applications to set the NodeState. When
       this method is called to change the current NodeState a signal will be
@@ -29,11 +29,11 @@
       @LucWanted: This will be a simple TRUE or FALSE to define whether the LUC
                   is wanted in the current Lifecycle
 
-      This method will be called exclusivley by the Boot Manager to find out
-      whether the LUC Applications should be started in the current
-      Lifecycle. This is required whilst in certain Node Application Modes
-      (i.e. Transport, Factory) we do not want the LUC Applications started.
-      Internally the Node State Manager.
+      This method will be called exclusivley by the Node Startup Controller
+      to find out whether the LUC applications should be started in the
+      current lifecycle. This is required whilst in certain Node Application
+      Modes (i.e. Transport, Factory) we do not want the LUC applications
+      started.
     -->
     <method name="CheckLucRequired">
       <arg name="LucWanted" direction="out" type="b"/>

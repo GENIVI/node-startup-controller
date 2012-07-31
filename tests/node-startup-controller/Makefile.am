@@ -18,8 +18,8 @@ EXTRA_DIST =								\
 
 export LUC_PATH = last-user-context
 
-export BOOT_MANAGER_CMD =						\
-	$(libdir)/boot-manager-$(BOOT_MANAGER_VERSION_API)/boot-manager
+export NODE_STARTUP_CONTROLLER_CMD =					\
+	$(libdir)/node-startup-controller-$(NODE_STARTUP_CONTROLLER_VERSION_API)/node-startup-controller
 
 noinst_PROGRAMS =							\
 	gvariant-writer
