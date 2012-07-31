@@ -298,8 +298,6 @@ boot_manager_service_handle_register_with_luc (BootManager           *interface,
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
 
-  g_debug ("register with LUC");
-
   /* check if last user context registration started */
   if (!service->started_registration)
     {
