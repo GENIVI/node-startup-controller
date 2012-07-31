@@ -327,7 +327,6 @@ target_startup_monitor_unit_proxy_new_finish (GObject      *object,
   GError      *error = NULL;
   gchar       *message;
 
-  g_return_if_fail (G_IS_DBUS_CONNECTION (object));
   g_return_if_fail (G_IS_ASYNC_RESULT (res));
   g_return_if_fail (data != NULL);
 
