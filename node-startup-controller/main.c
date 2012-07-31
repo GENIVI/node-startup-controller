@@ -29,7 +29,7 @@
 
 
 
-DLT_DECLARE_CONTEXT (boot_manager_context);
+DLT_DECLARE_CONTEXT (controller_context);
 DLT_DECLARE_CONTEXT (la_handler_context);
 
 
@@ -37,7 +37,7 @@ DLT_DECLARE_CONTEXT (la_handler_context);
 static void
 unregister_dlt (void)
 {
-  DLT_UNREGISTER_CONTEXT (boot_manager_context);
+  DLT_UNREGISTER_CONTEXT (controller_context);
   DLT_UNREGISTER_CONTEXT (la_handler_context);
   DLT_UNREGISTER_APP ();
 }
@@ -60,11 +60,11 @@ main (int    argc,
   gchar                            *msg;
 
   /* register the application and context in DLT */
-  DLT_REGISTER_APP ("BMGR", "GENIVI Boot Manager");
-  DLT_REGISTER_CONTEXT (boot_manager_context, "MGR",
-                        "Context of the boot manager itself");
+  DLT_REGISTER_APP ("NSC", "GENIVI Node Startup Controller");
+  DLT_REGISTER_CONTEXT (controller_context, "CTRL",
+                        "Context of the Node Startup Controller itself");
   DLT_REGISTER_CONTEXT (la_handler_context, "LAH",
-                        "Context of the legacy application handler that hooks legacy "
+                        "Context of the Legacy Application Handler that hooks legacy "
                         "applications up with the shutdown concept of the Node State "
                         "Manager");
 
@@ -79,7 +79,7 @@ main (int    argc,
   if (connection == NULL)
     {
       msg = g_strdup_printf ("Failed to connect to the system bus: %s", error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_FATAL, DLT_STRING (msg));
+      DLT_LOG (controller_context, DLT_LOG_FATAL, DLT_STRING (msg));
       g_free (msg);
 
       /* clean up */
@@ -99,7 +99,7 @@ main (int    argc,
     {
       msg = g_strdup_printf ("Failed to connect to the systemd manager: %s",
                              error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_FATAL, DLT_STRING (msg));
+      DLT_LOG (controller_context, DLT_LOG_FATAL, DLT_STRING (msg));
       g_free (msg);
 
       /* clean up */
@@ -114,7 +114,7 @@ main (int    argc,
     {
       msg = g_strdup_printf ("Failed to subscribe to the systemd manager: %s",
                              error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_FATAL, DLT_STRING (msg));
+      DLT_LOG (controller_context, DLT_LOG_FATAL, DLT_STRING (msg));
       g_free (msg);
 
       /* clean up */
@@ -132,7 +132,7 @@ main (int    argc,
     {
       msg = g_strdup_printf ("Failed to start the node startup controller service: %s",
                              error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (msg));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (msg));
       g_free (msg);
 
       /* clean up */
@@ -155,7 +155,7 @@ main (int    argc,
     {
       msg = g_strdup_printf ("Failed to start the legacy app handler service: %s",
                              error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (msg));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (msg));
       g_free (msg);
 
       /* clean up */

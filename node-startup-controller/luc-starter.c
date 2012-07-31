@@ -28,7 +28,7 @@
 
 
 
-DLT_IMPORT_CONTEXT (boot_manager_context);
+DLT_IMPORT_CONTEXT (controller_context);
 
 
 
@@ -191,7 +191,7 @@ luc_starter_constructed (GObject *object)
     {
       log_text = g_strdup_printf ("Failed to connect to the NSM lifecycle control: %s",
                                   error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
       g_error_free (error);
     }
@@ -404,7 +404,7 @@ luc_starter_start_app_finish (JobManager  *manager,
     {
       message = g_strdup_printf ("Failed to start the LUC application \"%s\": %s",
                                  unit, error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (message));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (message));
       g_free (message);
     }
 
@@ -491,11 +491,11 @@ luc_starter_check_luc_required_finish (GObject      *object,
     {
       log_text = g_strdup_printf ("Failed checking whether the LUC is required: %s",
                                   error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
       g_clear_error (&error);
 
-      DLT_LOG (boot_manager_context, DLT_LOG_INFO,
+      DLT_LOG (controller_context, DLT_LOG_INFO,
                DLT_STRING ("Assuming that we should start the LUC"));
 
       /* start all the LUC groups now */
@@ -506,7 +506,7 @@ luc_starter_check_luc_required_finish (GObject      *object,
       /* check whether we need to start the LUC or not */
       if (luc_required)
         {
-          DLT_LOG (boot_manager_context, DLT_LOG_INFO,
+          DLT_LOG (controller_context, DLT_LOG_INFO,
                    DLT_STRING ("LUC is required, starting it now"));
 
           /* start all the LUC groups now */
@@ -515,7 +515,7 @@ luc_starter_check_luc_required_finish (GObject      *object,
       else
         {
           /* LUC is not required, log this information */
-          DLT_LOG (boot_manager_context, DLT_LOG_INFO,
+          DLT_LOG (controller_context, DLT_LOG_INFO,
                    DLT_STRING ("LUC is not required"));
 
           /* notify others that we have started the LUC groups; we haven't
@@ -568,14 +568,14 @@ luc_starter_start_groups_for_real (LUCStarter *starter)
     {
       if (error->code == G_IO_ERROR_NOT_FOUND)
         {
-          DLT_LOG (boot_manager_context, DLT_LOG_INFO,
+          DLT_LOG (controller_context, DLT_LOG_INFO,
                    DLT_STRING ("Boot manager could not find the last user context"));
         }
       else
         {
           log_text = g_strdup_printf ("Error reading last user context: %s",
                                       error->message);
-          DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+          DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
           g_free (log_text);
         }
       g_error_free (error);
@@ -647,7 +647,7 @@ luc_starter_start_groups (LUCStarter *starter)
     }
   else
     {
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR,
+      DLT_LOG (controller_context, DLT_LOG_ERROR,
                DLT_STRING ("NSM unavailable, starting the LUC unconditionally"));
 
       /* start all the LUC groups now */

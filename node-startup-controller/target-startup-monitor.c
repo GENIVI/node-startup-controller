@@ -24,7 +24,7 @@
 
 
 
-DLT_IMPORT_CONTEXT (boot_manager_context);
+DLT_IMPORT_CONTEXT (controller_context);
 
 
 
@@ -145,7 +145,7 @@ target_startup_monitor_init (TargetStartupMonitor *monitor)
     {
      log_text = g_strdup_printf ("Failed to connect to the NSM lifecycle control: %s",
                                   error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
       g_error_free (error);
     }
@@ -303,7 +303,7 @@ target_startup_monitor_get_unit_finish (GObject      *object,
       /* there was an error, log it */
       message = g_strdup_printf ("Failed to get unit \"%s\" from systemd: %s",
                                  data->unit_name, error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (message));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (message));
       g_free (message);
       g_error_free (error);
 
@@ -315,7 +315,7 @@ target_startup_monitor_get_unit_finish (GObject      *object,
   else
     {
       message = g_strdup_printf ("Creating D-Bus proxy for unit \"%s\"", object_path);
-      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
+      DLT_LOG (controller_context, DLT_LOG_INFO, DLT_STRING (message));
       g_free (message);
 
       /* remember the object path */
@@ -356,7 +356,7 @@ target_startup_monitor_unit_proxy_new_finish (GObject      *object,
       /* there was an error, log it */
       message = g_strdup_printf ("Failed to create a D-Bus proxy for unit \"%s\": %s",
                                  data->object_path, error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (message));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (message));
       g_error_free (error);
     }
   else
@@ -367,7 +367,7 @@ target_startup_monitor_unit_proxy_new_finish (GObject      *object,
       /* log the the active state has changed */
       message = g_strdup_printf ("Active state of unit \"%s\" changed to %s",
                                  data->unit_name, state);
-      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
+      DLT_LOG (controller_context, DLT_LOG_INFO, DLT_STRING (message));
       g_free (message);
 
       /* check if the new state is active */
@@ -430,7 +430,7 @@ target_startup_monitor_set_node_state_finish (GObject      *object,
                                                          &error))
     {
       log_text = g_strdup_printf ("Failed to set the node state: %s", error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
       g_error_free (error);
     }
@@ -438,7 +438,7 @@ target_startup_monitor_set_node_state_finish (GObject      *object,
     {
       log_text = g_strdup_printf ("Failed to set the node state: error code %d",
                                   error_code);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
     }
 }

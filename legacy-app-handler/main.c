@@ -64,7 +64,7 @@ main (int    argc,
   gchar          *msg;
 
   /* register the application and context with the DLT */
-  DLT_REGISTER_APP ("BMGR", "GENIVI Boot Manager");
+  DLT_REGISTER_APP ("NSC", "GENIVI Node Startup Controller");
   DLT_REGISTER_CONTEXT (la_handler_context, "LAH", "Legacy Application Handler");
 
   /* make sure to unregister the DLT at exit */

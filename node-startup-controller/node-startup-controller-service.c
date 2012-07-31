@@ -23,7 +23,7 @@
 
 
 
-DLT_IMPORT_CONTEXT (boot_manager_context);
+DLT_IMPORT_CONTEXT (controller_context);
 
 
 
@@ -241,7 +241,7 @@ node_startup_controller_service_handle_finish_luc_registration (NodeStartupContr
     {
       log_text = g_strdup_printf ("Failed to finish LUC registration: "
                                   "the registration sequence has not been started yet");
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
 
       /* notify the caller that we have handled the method call */
@@ -254,7 +254,7 @@ node_startup_controller_service_handle_finish_luc_registration (NodeStartupContr
   if (error != NULL)
    {
      log_text = g_strdup_printf ("Failed to finish LUC registration: %s", error->message);
-     DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+     DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
      g_free (log_text);
      g_error_free (error);
    }
@@ -305,7 +305,7 @@ node_startup_controller_service_handle_register_with_luc (NodeStartupController 
     {
       log_text = g_strdup_printf ("Failed to register apps with the LUC: "
                                   "The registration sequence has not been started yet");
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
 
       /* notify the caller that we have handled the register request */
@@ -412,7 +412,7 @@ node_startup_controller_service_handle_register_with_luc (NodeStartupController 
   /* log the new last user context */
   debug_text = g_variant_print (service->current_user_context, TRUE);
   log_text = g_strdup_printf ("The new context is: %s", debug_text);
-  DLT_LOG (boot_manager_context, DLT_LOG_DEBUG, DLT_STRING (log_text));
+  DLT_LOG (controller_context, DLT_LOG_DEBUG, DLT_STRING (log_text));
   g_free (debug_text);
   g_free (log_text);
 

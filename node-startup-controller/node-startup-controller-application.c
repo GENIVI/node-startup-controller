@@ -34,7 +34,7 @@
 
 
 
-DLT_IMPORT_CONTEXT (boot_manager_context);
+DLT_IMPORT_CONTEXT (controller_context);
 
 
 
@@ -225,7 +225,7 @@ node_startup_controller_application_init (NodeStartupControllerApplication *appl
       /* log information about the watchdog timeout using DLT */
       message = g_strdup_printf ("Updating systemd's watchdog timestamp every %d seconds",
                                  watchdog_sec);
-      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (message));
+      DLT_LOG (controller_context, DLT_LOG_INFO, DLT_STRING (message));
       g_free (message);
     }
 }
@@ -328,7 +328,7 @@ node_startup_controller_application_constructed (GObject *object)
     {
       log_text = g_strdup_printf ("Failed to export shutdown consumer on the bus: %s",
                                   error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
       g_clear_error (&error);
     }
@@ -365,7 +365,7 @@ node_startup_controller_application_handle_register_finish (GObject      *object
     {
       log_text = g_strdup_printf ("Failed to register the node startup controller as a shutdown "
                                   "consumer: %s", error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
       g_error_free (error);
     }
@@ -373,14 +373,14 @@ node_startup_controller_application_handle_register_finish (GObject      *object
     {
       log_text = g_strdup_printf ("The node startup controller has registered as a shutdown "
                                   "consumer");
-      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_INFO, DLT_STRING (log_text));
       g_free (log_text);
     }
   else
     {
       log_text = g_strdup_printf ("Failed to register the node startup controller as a shutdown "
                                   "consumer: error status %d", error_code);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
     }
 }
@@ -408,7 +408,7 @@ node_startup_controller_application_handle_unregister_finish (GObject      *obje
     {
       log_text = g_strdup_printf ("Failed to unregister the node startup controller as a shutdown "
                                   "consumer: %s", error->message);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
       g_error_free (error);
     }
@@ -416,14 +416,14 @@ node_startup_controller_application_handle_unregister_finish (GObject      *obje
     {
       log_text = g_strdup_printf ("The node startup controller has unregistered as a shutdown "
                                   "consumer");
-      DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_INFO, DLT_STRING (log_text));
       g_free (log_text);
     }
   else
     {
       log_text = g_strdup_printf ("Failed to unregister the node startup controller as a shutdown "
                                   "consumer: error status %d", error_code);
-      DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
+      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
     }
 
