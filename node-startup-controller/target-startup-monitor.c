@@ -19,7 +19,6 @@
 #include <common/nsm-enum-types.h>
 #include <common/nsm-lifecycle-control-dbus.h>
 
-#include <node-startup-controller/boot-manager-dbus.h>
 #include <node-startup-controller/target-startup-monitor.h>
 #include <node-startup-controller/systemd-unit-dbus.h>
 
@@ -153,7 +152,7 @@ target_startup_monitor_init (TargetStartupMonitor *monitor)
 
   /* set the initial state to base running, which means that
    * the mandatory.target has been started (this is done before the
-   * boot manager itself is brought up) */
+   * node startup controller itself is brought up) */
   target_startup_monitor_set_node_state (monitor, NSM_NODE_STATE_BASE_RUNNING);
 
   /* create the table of targets and their node states */

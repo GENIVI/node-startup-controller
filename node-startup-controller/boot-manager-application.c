@@ -26,7 +26,7 @@
 #include <common/watchdog-client.h>
 
 #include <node-startup-controller/boot-manager-application.h>
-#include <node-startup-controller/boot-manager-service.h>
+#include <node-startup-controller/node-startup-controller-service.h>
 #include <node-startup-controller/job-manager.h>
 #include <node-startup-controller/la-handler-service.h>
 #include <node-startup-controller/luc-starter.h>
@@ -44,10 +44,10 @@ enum
   PROP_0,
   PROP_CONNECTION,
   PROP_JOB_MANAGER,
-  PROP_BOOT_MANAGER_SERVICE,
   PROP_LUC_STARTER,
   PROP_LA_HANDLER,
   PROP_MAIN_LOOP,
+  PROP_NODE_STARTUP_CONTROLLER,
 };
 
 
@@ -85,35 +85,35 @@ struct _BootManagerApplicationClass
 
 struct _BootManagerApplication
 {
-  GObject             __parent__;
+  GObject                       __parent__;
 
   /* the connection to D-Bus */
-  GDBusConnection    *connection;
+  GDBusConnection              *connection;
 
   /* systemd watchdog client that repeatedly asks systemd to update
    * the watchdog timestamp */
-  WatchdogClient     *watchdog_client;
+  WatchdogClient               *watchdog_client;
 
   /* manager of unit start and stop operations */
-  JobManager         *job_manager;
+  JobManager                   *job_manager;
 
-  /* boot manager service */
-  BootManagerService *boot_manager_service;
+  /* implementation of the node startup controller service */
+  NodeStartupControllerService *node_startup_controller;
 
   /* LUC starter to restore the LUC */
-  LUCStarter         *luc_starter;
+  LUCStarter                   *luc_starter;
 
   /* Legacy App Handler to register apps with the Node State Manager */
-  LAHandlerService   *la_handler;
+  LAHandlerService             *la_handler;
 
   /* the application's main loop */
-  GMainLoop          *main_loop;
+  GMainLoop                    *main_loop;
 
   /* identifier for the registered bus name */
-  guint               bus_name_id;
+  guint                         bus_name_id;
 
   /* shutdown client for the boot manager itself */
-  ShutdownClient     *client;
+  ShutdownClient               *client;
 };
 
 
@@ -165,16 +165,6 @@ boot_manager_application_class_init (BootManagerApplicationClass *klass)
                                                         G_PARAM_STATIC_STRINGS));
 
   g_object_class_install_property (gobject_class,
-                                   PROP_BOOT_MANAGER_SERVICE,
-                                   g_param_spec_object ("boot-manager-service",
-                                                        "boot-manager-service",
-                                                        "boot-manager-service",
-                                                        BOOT_MANAGER_TYPE_SERVICE,
-                                                        G_PARAM_READWRITE |
-                                                        G_PARAM_CONSTRUCT_ONLY |
-                                                        G_PARAM_STATIC_STRINGS));
-
-  g_object_class_install_property (gobject_class,
                                    PROP_LUC_STARTER,
                                    g_param_spec_object ("luc-starter",
                                                         "luc-starter",
@@ -192,6 +182,16 @@ boot_manager_application_class_init (BootManagerApplicationClass *klass)
                                                        G_PARAM_READWRITE |
                                                        G_PARAM_CONSTRUCT_ONLY |
                                                        G_PARAM_STATIC_STRINGS));
+
+  g_object_class_install_property (gobject_class,
+                                   PROP_NODE_STARTUP_CONTROLLER,
+                                   g_param_spec_object ("node-startup-controller",
+                                                        "node-startup-controller",
+                                                        "node-startup-controller",
+                                                        TYPE_NODE_STARTUP_CONTROLLER_SERVICE,
+                                                        G_PARAM_READWRITE |
+                                                        G_PARAM_CONSTRUCT_ONLY |
+                                                        G_PARAM_STATIC_STRINGS));
 }
 
 
@@ -255,8 +255,8 @@ boot_manager_application_finalize (GObject *object)
   if (application->watchdog_client != NULL)
     g_object_unref (application->watchdog_client);
 
-  /* release the boot manager */
-  g_object_unref (application->boot_manager_service);
+  /* release the node startup controller */
+  g_object_unref (application->node_startup_controller);
 
   /* release the LUC starter */
   g_object_unref (application->luc_starter);
@@ -290,7 +290,7 @@ boot_manager_application_constructed (GObject *object)
 
   /* instantiate the LUC starter */
   application->luc_starter = luc_starter_new (application->job_manager,
-                                              application->boot_manager_service);
+                                              application->node_startup_controller);
 
   /* be notified when LUC groups have started so that we can hand
    * control over to systemd again */
@@ -487,8 +487,8 @@ boot_manager_application_get_property (GObject    *object,
     case PROP_JOB_MANAGER:
       g_value_set_object (value, application->job_manager);
       break;
-    case PROP_BOOT_MANAGER_SERVICE:
-      g_value_set_object (value, application->boot_manager_service);
+    case PROP_NODE_STARTUP_CONTROLLER:
+      g_value_set_object (value, application->node_startup_controller);
     case PROP_LA_HANDLER:
       g_value_set_object (value, application->la_handler);
       break;
@@ -522,8 +522,8 @@ boot_manager_application_set_property (GObject      *object,
     case PROP_JOB_MANAGER:
       application->job_manager = g_value_dup_object (value);
       break;
-    case PROP_BOOT_MANAGER_SERVICE:
-      application->boot_manager_service = g_value_dup_object (value);
+    case PROP_NODE_STARTUP_CONTROLLER:
+      application->node_startup_controller = g_value_dup_object (value);
       break;
     case PROP_LA_HANDLER:
       application->la_handler = g_value_dup_object (value);
@@ -555,21 +555,21 @@ boot_manager_application_luc_groups_started (LUCStarter             *starter,
 
 
 BootManagerApplication *
-boot_manager_application_new (GMainLoop          *main_loop,
-                              GDBusConnection    *connection,
-                              JobManager         *job_manager,
-                              LAHandlerService   *la_handler,
-                              BootManagerService *boot_manager_service)
+boot_manager_application_new (GMainLoop                    *main_loop,
+                              GDBusConnection              *connection,
+                              JobManager                   *job_manager,
+                              LAHandlerService             *la_handler,
+                              NodeStartupControllerService *node_startup_controller)
 {
   g_return_val_if_fail (main_loop != NULL, NULL);
   g_return_val_if_fail (G_IS_DBUS_CONNECTION (connection), NULL);
   g_return_val_if_fail (IS_JOB_MANAGER (job_manager), NULL);
   g_return_val_if_fail (LA_HANDLER_IS_SERVICE (la_handler), NULL);
-  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (boot_manager_service), NULL);
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_SERVICE (node_startup_controller), NULL);
 
   return g_object_new (BOOT_MANAGER_TYPE_APPLICATION,
                        "connection", connection,
-                       "boot-manager-service", boot_manager_service,
+                       "node-startup-controller", node_startup_controller,
                        "job-manager", job_manager,
                        "la-handler", la_handler,
                        "main-loop", main_loop,

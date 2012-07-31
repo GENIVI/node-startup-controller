@@ -10,7 +10,7 @@
 #ifndef __LUC_STARTER_H__
 #define __LUC_STARTER_H__
 
-#include <node-startup-controller/boot-manager-service.h>
+#include <node-startup-controller/node-startup-controller-service.h>
 #include <node-startup-controller/job-manager.h>
 
 G_BEGIN_DECLS
@@ -27,10 +27,10 @@ typedef struct _LUCStarter      LUCStarter;
 
 GType       luc_starter_get_type     (void) G_GNUC_CONST;
 
-LUCStarter *luc_starter_new          (JobManager         *job_manager,
-                                      BootManagerService *boot_manager_service) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
-void        luc_starter_start_groups (LUCStarter         *starter);
-void        luc_starter_cancel       (LUCStarter         *starter);
+LUCStarter *luc_starter_new          (JobManager                   *job_manager,
+                                      NodeStartupControllerService *node_startup_controller) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
+void        luc_starter_start_groups (LUCStarter                   *starter);
+void        luc_starter_cancel       (LUCStarter                   *starter);
 
 G_END_DECLS
 

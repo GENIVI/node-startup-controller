@@ -18,8 +18,8 @@
 #include <dlt/dlt.h>
 
 #include <node-startup-controller/glib-extensions.h>
-#include <node-startup-controller/boot-manager-dbus.h>
-#include <node-startup-controller/boot-manager-service.h>
+#include <node-startup-controller/node-startup-controller-dbus.h>
+#include <node-startup-controller/node-startup-controller-service.h>
 
 
 
@@ -36,59 +36,61 @@ enum
 
 
 
-static void     boot_manager_service_finalize                       (GObject               *object);
-static void     boot_manager_service_get_property                   (GObject               *object,
-                                                                     guint                  prop_id,
-                                                                     GValue                *value,
-                                                                     GParamSpec            *pspec);
-static void     boot_manager_service_set_property                   (GObject               *object,
-                                                                     guint                  prop_id,
-                                                                     const GValue          *value,
-                                                                     GParamSpec            *pspec);
-static gboolean boot_manager_service_handle_begin_luc_registration  (BootManager           *interface,
-                                                                     GDBusMethodInvocation *invocation,
-                                                                     BootManagerService    *service);
-static gboolean boot_manager_service_handle_finish_luc_registration (BootManager           *interface,
-                                                                     GDBusMethodInvocation *invocation,
-                                                                     BootManagerService    *service);
-static gboolean boot_manager_service_handle_register_with_luc       (BootManager           *interface,
-                                                                     GDBusMethodInvocation *invocation,
-                                                                     GVariant              *apps,
-                                                                     BootManagerService    *service);
+static void     node_startup_controller_service_finalize                       (GObject                      *object);
+static void     node_startup_controller_service_get_property                   (GObject                      *object,
+                                                                                guint                         prop_id,
+                                                                                GValue                       *value,
+                                                                                GParamSpec                   *pspec);
+static void     node_startup_controller_service_set_property                   (GObject                      *object,
+                                                                                guint                         prop_id,
+                                                                                const GValue                 *value,
+                                                                                GParamSpec                   *pspec);
+static gboolean node_startup_controller_service_handle_begin_luc_registration  (NodeStartupController        *interface,
+                                                                                GDBusMethodInvocation        *invocation,
+                                                                                NodeStartupControllerService *service);
+static gboolean node_startup_controller_service_handle_finish_luc_registration (NodeStartupController        *interface,
+                                                                                GDBusMethodInvocation        *invocation,
+                                                                                NodeStartupControllerService *service);
+static gboolean node_startup_controller_service_handle_register_with_luc       (NodeStartupController        *interface,
+                                                                                GDBusMethodInvocation        *invocation,
+                                                                                GVariant                     *apps,
+                                                                                NodeStartupControllerService *service);
 
 
 
-struct _BootManagerServiceClass
+struct _NodeStartupControllerServiceClass
 {
   GObjectClass __parent__;
 };
 
-struct _BootManagerService
+struct _NodeStartupControllerService
 {
-  GObject          __parent__;
+  GObject                __parent__;
 
-  GDBusConnection *connection;
-  BootManager     *interface;
+  GDBusConnection       *connection;
+  NodeStartupController *interface;
 
-  GVariant        *current_user_context;
-  gboolean         started_registration;
+  GVariant              *current_user_context;
+  gboolean               started_registration;
 };
 
 
 
-G_DEFINE_TYPE (BootManagerService, boot_manager_service, G_TYPE_OBJECT);
+G_DEFINE_TYPE (NodeStartupControllerService,
+               node_startup_controller_service,
+               G_TYPE_OBJECT);
 
 
 
 static void
-boot_manager_service_class_init (BootManagerServiceClass *klass)
+node_startup_controller_service_class_init (NodeStartupControllerServiceClass *klass)
 {
   GObjectClass *gobject_class;
 
   gobject_class = G_OBJECT_CLASS (klass);
-  gobject_class->finalize = boot_manager_service_finalize;
-  gobject_class->get_property = boot_manager_service_get_property;
-  gobject_class->set_property = boot_manager_service_set_property;
+  gobject_class->finalize = node_startup_controller_service_finalize;
+  gobject_class->get_property = node_startup_controller_service_get_property;
+  gobject_class->set_property = node_startup_controller_service_set_property;
 
   g_object_class_install_property (gobject_class,
                                    PROP_CONNECTION,
@@ -104,9 +106,9 @@ boot_manager_service_class_init (BootManagerServiceClass *klass)
 
 
 static void
-boot_manager_service_init (BootManagerService *service)
+node_startup_controller_service_init (NodeStartupControllerService *service)
 {
-  service->interface = boot_manager_skeleton_new ();
+  service->interface = node_startup_controller_skeleton_new ();
 
   /* initially, no registration is assumed to have been started */
   service->started_registration = FALSE;
@@ -116,26 +118,26 @@ boot_manager_service_init (BootManagerService *service)
 
   /* implement the RegisterWithLUC() handler */
   g_signal_connect (service->interface, "handle-register-with-luc",
-                    G_CALLBACK (boot_manager_service_handle_register_with_luc),
+                    G_CALLBACK (node_startup_controller_service_handle_register_with_luc),
                     service);
 
   /* implement the BeginLUCRegistration() handler */
   g_signal_connect (service->interface, "handle-begin-lucregistration",
-                    G_CALLBACK (boot_manager_service_handle_begin_luc_registration),
+                    G_CALLBACK (node_startup_controller_service_handle_begin_luc_registration),
                     service);
 
   /* implement the FinishLUCRegistration() handler */
   g_signal_connect (service->interface, "handle-finish-lucregistration",
-                    G_CALLBACK (boot_manager_service_handle_finish_luc_registration),
+                    G_CALLBACK (node_startup_controller_service_handle_finish_luc_registration),
                     service);
 }
 
 
 
 static void
-boot_manager_service_finalize (GObject *object)
+node_startup_controller_service_finalize (GObject *object)
 {
-  BootManagerService *service = BOOT_MANAGER_SERVICE (object);
+  NodeStartupControllerService *service = NODE_STARTUP_CONTROLLER_SERVICE (object);
 
   /* release the D-Bus connection object */
   g_object_unref (service->connection);
@@ -150,18 +152,18 @@ boot_manager_service_finalize (GObject *object)
   if (service->current_user_context != NULL)
     g_variant_unref (service->current_user_context);
 
-  (*G_OBJECT_CLASS (boot_manager_service_parent_class)->finalize) (object);
+  (*G_OBJECT_CLASS (node_startup_controller_service_parent_class)->finalize) (object);
 }
 
 
 
 static void
-boot_manager_service_get_property (GObject    *object,
-                                   guint       prop_id,
-                                   GValue     *value,
-                                   GParamSpec *pspec)
+node_startup_controller_service_get_property (GObject    *object,
+                                              guint       prop_id,
+                                              GValue     *value,
+                                              GParamSpec *pspec)
 {
-  BootManagerService *service = BOOT_MANAGER_SERVICE (object);
+  NodeStartupControllerService *service = NODE_STARTUP_CONTROLLER_SERVICE (object);
 
   switch (prop_id)
     {
@@ -177,12 +179,12 @@ boot_manager_service_get_property (GObject    *object,
 
 
 static void
-boot_manager_service_set_property (GObject      *object,
-                                   guint         prop_id,
-                                   const GValue *value,
-                                   GParamSpec   *pspec)
+node_startup_controller_service_set_property (GObject      *object,
+                                              guint         prop_id,
+                                              const GValue *value,
+                                              GParamSpec   *pspec)
 {
-  BootManagerService *service = BOOT_MANAGER_SERVICE (object);
+  NodeStartupControllerService *service = NODE_STARTUP_CONTROLLER_SERVICE (object);
 
   switch (prop_id)
     {
@@ -198,15 +200,15 @@ boot_manager_service_set_property (GObject      *object,
 
 
 static gboolean
-boot_manager_service_handle_begin_luc_registration (BootManager           *interface,
-                                                    GDBusMethodInvocation *invocation,
-                                                    BootManagerService    *service)
+node_startup_controller_service_handle_begin_luc_registration (NodeStartupController        *interface,
+                                                               GDBusMethodInvocation        *invocation,
+                                                               NodeStartupControllerService *service)
 {
   GVariantBuilder builder;
 
-  g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
-  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_SERVICE (service), FALSE);
 
   /* mark the last user context registration as started */
   service->started_registration = TRUE;
@@ -223,16 +225,16 @@ boot_manager_service_handle_begin_luc_registration (BootManager           *inter
 
 
 static gboolean
-boot_manager_service_handle_finish_luc_registration (BootManager           *interface,
-                                                     GDBusMethodInvocation *invocation,
-                                                     BootManagerService    *service)
+node_startup_controller_service_handle_finish_luc_registration (NodeStartupController        *interface,
+                                                                GDBusMethodInvocation        *invocation,
+                                                                NodeStartupControllerService *service)
 {
   GError *error = NULL;
   gchar  *log_text;
 
-  g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
-  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_SERVICE (service), FALSE);
 
   /* check if last user context registration started */
   if (!service->started_registration)
@@ -248,7 +250,7 @@ boot_manager_service_handle_finish_luc_registration (BootManager           *inte
     }
 
   /* write the last user context in a file */
-  boot_manager_service_write_luc (service, &error);
+  node_startup_controller_service_write_luc (service, &error);
   if (error != NULL)
    {
      log_text = g_strdup_printf ("Failed to finish LUC registration: %s", error->message);
@@ -272,10 +274,10 @@ boot_manager_service_handle_finish_luc_registration (BootManager           *inte
 
 
 static gboolean
-boot_manager_service_handle_register_with_luc (BootManager           *interface,
-                                               GDBusMethodInvocation *invocation,
-                                               GVariant              *apps,
-                                               BootManagerService    *service)
+node_startup_controller_service_handle_register_with_luc (NodeStartupController        *interface,
+                                                          GDBusMethodInvocation        *invocation,
+                                                          GVariant                     *apps,
+                                                          NodeStartupControllerService *service)
 {
   GVariantBuilder dict_builder;
   GHashTableIter  hiter;
@@ -294,9 +296,9 @@ boot_manager_service_handle_register_with_luc (BootManager           *interface,
   guint           n;
   gint            luc_type;
 
-  g_return_val_if_fail (IS_BOOT_MANAGER (interface), FALSE);
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
-  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_SERVICE (service), FALSE);
 
   /* check if last user context registration started */
   if (!service->started_registration)
@@ -425,12 +427,12 @@ boot_manager_service_handle_register_with_luc (BootManager           *interface,
 
 
 
-BootManagerService *
-boot_manager_service_new (GDBusConnection *connection)
+NodeStartupControllerService *
+node_startup_controller_service_new (GDBusConnection *connection)
 {
   g_return_val_if_fail (G_IS_DBUS_CONNECTION (connection), NULL);
 
-  return g_object_new (BOOT_MANAGER_TYPE_SERVICE,
+  return g_object_new (TYPE_NODE_STARTUP_CONTROLLER_SERVICE,
                        "connection", connection,
                        NULL);
 }
@@ -438,24 +440,24 @@ boot_manager_service_new (GDBusConnection *connection)
 
 
 gboolean
-boot_manager_service_start_up (BootManagerService *service,
-                               GError            **error)
+node_startup_controller_service_start_up (NodeStartupControllerService *service,
+                                          GError                      **error)
 {
-  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), FALSE);
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_SERVICE (service), FALSE);
   g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
-  /* announce the org.genivi.BootManager1.BootManager service on the bus */
+  /* announce the org.genivi.NodeStartupController1.NodeStartupController service on the bus */
   return g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (service->interface),
                                            service->connection,
-                                           "/org/genivi/BootManager1/BootManager",
+                                           "/org/genivi/NodeStartupController1/NodeStartupController",
                                            error);
 }
 
 
 
 GVariant *
-boot_manager_service_read_luc (BootManagerService *service,
-                               GError            **error)
+node_startup_controller_service_read_luc (NodeStartupControllerService *service,
+                                          GError                      **error)
 {
   const gchar *luc_path;
   GVariant    *context;
@@ -463,7 +465,7 @@ boot_manager_service_read_luc (BootManagerService *service,
   char        *data;
   gsize        data_len;
 
-  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (service), NULL);
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_SERVICE (service), NULL);
   g_return_val_if_fail ((error == NULL || *error == NULL), NULL);
 
   /* check which configuration file to use; the LUC_PATH environment variable
@@ -494,15 +496,15 @@ boot_manager_service_read_luc (BootManagerService *service,
 
 
 void
-boot_manager_service_write_luc (BootManagerService *service,
-                                GError            **error)
+node_startup_controller_service_write_luc (NodeStartupControllerService *service,
+                                           GError                      **error)
 {
   const gchar *luc_path;
   GError      *err = NULL;
   GFile       *luc_file;
   GFile       *luc_dir;
 
-  g_return_if_fail (BOOT_MANAGER_IS_SERVICE (service));
+  g_return_if_fail (IS_NODE_STARTUP_CONTROLLER_SERVICE (service));
   g_return_if_fail (error == NULL || *error == NULL);
 
   /* check which configuration file to use; the LUC_PATH environment variable

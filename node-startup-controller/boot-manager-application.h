@@ -12,7 +12,7 @@
 
 #include <gio/gio.h>
 
-#include <node-startup-controller/boot-manager-service.h>
+#include <node-startup-controller/node-startup-controller-service.h>
 #include <node-startup-controller/job-manager.h>
 #include <node-startup-controller/la-handler-service.h>
 
@@ -30,11 +30,11 @@ typedef struct _BootManagerApplication      BootManagerApplication;
 
 GType		                boot_manager_application_get_type (void) G_GNUC_CONST;
 
-BootManagerApplication *boot_manager_application_new      (GMainLoop          *main_loop,
-                                                           GDBusConnection    *connection,
-                                                           JobManager         *job_manager,
-                                                           LAHandlerService   *la_handler,
-                                                           BootManagerService *boot_manager_service) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
+BootManagerApplication *boot_manager_application_new      (GMainLoop                    *main_loop,
+                                                           GDBusConnection              *connection,
+                                                           JobManager                   *job_manager,
+                                                           LAHandlerService             *la_handler,
+                                                           NodeStartupControllerService *node_startup_controller) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
 
 G_END_DECLS
 

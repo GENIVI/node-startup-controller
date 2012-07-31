@@ -21,9 +21,9 @@
 #include <dlt/dlt.h>
 
 #include <node-startup-controller/boot-manager-application.h>
-#include <node-startup-controller/boot-manager-dbus.h>
-#include <node-startup-controller/boot-manager-service.h>
 #include <node-startup-controller/la-handler-service.h>
+#include <node-startup-controller/node-startup-controller-dbus.h>
+#include <node-startup-controller/node-startup-controller-service.h>
 #include <node-startup-controller/systemd-manager-dbus.h>
 #include <node-startup-controller/target-startup-monitor.h>
 
@@ -48,16 +48,16 @@ int
 main (int    argc,
       char **argv)
 {
-  BootManagerApplication *application;
-  TargetStartupMonitor   *target_startup_monitor;
-  BootManagerService     *boot_manager_service;
-  LAHandlerService       *la_handler_service;
-  GDBusConnection        *connection;
-  SystemdManager         *systemd_manager;
-  JobManager             *job_manager;
-  GMainLoop              *main_loop;
-  GError                 *error = NULL;
-  gchar                  *msg;
+  NodeStartupControllerService *node_startup_controller;
+  BootManagerApplication       *application;
+  TargetStartupMonitor         *target_startup_monitor;
+  LAHandlerService             *la_handler_service;
+  GDBusConnection              *connection;
+  SystemdManager               *systemd_manager;
+  JobManager                   *job_manager;
+  GMainLoop                    *main_loop;
+  GError                       *error = NULL;
+  gchar                        *msg;
 
   /* register the application and context in DLT */
   DLT_REGISTER_APP ("BMGR", "GENIVI Boot Manager");
@@ -125,10 +125,10 @@ main (int    argc,
     }
 
   /* instantiate the boot manager service implementation */
-  boot_manager_service = boot_manager_service_new (connection);
+  node_startup_controller = node_startup_controller_service_new (connection);
 
   /* attempt to start the boot manager service */
-  if (!boot_manager_service_start_up (boot_manager_service, &error))
+  if (!node_startup_controller_service_start_up (node_startup_controller, &error))
     {
       msg = g_strdup_printf ("Failed to start the boot manager service: %s",
                              error->message);
@@ -137,7 +137,7 @@ main (int    argc,
 
       /* clean up */
       g_error_free (error);
-      g_object_unref (boot_manager_service);
+      g_object_unref (node_startup_controller);
       g_object_unref (systemd_manager);
       g_object_unref (connection);
 
@@ -162,7 +162,7 @@ main (int    argc,
       g_clear_error (&error);
       g_object_unref (la_handler_service);
       g_object_unref (job_manager);
-      g_object_unref (boot_manager_service);
+      g_object_unref (node_startup_controller);
       g_object_unref (systemd_manager);
       g_object_unref (connection);
 
@@ -176,8 +176,9 @@ main (int    argc,
   target_startup_monitor = target_startup_monitor_new (systemd_manager);
 
   /* create and run the main application */
-  application = boot_manager_application_new (main_loop, connection, job_manager,
-                                              la_handler_service, boot_manager_service);
+  application = boot_manager_application_new (main_loop, connection,
+                                              job_manager, la_handler_service,
+                                              node_startup_controller);
 
   /* run the main loop */
   g_main_loop_run (main_loop);
@@ -188,7 +189,7 @@ main (int    argc,
   g_object_unref (target_startup_monitor);
   g_object_unref (systemd_manager);
   g_object_unref (job_manager);
-  g_object_unref (boot_manager_service);
+  g_object_unref (node_startup_controller);
   g_object_unref (connection);
 
   return EXIT_SUCCESS;

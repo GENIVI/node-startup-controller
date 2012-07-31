@@ -22,9 +22,9 @@
 
 #include <common/nsm-lifecycle-control-dbus.h>
 
-#include <node-startup-controller/boot-manager-service.h>
 #include <node-startup-controller/job-manager.h>
 #include <node-startup-controller/luc-starter.h>
+#include <node-startup-controller/node-startup-controller-service.h>
 
 
 
@@ -46,7 +46,7 @@ enum
 {
   PROP_0,
   PROP_JOB_MANAGER,
-  PROP_BOOT_MANAGER_SERVICE,
+  PROP_NODE_STARTUP_CONTROLLER,
 };
 
 
@@ -88,18 +88,18 @@ struct _LUCStarterClass
 
 struct _LUCStarter
 {
-  GObject              __parent__;
+  GObject                        __parent__;
 
-  JobManager          *job_manager;
-  BootManagerService  *boot_manager_service;
-  NSMLifecycleControl *nsm_lifecycle_control;
+  JobManager                    *job_manager;
+  NodeStartupControllerService  *node_startup_controller;
+  NSMLifecycleControl           *nsm_lifecycle_control;
 
-  GArray              *prioritised_types;
+  GArray                        *prioritised_types;
 
-  GArray              *start_order;
-  GHashTable          *start_groups;
+  GArray                        *start_order;
+  GHashTable                    *start_groups;
 
-  GHashTable          *cancellables;
+  GHashTable                    *cancellables;
 };
 
 
@@ -135,11 +135,11 @@ luc_starter_class_init (LUCStarterClass *klass)
                                                         G_PARAM_STATIC_STRINGS));
 
   g_object_class_install_property (gobject_class,
-                                   PROP_BOOT_MANAGER_SERVICE,
-                                   g_param_spec_object ("boot-manager-service",
-                                                        "boot-manager-service",
-                                                        "boot-manager-service",
-                                                        BOOT_MANAGER_TYPE_SERVICE,
+                                   PROP_NODE_STARTUP_CONTROLLER,
+                                   g_param_spec_object ("node-startup-controller",
+                                                        "node-startup-controller",
+                                                        "node-startup-controller",
+                                                        TYPE_NODE_STARTUP_CONTROLLER_SERVICE,
                                                         G_PARAM_READWRITE |
                                                         G_PARAM_CONSTRUCT_ONLY |
                                                         G_PARAM_STATIC_STRINGS));
@@ -231,8 +231,8 @@ luc_starter_finalize (GObject *object)
   /* release the job manager */
   g_object_unref (starter->job_manager);
 
-  /* release the boot manager service */
-  g_object_unref (starter->boot_manager_service);
+  /* release the node startup controller service */
+  g_object_unref (starter->node_startup_controller);
 
   (*G_OBJECT_CLASS (luc_starter_parent_class)->finalize) (object);
 }
@@ -252,8 +252,8 @@ luc_starter_get_property (GObject    *object,
     case PROP_JOB_MANAGER:
       g_value_set_object (value, starter->job_manager);
       break;
-    case PROP_BOOT_MANAGER_SERVICE:
-      g_value_set_object (value, starter->boot_manager_service);
+    case PROP_NODE_STARTUP_CONTROLLER:
+      g_value_set_object (value, starter->node_startup_controller);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -276,8 +276,8 @@ luc_starter_set_property (GObject      *object,
     case PROP_JOB_MANAGER:
       starter->job_manager = g_value_dup_object (value);
       break;
-    case PROP_BOOT_MANAGER_SERVICE:
-      starter->boot_manager_service = g_value_dup_object (value);
+    case PROP_NODE_STARTUP_CONTROLLER:
+      starter->node_startup_controller = g_value_dup_object (value);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -562,7 +562,8 @@ luc_starter_start_groups_for_real (LUCStarter *starter)
   g_hash_table_remove_all (starter->cancellables);
 
   /* get the current last user context */
-  context = boot_manager_service_read_luc (starter->boot_manager_service, &error);
+  context = node_startup_controller_service_read_luc (starter->node_startup_controller,
+                                                      &error);
   if (error != NULL)
     {
       if (error->code == G_IO_ERROR_NOT_FOUND)
@@ -617,15 +618,15 @@ luc_starter_start_groups_for_real (LUCStarter *starter)
 
 
 LUCStarter *
-luc_starter_new (JobManager         *job_manager,
-                 BootManagerService *boot_manager_service)
+luc_starter_new (JobManager                   *job_manager,
+                 NodeStartupControllerService *node_startup_controller)
 {
   g_return_val_if_fail (IS_JOB_MANAGER (job_manager), NULL);
-  g_return_val_if_fail (BOOT_MANAGER_IS_SERVICE (boot_manager_service), NULL);
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_SERVICE (node_startup_controller), NULL);
 
   return g_object_new (TYPE_LUC_STARTER,
                        "job-manager", job_manager,
-                       "boot-manager-service", boot_manager_service,
+                       "node-startup-controller-service", node_startup_controller,
                        NULL);
 }
 

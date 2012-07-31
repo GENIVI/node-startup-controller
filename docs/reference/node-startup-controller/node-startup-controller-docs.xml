@@ -88,17 +88,17 @@
 
   <chapter>
     <title>Public API</title>
-    <xi:include href="../../../node-startup-controller/boot-manager-dbus-doc-org.genivi.BootManager1.BootManager.xml"/>
+    <xi:include href="../../../node-startup-controller/doc-org.genivi.NodeStartupController1.NodeStartupController.xml"/>
     <xi:include href="legacy-app-handler.xml"/>
   </chapter>
 
   <chapter id="node-startup-controller-classes">
     <title>Main Classes of the Node Startup Controller</title>
     <xi:include href="xml/boot-manager-application.xml"/>
-    <xi:include href="xml/boot-manager-service.xml"/>
     <xi:include href="xml/job-manager.xml"/>
     <xi:include href="xml/la-handler-service.xml"/>
     <xi:include href="xml/luc-starter.xml"/>
+    <xi:include href="xml/node-startup-controller-service.xml"/>
     <xi:include href="xml/target-startup-monitor.xml"/>
   </chapter>
 

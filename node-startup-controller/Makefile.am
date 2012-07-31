@@ -9,9 +9,9 @@ boot_managerdir =							\
 boot_manager_PROGRAMS =							\
 	boot-manager
 
-boot_manager_built_sources =						\
-	boot-manager-dbus.h						\
-	boot-manager-dbus.c
+node_startup_controller_built_sources =					\
+	node-startup-controller-dbus.h					\
+	node-startup-controller-dbus.c
 
 systemd_manager_built_sources =						\
 	systemd-manager-dbus.h						\
@@ -24,8 +24,6 @@ systemd_unit_built_sources =						\
 boot_manager_SOURCES =							\
 	boot-manager-application.c					\
 	boot-manager-application.h					\
-	boot-manager-service.c						\
-	boot-manager-service.h						\
 	glib-extensions.c						\
 	glib-extensions.h						\
 	job-manager.c							\
@@ -34,10 +32,12 @@ boot_manager_SOURCES =							\
 	la-handler-service.h						\
 	luc-starter.c							\
 	luc-starter.h							\
+	node-startup-controller-service.c				\
+	node-startup-controller-service.h				\
 	target-startup-monitor.c					\
 	target-startup-monitor.h					\
 	main.c								\
-	$(boot_manager_built_sources)					\
+	$(node_startup_controller_built_sources)			\
 	$(systemd_manager_built_sources)				\
 	$(systemd_unit_built_sources)
 
@@ -89,45 +89,46 @@ systemd_service_DATA = $(systemd_service_in_files:.service.in=.service)
 CLEANFILES =								\
 	$(dbus_service_DATA)						\
 	$(systemd_service_DATA)						\
-	boot-manager-dbus-doc-*.xml
+	node-startup-controller-dbus-doc-*.xml
 
 EXTRA_DIST =								\
-	boot-manager-dbus.xml						\
+	node-startup-controller-dbus.xml				\
 	systemd-manager-dbus.xml					\
 	$(dbus_service_in_files)					\
 	$(systemd_service_in_files)
 
 DISTCLEANFILES =							\
-	$(boot_manager_built_sources)					\
+	$(node_startup_controller_built_sources)			\
 	$(systemd_manager_built_sources)				\
 	$(systemd_unit_built_sources)
 
 BUILT_SOURCES =								\
-	$(boot_manager_built_sources)					\
+	$(node_startup_controller_built_sources)			\
 	$(systemd_manager_built_sources)				\
 	$(systemd_unit_built_sources)
 
-$(boot_manager_built_sources): boot-manager-dbus.xml Makefile
+$(node_startup_controller_built_sources): node-startup-controller-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
 	    --interface-prefix org.genivi				\
 	    --c-namespace ""						\
-	    --generate-c-code boot-manager-dbus				\
-	    --generate-docbook boot-manager-dbus-doc			\
-	    --annotate org.genivi.BootManager1.BootManager org.gtk.GDBus.C.Name	\
-	      Boot_Manager $<
+	    --generate-c-code node-startup-controller-dbus		\
+	    --generate-docbook doc					\
+	    --annotate							\
+	      org.genivi.NodeStartupController1.NodeStartupController	\
+	      org.gtk.GDBus.C.Name Node_Startup_Controller $<
 
 $(systemd_manager_built_sources): systemd-manager-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
 	    --interface-prefix org.freedesktop.systemd1			\
 	    --c-namespace ""						\
 	    --generate-c-code systemd-manager-dbus			\
-	    --annotate org.freedesktop.systemd1.Manager org.gtk.GDBus.C.Name \
-	      SystemdManager $<
+	    --annotate org.freedesktop.systemd1.Manager			\
+	      org.gtk.GDBus.C.Name SystemdManager $<
 
 $(systemd_unit_built_sources): systemd-unit-dbus.xml Makefile
 	$(AM_V_GEN) $(GDBUS_CODEGEN)					\
 	    --interface-prefix org.freedesktop.systemd1			\
 	    --c-namespace ""						\
 	    --generate-c-code systemd-unit-dbus				\
-	    --annotate org.freedesktop.systemd1.Unit org.gtk.GDBus.C.Name \
-	      SystemdUnit $<
+	    --annotate org.freedesktop.systemd1.Unit			\
+	      org.gtk.GDBus.C.Name SystemdUnit $<
