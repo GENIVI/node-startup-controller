@@ -87,13 +87,14 @@ systemd_service_in_files =						\
 systemd_service_DATA = $(systemd_service_in_files:.service.in=.service)
 
 CLEANFILES =								\
+	doc-org.genivi.NodeStartupController1.NodeStartupController.xml	\
 	$(dbus_service_DATA)						\
-	$(systemd_service_DATA)						\
-	node-startup-controller-dbus-doc-*.xml
+	$(systemd_service_DATA)
 
 EXTRA_DIST =								\
 	node-startup-controller-dbus.xml				\
 	systemd-manager-dbus.xml					\
+	systemd-unit-dbus.xml						\
 	$(dbus_service_in_files)					\
 	$(systemd_service_in_files)
 
