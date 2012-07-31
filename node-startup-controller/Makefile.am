@@ -22,8 +22,6 @@ systemd_unit_built_sources =						\
 	systemd-unit-dbus.c
 
 boot_manager_SOURCES =							\
-	boot-manager-application.c					\
-	boot-manager-application.h					\
 	glib-extensions.c						\
 	glib-extensions.h						\
 	job-manager.c							\
@@ -32,6 +30,8 @@ boot_manager_SOURCES =							\
 	la-handler-service.h						\
 	luc-starter.c							\
 	luc-starter.h							\
+	node-startup-controller-application.c				\
+	node-startup-controller-application.h				\
 	node-startup-controller-service.c				\
 	node-startup-controller-service.h				\
 	target-startup-monitor.c					\

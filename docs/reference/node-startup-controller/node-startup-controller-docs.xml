@@ -94,7 +94,7 @@
 
   <chapter id="node-startup-controller-classes">
     <title>Main Classes of the Node Startup Controller</title>
-    <xi:include href="xml/boot-manager-application.xml"/>
+    <xi:include href="xml/node-startup-controller-application.xml"/>
     <xi:include href="xml/job-manager.xml"/>
     <xi:include href="xml/la-handler-service.xml"/>
     <xi:include href="xml/luc-starter.xml"/>

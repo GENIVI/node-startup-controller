@@ -25,7 +25,7 @@
 #include <common/shutdown-consumer-dbus.h>
 #include <common/watchdog-client.h>
 
-#include <node-startup-controller/boot-manager-application.h>
+#include <node-startup-controller/node-startup-controller-application.h>
 #include <node-startup-controller/node-startup-controller-service.h>
 #include <node-startup-controller/job-manager.h>
 #include <node-startup-controller/la-handler-service.h>
@@ -52,38 +52,38 @@ enum
 
 
 
-static void boot_manager_application_finalize                     (GObject                *object);
-static void boot_manager_application_constructed                  (GObject                *object);
-static void boot_manager_application_get_property                 (GObject                *object,
-                                                                   guint                   prop_id,
-                                                                   GValue                 *value,
-                                                                   GParamSpec             *pspec);
-static gboolean boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *interface,
-                                                                   GDBusMethodInvocation  *invocation,
-                                                                   NSMShutdownType         request,
-                                                                   guint                   request_id,
-                                                                   BootManagerApplication *application);
-static void boot_manager_application_handle_register_finish       (GObject                *object,
-                                                                   GAsyncResult           *res,
-                                                                   gpointer                user_data);
-static void boot_manager_application_handle_unregister_finish     (GObject                *object,
-                                                                   GAsyncResult           *res,
-                                                                   gpointer                user_data);
-static void boot_manager_application_set_property                 (GObject                *object,
-                                                                   guint                   prop_id,
-                                                                   const GValue           *value,
-                                                                   GParamSpec             *pspec);
-static void boot_manager_application_luc_groups_started           (LUCStarter             *starter,
-                                                                   BootManagerApplication *application);
+static void node_startup_controller_application_finalize                     (GObject                          *object);
+static void node_startup_controller_application_constructed                  (GObject                          *object);
+static void node_startup_controller_application_get_property                 (GObject                          *object,
+                                                                              guint                             prop_id,
+                                                                              GValue                           *value,
+                                                                              GParamSpec                       *pspec);
+static gboolean node_startup_controller_application_handle_lifecycle_request (ShutdownConsumer                 *interface,
+                                                                              GDBusMethodInvocation            *invocation,
+                                                                              NSMShutdownType                   request,
+                                                                              guint                             request_id,
+                                                                              NodeStartupControllerApplication *application);
+static void node_startup_controller_application_handle_register_finish       (GObject                          *object,
+                                                                              GAsyncResult                     *res,
+                                                                              gpointer                          user_data);
+static void node_startup_controller_application_handle_unregister_finish     (GObject                          *object,
+                                                                              GAsyncResult                     *res,
+                                                                              gpointer                          user_data);
+static void node_startup_controller_application_set_property                 (GObject                          *object,
+                                                                              guint                             prop_id,
+                                                                              const GValue                     *value,
+                                                                              GParamSpec                       *pspec);
+static void node_startup_controller_application_luc_groups_started           (LUCStarter                       *starter,
+                                                                              NodeStartupControllerApplication *application);
 
 
 
-struct _BootManagerApplicationClass
+struct _NodeStartupControllerApplicationClass
 {
   GObjectClass __parent__;
 };
 
-struct _BootManagerApplication
+struct _NodeStartupControllerApplication
 {
   GObject                       __parent__;
 
@@ -112,26 +112,28 @@ struct _BootManagerApplication
   /* identifier for the registered bus name */
   guint                         bus_name_id;
 
-  /* shutdown client for the boot manager itself */
+  /* shutdown client for the node startup controller itself */
   ShutdownClient               *client;
 };
 
 
 
-G_DEFINE_TYPE (BootManagerApplication, boot_manager_application, G_TYPE_OBJECT);
+G_DEFINE_TYPE (NodeStartupControllerApplication,
+               node_startup_controller_application,
+               G_TYPE_OBJECT);
 
 
 
 static void
-boot_manager_application_class_init (BootManagerApplicationClass *klass)
+node_startup_controller_application_class_init (NodeStartupControllerApplicationClass *klass)
 {
   GObjectClass *gobject_class;
 
   gobject_class = G_OBJECT_CLASS (klass);
-  gobject_class->finalize = boot_manager_application_finalize;
-  gobject_class->constructed = boot_manager_application_constructed;
-  gobject_class->get_property = boot_manager_application_get_property;
-  gobject_class->set_property = boot_manager_application_set_property;
+  gobject_class->finalize = node_startup_controller_application_finalize;
+  gobject_class->constructed = node_startup_controller_application_constructed;
+  gobject_class->get_property = node_startup_controller_application_get_property;
+  gobject_class->set_property = node_startup_controller_application_set_property;
 
   g_object_class_install_property (gobject_class,
                                    PROP_CONNECTION,
@@ -197,7 +199,7 @@ boot_manager_application_class_init (BootManagerApplicationClass *klass)
 
 
 static void
-boot_manager_application_init (BootManagerApplication *application)
+node_startup_controller_application_init (NodeStartupControllerApplication *application)
 {
   const gchar *watchdog_str;
   guint64      watchdog_usec = 0;
@@ -231,10 +233,10 @@ boot_manager_application_init (BootManagerApplication *application)
 
 
 static void
-boot_manager_application_finalize (GObject *object)
+node_startup_controller_application_finalize (GObject *object)
 {
-  BootManagerApplication *application = BOOT_MANAGER_APPLICATION (object);
-  ShutdownConsumer       *consumer;
+  NodeStartupControllerApplication *application = NODE_STARTUP_CONTROLLER_APPLICATION (object);
+  ShutdownConsumer                 *consumer;
 
   /* disconnect from the shutdown consumer */
   consumer = shutdown_client_get_consumer (application->client);
@@ -270,23 +272,23 @@ boot_manager_application_finalize (GObject *object)
   /* release the main loop */
   g_main_loop_unref (application->main_loop);
 
-  (*G_OBJECT_CLASS (boot_manager_application_parent_class)->finalize) (object);
+  (*G_OBJECT_CLASS (node_startup_controller_application_parent_class)->finalize) (object);
 }
 
 
 
 static void
-boot_manager_application_constructed (GObject *object)
+node_startup_controller_application_constructed (GObject *object)
 {
-  BootManagerApplication *application = BOOT_MANAGER_APPLICATION (object);
-  ShutdownConsumer       *consumer;
-  NSMShutdownType         shutdown_mode;
-  NSMConsumer            *nsm_consumer;
-  GError                 *error = NULL;
-  gchar                  *bus_name = "org.genivi.BootManager1";
-  gchar                  *log_text;
-  gchar                  *object_path;
-  gint                    timeout;
+  NodeStartupControllerApplication *application = NODE_STARTUP_CONTROLLER_APPLICATION (object);
+  ShutdownConsumer                 *consumer;
+  NSMShutdownType                   shutdown_mode;
+  NSMConsumer                      *nsm_consumer;
+  GError                           *error = NULL;
+  gchar                            *bus_name = "org.genivi.NodeStartupController1";
+  gchar                            *log_text;
+  gchar                            *object_path;
+  gint                              timeout;
 
   /* instantiate the LUC starter */
   application->luc_starter = luc_starter_new (application->job_manager,
@@ -295,7 +297,7 @@ boot_manager_application_constructed (GObject *object)
   /* be notified when LUC groups have started so that we can hand
    * control over to systemd again */
   g_signal_connect (application->luc_starter, "luc-groups-started",
-                    G_CALLBACK (boot_manager_application_luc_groups_started),
+                    G_CALLBACK (node_startup_controller_application_luc_groups_started),
                     application);
 
   /* restore the LUC if desired */
@@ -303,11 +305,11 @@ boot_manager_application_constructed (GObject *object)
 
   /* get a bus name on the given connection */
   application->bus_name_id =
-    g_bus_own_name_on_connection (application->connection, "org.genivi.BootManager1",
+    g_bus_own_name_on_connection (application->connection, "org.genivi.NodeStartupController1",
                                   G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
 
-  /* create a shutdown client for the boot manager itself */
-  object_path = "/org/genivi/BootManager1/ShutdownConsumer/0";
+  /* create a shutdown client for the node startup controller itself */
+  object_path = "/org/genivi/NodeStartupController1/ShutdownConsumer/0";
   shutdown_mode = NSM_SHUTDOWN_TYPE_NORMAL;
   timeout = 1000;
   application->client = shutdown_client_new (bus_name, object_path, shutdown_mode,
@@ -317,7 +319,7 @@ boot_manager_application_constructed (GObject *object)
   consumer = shutdown_consumer_skeleton_new ();
   shutdown_client_set_consumer (application->client, consumer);
   g_signal_connect (consumer, "handle-lifecycle-request",
-                    G_CALLBACK (boot_manager_application_handle_lifecycle_request),
+                    G_CALLBACK (node_startup_controller_application_handle_lifecycle_request),
                     application);
 
   /* export the shutdown consumer on the bus */
@@ -331,11 +333,11 @@ boot_manager_application_constructed (GObject *object)
       g_clear_error (&error);
     }
 
-  /* register boot manager as a shutdown consumer */
+  /* register node startup controller as a shutdown consumer */
   nsm_consumer = la_handler_service_get_nsm_consumer (application->la_handler);
   nsm_consumer_call_register_shutdown_client (nsm_consumer, bus_name, object_path,
                                               shutdown_mode, timeout, NULL,
-                                              boot_manager_application_handle_register_finish,
+                                              node_startup_controller_application_handle_register_finish,
                                               NULL);
 
   /* release the shutdown consumer */
@@ -345,9 +347,9 @@ boot_manager_application_constructed (GObject *object)
 
 
 static void
-boot_manager_application_handle_register_finish (GObject      *object,
-                                                 GAsyncResult *res,
-                                                 gpointer      user_data)
+node_startup_controller_application_handle_register_finish (GObject      *object,
+                                                            GAsyncResult *res,
+                                                            gpointer      user_data)
 {
   NSMConsumer *nsm_consumer = NSM_CONSUMER (object);
   GError      *error = NULL;
@@ -357,11 +359,11 @@ boot_manager_application_handle_register_finish (GObject      *object,
   g_return_if_fail (IS_NSM_CONSUMER (nsm_consumer));
   g_return_if_fail (G_IS_ASYNC_RESULT (res));
 
-  /* finish registering boot manager as a shutdown client */
+  /* finish registering node startup controller as a shutdown client */
   if (!nsm_consumer_call_register_shutdown_client_finish (nsm_consumer, &error_code, res,
                                                           &error))
     {
-      log_text = g_strdup_printf ("Failed to register the boot manager as a shutdown "
+      log_text = g_strdup_printf ("Failed to register the node startup controller as a shutdown "
                                   "consumer: %s", error->message);
       DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
@@ -369,14 +371,14 @@ boot_manager_application_handle_register_finish (GObject      *object,
     }
   else if (error_code == NSM_ERROR_STATUS_OK)
     {
-      log_text = g_strdup_printf ("The boot manager has registered as a shutdown "
+      log_text = g_strdup_printf ("The node startup controller has registered as a shutdown "
                                   "consumer");
       DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (log_text));
       g_free (log_text);
     }
   else
     {
-      log_text = g_strdup_printf ("Failed to register the boot manager as a shutdown "
+      log_text = g_strdup_printf ("Failed to register the node startup controller as a shutdown "
                                   "consumer: error status %d", error_code);
       DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
@@ -386,25 +388,25 @@ boot_manager_application_handle_register_finish (GObject      *object,
 
 
 static void
-boot_manager_application_handle_unregister_finish (GObject      *object,
-                                                   GAsyncResult *res,
-                                                   gpointer      user_data)
+node_startup_controller_application_handle_unregister_finish (GObject      *object,
+                                                              GAsyncResult *res,
+                                                              gpointer      user_data)
 {
-  BootManagerApplication *application = BOOT_MANAGER_APPLICATION (user_data);
-  NSMConsumer            *nsm_consumer = NSM_CONSUMER (object);
-  GError                 *error = NULL;
-  gchar                  *log_text;
-  gint                    error_code = NSM_ERROR_STATUS_OK;
+  NodeStartupControllerApplication *application = NODE_STARTUP_CONTROLLER_APPLICATION (user_data);
+  NSMConsumer                      *nsm_consumer = NSM_CONSUMER (object);
+  GError                           *error = NULL;
+  gchar                            *log_text;
+  gint                              error_code = NSM_ERROR_STATUS_OK;
 
   g_return_if_fail (IS_NSM_CONSUMER (nsm_consumer));
-  g_return_if_fail (BOOT_MANAGER_IS_APPLICATION (application));
+  g_return_if_fail (IS_NODE_STARTUP_CONTROLLER_APPLICATION (application));
   g_return_if_fail (G_IS_ASYNC_RESULT (res));
 
-  /* finish unregistering boot manager as a shutdown client */
+  /* finish unregistering node startup controller as a shutdown client */
   if (!nsm_consumer_call_un_register_shutdown_client_finish (nsm_consumer, &error_code,
                                                              res, &error))
     {
-      log_text = g_strdup_printf ("Failed to unregister the boot manager as a shutdown "
+      log_text = g_strdup_printf ("Failed to unregister the node startup controller as a shutdown "
                                   "consumer: %s", error->message);
       DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
@@ -412,14 +414,14 @@ boot_manager_application_handle_unregister_finish (GObject      *object,
     }
   else if (error_code == NSM_ERROR_STATUS_OK)
     {
-      log_text = g_strdup_printf ("The boot manager has unregistered as a shutdown "
+      log_text = g_strdup_printf ("The node startup controller has unregistered as a shutdown "
                                   "consumer");
       DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (log_text));
       g_free (log_text);
     }
   else
     {
-      log_text = g_strdup_printf ("Failed to unregister the boot manager as a shutdown "
+      log_text = g_strdup_printf ("Failed to unregister the node startup controller as a shutdown "
                                   "consumer: error status %d", error_code);
       DLT_LOG (boot_manager_context, DLT_LOG_ERROR, DLT_STRING (log_text));
       g_free (log_text);
@@ -432,11 +434,11 @@ boot_manager_application_handle_unregister_finish (GObject      *object,
 
 
 static gboolean
-boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consumer,
-                                                   GDBusMethodInvocation  *invocation,
-                                                   NSMShutdownType         request,
-                                                   guint                   request_id,
-                                                   BootManagerApplication *application)
+node_startup_controller_application_handle_lifecycle_request (ShutdownConsumer                 *consumer,
+                                                              GDBusMethodInvocation            *invocation,
+                                                              NSMShutdownType                   request,
+                                                              guint                             request_id,
+                                                              NodeStartupControllerApplication *application)
 {
   NSMConsumer *nsm_consumer;
   const gchar *bus_name;
@@ -445,7 +447,7 @@ boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consu
 
   g_return_val_if_fail (IS_SHUTDOWN_CONSUMER (consumer), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
-  g_return_val_if_fail (BOOT_MANAGER_IS_APPLICATION (application), FALSE);
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_APPLICATION (application), FALSE);
 
   /* cancel the LUC startup */
   luc_starter_cancel (application->luc_starter);
@@ -457,14 +459,14 @@ boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consu
   shutdown_consumer_complete_lifecycle_request (consumer, invocation,
                                                 NSM_ERROR_STATUS_OK);
 
-  /* deregister the boot manager as a shutdown client itself */
+  /* deregister the node startup controller as a shutdown client itself */
   nsm_consumer = la_handler_service_get_nsm_consumer (application->la_handler);
   bus_name = shutdown_client_get_bus_name (application->client);
   object_path = shutdown_client_get_object_path (application->client);
   shutdown_mode = shutdown_client_get_shutdown_mode (application->client);
   nsm_consumer_call_un_register_shutdown_client (nsm_consumer, bus_name,
                                                  object_path, shutdown_mode, NULL,
-                                                 boot_manager_application_handle_unregister_finish,
+                                                 node_startup_controller_application_handle_unregister_finish,
                                                  application);
   return TRUE;
 }
@@ -472,12 +474,12 @@ boot_manager_application_handle_lifecycle_request (ShutdownConsumer       *consu
 
 
 static void
-boot_manager_application_get_property (GObject    *object,
-                                       guint       prop_id,
-                                       GValue     *value,
-                                       GParamSpec *pspec)
+node_startup_controller_application_get_property (GObject    *object,
+                                                  guint       prop_id,
+                                                  GValue     *value,
+                                                  GParamSpec *pspec)
 {
-  BootManagerApplication *application = BOOT_MANAGER_APPLICATION (object);
+  NodeStartupControllerApplication *application = NODE_STARTUP_CONTROLLER_APPLICATION (object);
 
   switch (prop_id)
     {
@@ -507,12 +509,12 @@ boot_manager_application_get_property (GObject    *object,
 
 
 static void
-boot_manager_application_set_property (GObject      *object,
-                                       guint         prop_id,
-                                       const GValue *value,
-                                       GParamSpec   *pspec)
+node_startup_controller_application_set_property (GObject      *object,
+                                                  guint         prop_id,
+                                                  const GValue *value,
+                                                  GParamSpec   *pspec)
 {
-  BootManagerApplication *application = BOOT_MANAGER_APPLICATION (object);
+  NodeStartupControllerApplication *application = NODE_STARTUP_CONTROLLER_APPLICATION (object);
 
   switch (prop_id)
     {
@@ -540,11 +542,11 @@ boot_manager_application_set_property (GObject      *object,
 
 
 static void
-boot_manager_application_luc_groups_started (LUCStarter             *starter,
-                                             BootManagerApplication *application)
+node_startup_controller_application_luc_groups_started (LUCStarter                       *starter,
+                                                        NodeStartupControllerApplication *application)
 {
   g_return_if_fail (IS_LUC_STARTER (starter));
-  g_return_if_fail (BOOT_MANAGER_IS_APPLICATION (application));
+  g_return_if_fail (IS_NODE_STARTUP_CONTROLLER_APPLICATION (application));
 
   /* notify systemd that we have finished starting the LUC and
    * that it can take over control to start unfocused.target,
@@ -554,12 +556,12 @@ boot_manager_application_luc_groups_started (LUCStarter             *starter,
 
 
 
-BootManagerApplication *
-boot_manager_application_new (GMainLoop                    *main_loop,
-                              GDBusConnection              *connection,
-                              JobManager                   *job_manager,
-                              LAHandlerService             *la_handler,
-                              NodeStartupControllerService *node_startup_controller)
+NodeStartupControllerApplication *
+node_startup_controller_application_new (GMainLoop                    *main_loop,
+                                         GDBusConnection              *connection,
+                                         JobManager                   *job_manager,
+                                         LAHandlerService             *la_handler,
+                                         NodeStartupControllerService *node_startup_controller)
 {
   g_return_val_if_fail (main_loop != NULL, NULL);
   g_return_val_if_fail (G_IS_DBUS_CONNECTION (connection), NULL);
@@ -567,7 +569,7 @@ boot_manager_application_new (GMainLoop                    *main_loop,
   g_return_val_if_fail (LA_HANDLER_IS_SERVICE (la_handler), NULL);
   g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_SERVICE (node_startup_controller), NULL);
 
-  return g_object_new (BOOT_MANAGER_TYPE_APPLICATION,
+  return g_object_new (TYPE_NODE_STARTUP_CONTROLLER_APPLICATION,
                        "connection", connection,
                        "node-startup-controller", node_startup_controller,
                        "job-manager", job_manager,
