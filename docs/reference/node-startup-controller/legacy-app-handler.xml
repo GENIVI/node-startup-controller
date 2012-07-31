@@ -17,9 +17,9 @@
   <refsynopsisdiv>
     <cmdsynopsis>
       <command>legacy-app-handler</command>
-      <arg><option>--unit</option> <replaceable>unit-file</replaceable></arg>
-      <arg><option>--timeout</option> <replaceable>timeout</replaceable></arg>
-      <arg><option>--shutdown-mode</option> <replaceable>mode</replaceable></arg>
+      <arg choice="plain"><option>--unit</option> <replaceable>UNIT</replaceable></arg>
+      <arg choice="plain"><option>--shutdown-mode</option> <replaceable>MODE</replaceable></arg>
+      <arg><option>--timeout</option> <replaceable>TIMEOUT</replaceable></arg>
     </cmdsynopsis>
   </refsynopsisdiv>
 
@@ -42,17 +42,17 @@
           </para></listitem>
         </varlistentry>
         <varlistentry>
-          <term><option>-t</option>, <option>--timeout</option></term>
-          <listitem><para>
-            The amount of time in milliseconds the Node State Manager will wait until it
-            considers shutdown to have failed.
-          </para></listitem>
-        </varlistentry>
-        <varlistentry>
           <term><option>-m</option>, <option>--shutdown-mode</option></term>
           <listitem><para>
             The <link linkend="NSMShutdownType">NSMShutdownType</link> of the shutdown
             mode to register the app with.
+          </para></listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-t</option>, <option>--timeout</option></term>
+          <listitem><para>
+            The amount of time in milliseconds the Node State Manager will wait until it
+            considers shutdown to have failed.
           </para></listitem>
         </varlistentry>
       </variablelist>
