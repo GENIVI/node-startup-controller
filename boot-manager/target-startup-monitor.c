@@ -51,7 +51,7 @@ static void     target_startup_monitor_set_property                     (GObject
                                                                          guint                 prop_id,
                                                                          const GValue         *value,
                                                                          GParamSpec           *pspec);
-static void     target_startup_monitor_job_removed                      (SystemdManager       *manager,
+static gboolean target_startup_monitor_job_removed                      (SystemdManager       *manager,
                                                                          guint                 id,
                                                                          const gchar          *job_name,
                                                                          const gchar          *unit,
@@ -240,7 +240,7 @@ target_startup_monitor_set_property (GObject      *object,
 
 
 
-static void
+static gboolean
 target_startup_monitor_job_removed (SystemdManager       *manager,
                                     guint                 id,
                                     const gchar          *job_name,
@@ -251,11 +251,11 @@ target_startup_monitor_job_removed (SystemdManager       *manager,
   gpointer state;
   gchar   *message;
 
-  g_return_if_fail (IS_SYSTEMD_MANAGER (manager));
-  g_return_if_fail (job_name != NULL && *job_name != '\0');
-  g_return_if_fail (unit != NULL && *unit != '\0');
-  g_return_if_fail (result != NULL && *result != '\0');
-  g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
+  g_return_val_if_fail (IS_SYSTEMD_MANAGER (manager), FALSE);
+  g_return_val_if_fail (job_name != NULL && *job_name != '\0', FALSE);
+  g_return_val_if_fail (unit != NULL && *unit != '\0', FALSE);
+  g_return_val_if_fail (result != NULL && *result != '\0', FALSE);
+  g_return_val_if_fail (IS_TARGET_STARTUP_MONITOR (monitor), FALSE);
 
   message = g_strdup_printf ("A systemd job was removed: "
                              "id %u, job name %s, unit %s, result %s",
@@ -265,7 +265,7 @@ target_startup_monitor_job_removed (SystemdManager       *manager,
 
   /* we are only interested in successful JobRemoved signals */
   if (g_strcmp0 (result, "done") != 0)
-    return;
+    return TRUE;
 
   /* check if the unit corresponds to a node state */
   if (g_hash_table_lookup_extended (monitor->watched_targets, unit, NULL, &state))
@@ -275,6 +275,7 @@ target_startup_monitor_job_removed (SystemdManager       *manager,
                                                         GPOINTER_TO_UINT (state),
                                                         job_name);
     }
+  return TRUE;
 }
 
 
@@ -407,7 +408,7 @@ target_startup_monitor_set_state_if_is_start_job_finish (GObject      *object,
   while (g_variant_iter_loop (&iter, "usssoo", NULL, NULL, &job_type, NULL,
                               &job_name, NULL))
     {
-      log_text = g_strdup_printf ("  Checking job %s, type %s", job_name, job_type);
+      log_text = g_strdup_printf ("Checking job %s, type %s", job_name, job_type);
       DLT_LOG (boot_manager_context, DLT_LOG_INFO, DLT_STRING (log_text));
       g_free (log_text);
 
