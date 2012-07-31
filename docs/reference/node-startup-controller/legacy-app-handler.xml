@@ -6,13 +6,63 @@
   <refmeta>
     <refentrytitle>legacy-app-handler</refentrytitle>
   </refmeta>
-  
+
   <refnamediv>
     <refname>legacy-app-handler</refname>
     <refpurpose>
       Helper binary for registering legacy apps with the GENIVI Node State Manager
     </refpurpose>
   </refnamediv>
-  
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>legacy-app-handler</command>
+      <arg><option>--unit</option> <replaceable>unit-file</replaceable></arg>
+      <arg><option>--timeout</option> <replaceable>timeout</replaceable></arg>
+      <arg><option>--shutdown-mode</option> <replaceable>mode</replaceable></arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+    <para>
+      <command>legacy-app-handler</command> is a helper binary which registers the legacy
+      app <arg>unit</arg> with the boot manager, which in turn registers a shutdown client
+      with the Node State Manager.
+      This means that during the Node State Manager's shutdown cycle, it will shut down
+      the legacy app as well.
+    </para>
+    <refsect2>
+      <title>Arguments</title>
+      <variablelist>
+        <varlistentry>
+          <term><option>-u</option>, <option>--unit</option></term>
+          <listitem><para>
+            The unit file for the legacy application, e.g. cups.service.
+          </para></listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-t</option>, <option>--timeout</option></term>
+          <listitem><para>
+            The amount of time in milliseconds the Node State Manager will wait until it
+            considers shutdown to have failed.
+          </para></listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><option>-m</option>, <option>--shutdown-mode</option></term>
+          <listitem><para>
+            The <link linkend="NSMShutdownType">NSMShutdownType</link> of the shutdown
+            mode to register the app with.
+          </para></listitem>
+        </varlistentry>
+      </variablelist>
+    </refsect2>
+  </refsect1>
+  <note><para>The Node State Manager does not guarantee that it will shut down
+  units registered with the "fast" shutdown mode in the event of a "normal"
+  shutdown. For units which must shut down in both shutdown cases, use the bitwise
+  combination of the shutdown modes, (e.g. for a normal and fast shutdown client
+  shutdown-mode=3).
+  </para></note>
 </refentry>
 
