@@ -65,7 +65,9 @@ main (int    argc,
   connection = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
   if (connection == NULL)
     {
-      g_warning ("Failed to connect to D-Bus: %s", error->message);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_FATAL,
+               DLT_STRING ("Failed to connect to D-Bus: "),
+               DLT_STRING (error->message));
 
       /* clean up */
       g_error_free (error);
@@ -77,7 +79,9 @@ main (int    argc,
   lifecycle_control_service = nsm_lifecycle_control_service_new (connection);
   if (!nsm_lifecycle_control_service_start (lifecycle_control_service, &error))
     {
-      g_warning ("Failed to start the LifecycleControl service: %s", error->message);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_FATAL,
+               DLT_STRING ("Failed to start the lifecycle control service: "),
+               DLT_STRING (error->message));
 
       /* clean up */
       g_error_free (error);
@@ -91,7 +95,9 @@ main (int    argc,
   consumer_service = nsm_consumer_service_new (connection);
   if (!nsm_consumer_service_start (consumer_service, &error))
     {
-      g_warning ("Failed to start the Consumer service: %s", error->message);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_FATAL,
+               DLT_STRING ("Failed to start the consumer service: "),
+               DLT_STRING (error->message));
 
       /* clean up */
       g_error_free (error);
