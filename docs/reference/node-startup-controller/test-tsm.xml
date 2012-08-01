@@ -54,11 +54,6 @@
   
   <section>
     <title>Test Overview</title>
-    <note>
-      The Node State Manager Dummy (application ID <emphasis role="bold">NSMD</emphasis>) 
-      alternates between failing and succeeding to set the node state. This behaviour does
-      not extend to the real Node State Manager.
-    </note>
     <para>
       The following behaviours will be confirmed:
       <itemizedlist>

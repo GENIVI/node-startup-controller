@@ -85,7 +85,21 @@
       <title>Testing</title>
       <note>
         These tests are performed against the Node State Manager Dummy. The real
-        Node State Manager behaves differently to the dummy.
+        Node State Manager behaves differently from the NSM dummy in the following ways:
+        <itemizedlist>
+        <listitem>
+          When the NSM dummy receives a request to set the node state, it alternates
+          between successfully setting the node state, and failing to set the node state.
+        </listitem>
+        <listitem>
+          When the NSM dummy is queried as to whether the LUC is required, it alternates
+          between saying no and yes.
+        </listitem>
+        <listitem>
+          On receiving a SIGHUP, the NSM dummy will shut down all its fast shutdown
+          clients, then all its normal shutdown clients.
+        </listitem>
+        </itemizedlist>
       </note>
       <xi:include href="test-example.xml"/>
       <xi:include href="test-tsm.xml"/>
