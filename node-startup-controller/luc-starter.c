@@ -626,7 +626,7 @@ luc_starter_new (JobManager                   *job_manager,
 
   return g_object_new (TYPE_LUC_STARTER,
                        "job-manager", job_manager,
-                       "node-startup-controller-service", node_startup_controller,
+                       "node-startup-controller", node_startup_controller,
                        NULL);
 }
 
