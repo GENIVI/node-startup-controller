@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+                          "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+
+<refsection id="test-example">
+  <title> Example test</title>
+  <para>
+    An example of how tests should be structured
+  </para>
+
+  <refsection>
+    <title>Test environment and setup</title>
+    <para>
+      Automated testing isn't possible. To make things easier, we have code snippets which 
+      can be copied exactly, to get the required result.
+      <programlisting>
+        cp /lib/systemd/system/{graphical,focussed}.target
+        systemctl start boot-manager.target
+      </programlisting>
+    </para>
+  </refsection>
+  
+  <refsection>
+    <title>Test Overview</title>
+    <para>
+      A broad explanation of the different test cases in the scenario, i.e.
+      <itemizedlist>
+        <listitem>Add a shutdown client</listitem>
+        <listitem>Tell the shutdown client to shut down</listitem>
+      </itemizedlist>
+    </para>
+  </refsection>
+
+  <refsection>
+    <title>Test steps</title>
+    <para>
+    Add a shutdown client
+    <orderedlist>
+      <listitem><programlisting>/usr/local/lib/boot-manager-1/legacy-app-handler -u cups.service -m 1</programlisting></listitem>
+      <listitem>Check the DLT log for appropriate output</listitem>
+    </orderedlist>
+    Tell the shutdown client to shut down
+    <orderedlist continuation="continues">
+      <listitem><programlisting>kill -HUP $(pidof nsm-dummy)</programlisting></listitem>
+      <listitem>Check the DLT log for appropriate output</listitem>
+    </orderedlist>
+    </para>
+  </refsection>
+
+</refsection>

@@ -81,9 +81,29 @@
     <sect1>
       <title>Installing</title>
     </sect1>
-    <sect1>
-      <title>Testing</title>
-    </sect1>
+    <refentry>
+      <refmeta><refentrytitle>Testing</refentrytitle></refmeta>
+      <refnamediv>
+        <refname>Testing</refname>
+        <refpurpose>
+          Instructions on how to test the Node Startup Controller
+        </refpurpose>
+      </refnamediv>
+
+      <refsection>
+        <title>Example tests</title>
+        <xi:include href="test-example.xml"/>
+      </refsection>
+      <refsection>
+        <title>Last User Context management tests</title>
+      </refsection>
+      <refsection>
+        <title>Legacy App Handling tests</title>
+      </refsection>
+      <refsection>
+        <title>Target Startup Monitoring tests</title>
+      </refsection>
+    </refentry>
   </chapter>
 
   <chapter>
