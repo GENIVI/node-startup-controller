@@ -407,7 +407,7 @@ node_startup_controller_service_handle_register_with_luc (NodeStartupController 
 
   /* log the new last user context */
   debug_text = g_variant_print (service->current_user_context, TRUE);
-  DLT_LOG (controller_context, DLT_LOG_DEBUG,
+  DLT_LOG (controller_context, DLT_LOG_INFO,
            DLT_STRING ("Updated LUC to: "), DLT_STRING (debug_text));
   g_free (debug_text);
 

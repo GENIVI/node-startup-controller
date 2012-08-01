@@ -222,7 +222,7 @@ node_startup_controller_application_init (NodeStartupControllerApplication *appl
       application->watchdog_client = watchdog_client_new (watchdog_sec);
 
       /* log information about the watchdog timeout using DLT */
-      DLT_LOG (controller_context, DLT_LOG_DEBUG,
+      DLT_LOG (controller_context, DLT_LOG_INFO,
                DLT_STRING ("Updating the systemd watchdog timestamp every "),
                DLT_UINT (watchdog_sec), DLT_STRING (" seconds"));
     }
@@ -365,7 +365,7 @@ node_startup_controller_application_handle_register_finish (GObject      *object
     }
   else if (error_code == NSM_ERROR_STATUS_OK)
     {
-      DLT_LOG (controller_context, DLT_LOG_DEBUG,
+      DLT_LOG (controller_context, DLT_LOG_INFO,
                DLT_STRING ("Successfully registered the node startup controller "
                            "as a shutdown consumer"));
     }
@@ -405,7 +405,7 @@ node_startup_controller_application_handle_unregister_finish (GObject      *obje
     }
   else if (error_code == NSM_ERROR_STATUS_OK)
     {
-      DLT_LOG (controller_context, DLT_LOG_DEBUG,
+      DLT_LOG (controller_context, DLT_LOG_INFO,
                DLT_STRING ("Successfully unregistered the node startup controller "
                            "as a shutdown consumer"));
     }

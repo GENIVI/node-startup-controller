@@ -172,7 +172,7 @@ nsm_dummy_application_init (NSMDummyApplication *application)
       application->watchdog_client = watchdog_client_new (watchdog_sec);
 
       /* log information about the watchdog timeout using DLT */
-      DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
                DLT_STRING ("Updating the systemd watchdog timestamp every "),
                DLT_UINT (watchdog_sec), DLT_STRING (" seconds"));
     }

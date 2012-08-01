@@ -337,7 +337,7 @@ luc_starter_start_next_group (LUCStarter *starter)
   /* fetch the next group */
   group = g_array_index (starter->start_order, gint, 0);
 
-  DLT_LOG (controller_context, DLT_LOG_DEBUG,
+  DLT_LOG (controller_context, DLT_LOG_INFO,
            DLT_STRING ("Starting LUC group: "), DLT_INT (group));
 
   /* look up the apps for the group */
@@ -360,7 +360,7 @@ luc_starter_start_app (const gchar *app,
   g_return_if_fail (app != NULL && *app != '\0');
   g_return_if_fail (IS_LUC_STARTER (starter));
 
-  DLT_LOG (controller_context, DLT_LOG_DEBUG,
+  DLT_LOG (controller_context, DLT_LOG_INFO,
            DLT_STRING ("Starting LUC app: "), DLT_STRING (app));
 
   /* create the new cancellable */
@@ -396,7 +396,7 @@ luc_starter_start_app_finish (JobManager  *manager,
   g_return_if_fail (IS_LUC_STARTER (user_data));
   g_return_if_fail (starter->start_order->len > 0);
 
-  DLT_LOG (controller_context, DLT_LOG_DEBUG,
+  DLT_LOG (controller_context, DLT_LOG_INFO,
            DLT_STRING ("Finished starting LUC app: "), DLT_STRING (unit));
 
   /* respond to errors */
@@ -428,7 +428,7 @@ luc_starter_start_app_finish (JobManager  *manager,
       /* check if this was the last app in the group to be started */
       if (apps->len == 0)
         {
-          DLT_LOG (controller_context, DLT_LOG_DEBUG,
+          DLT_LOG (controller_context, DLT_LOG_INFO,
                    DLT_STRING ("Finished starting LUC group: "), DLT_INT (group));
 
           /* remove the group from the groups and the order */
@@ -493,7 +493,7 @@ luc_starter_check_luc_required_finish (GObject      *object,
                DLT_STRING (error->message));
       g_clear_error (&error);
 
-      DLT_LOG (controller_context, DLT_LOG_DEBUG,
+      DLT_LOG (controller_context, DLT_LOG_INFO,
                DLT_STRING ("Assuming that we should start the LUC"));
 
       /* start all the LUC groups now */
@@ -504,7 +504,7 @@ luc_starter_check_luc_required_finish (GObject      *object,
       /* check whether we need to start the LUC or not */
       if (luc_required)
         {
-          DLT_LOG (controller_context, DLT_LOG_DEBUG,
+          DLT_LOG (controller_context, DLT_LOG_INFO,
                    DLT_STRING ("LUC is required, starting it now"));
 
           /* start all the LUC groups now */
@@ -513,7 +513,7 @@ luc_starter_check_luc_required_finish (GObject      *object,
       else
         {
           /* LUC is not required, log this information */
-          DLT_LOG (controller_context, DLT_LOG_DEBUG, DLT_STRING ("LUC is not required"));
+          DLT_LOG (controller_context, DLT_LOG_INFO, DLT_STRING ("LUC is not required"));
 
           /* notify others that we have started the LUC groups; we haven't
            * in this case but the call of luc_starter_start_groups() may
@@ -543,10 +543,10 @@ luc_starter_start_groups_for_real (LUCStarter *starter)
   g_return_if_fail (IS_LUC_STARTER (starter));
 
   /* log prioritised LUC types */
-  DLT_LOG (controller_context, DLT_LOG_DEBUG, DLT_STRING ("Prioritised LUC types:"));
+  DLT_LOG (controller_context, DLT_LOG_INFO, DLT_STRING ("Prioritised LUC types:"));
   for (n = 0; n < starter->prioritised_types->len; n++)
     {
-      DLT_LOG (controller_context, DLT_LOG_DEBUG,
+      DLT_LOG (controller_context, DLT_LOG_INFO,
                DLT_INT (g_array_index (starter->prioritised_types, gint, n)));
     }
 
@@ -597,10 +597,10 @@ luc_starter_start_groups_for_real (LUCStarter *starter)
     }
   g_array_sort_with_data (starter->start_order, luc_starter_compare_luc_types, starter);
 
-  DLT_LOG (controller_context, DLT_LOG_DEBUG, DLT_STRING ("LUC start groups (ordered):"));
+  DLT_LOG (controller_context, DLT_LOG_INFO, DLT_STRING ("LUC start groups (ordered):"));
   for (n = 0; n < starter->start_order->len; n++)
     {
-      DLT_LOG (controller_context, DLT_LOG_DEBUG,
+      DLT_LOG (controller_context, DLT_LOG_INFO,
                DLT_INT (g_array_index (starter->start_order, gint, n)));
     }
 

@@ -277,7 +277,7 @@ nsm_consumer_service_handle_register_shutdown_client (NSMConsumer           *obj
       g_dbus_proxy_set_default_timeout (G_DBUS_PROXY (consumer), timeout);
 
       /* log information about the re-registration */
-      DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
                DLT_STRING ("Re-registered shutdown client: "),
                DLT_STRING ("bus name "), DLT_STRING (bus_name),
                DLT_STRING (", object path "), DLT_STRING (object_path),
@@ -321,7 +321,7 @@ nsm_consumer_service_handle_register_shutdown_client (NSMConsumer           *obj
                                                  shutdown_client);
 
       /* log the registered shutdown client */
-      DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
                DLT_STRING ("Shutdown client registered: "),
                DLT_STRING ("bus name "), DLT_STRING (bus_name),
                DLT_STRING (", object path "), DLT_STRING (object_path),
@@ -391,7 +391,7 @@ nsm_consumer_service_handle_unregister_shutdown_client (NSMConsumer           *o
       if (shutdown_client_get_shutdown_mode (shutdown_client) == 0)
         {
           /* log the unregistration now */
-          DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+          DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
                    DLT_STRING ("Shutdown client unregistered: "),
                    DLT_STRING ("bus name "), DLT_STRING (bus_name),
                    DLT_STRING (", object path "), DLT_STRING (object_path));
@@ -430,7 +430,7 @@ nsm_consumer_service_handle_lifecycle_request_complete (NSMConsumer           *o
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (NSM_CONSUMER_IS_SERVICE (service), FALSE);
 
-  DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+  DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
            DLT_STRING ("Finished shutting down client: "),
            DLT_STRING ("request id "), DLT_UINT (request_id),
            DLT_STRING (", status "), DLT_UINT (status));
@@ -495,19 +495,19 @@ nsm_consumer_service_shut_down_next_client_in_queue (NSMConsumerService *service
   g_return_if_fail (NSM_CONSUMER_IS_SERVICE (service));
   g_return_if_fail (service->shutdown_queue != NULL);
 
-  DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+  DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
            DLT_STRING ("Shutting down next client in queue"));
 
   /* check if we have processed all clients in the queue */
   if (service->shutdown_queue->remaining_clients == NULL)
     {
-      DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
                DLT_STRING ("Processed all items in the queue for this mode"));
 
       /* check if we have processed all shutdown modes */
       if (service->shutdown_queue->current_mode == NSM_SHUTDOWN_TYPE_NORMAL)
         {
-          DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+          DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
                    DLT_STRING ("All clients have been shut down"));
 
           /* fast and normal have been processed, we are finished */
@@ -521,7 +521,7 @@ nsm_consumer_service_shut_down_next_client_in_queue (NSMConsumerService *service
         }
       else if (service->shutdown_queue->current_mode == NSM_SHUTDOWN_TYPE_FAST)
         {
-          DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+          DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
                    DLT_STRING ("Transitioning to normal shutdown mode"));
 
           /* move on to normal shutdown mode and reset clients to be processed */
@@ -545,7 +545,7 @@ nsm_consumer_service_shut_down_next_client_in_queue (NSMConsumerService *service
   if ((shutdown_client_get_shutdown_mode (client)
        & service->shutdown_queue->current_mode) != 0)
     {
-      DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
                DLT_STRING ("Shutting down a client: "),
                DLT_STRING ("bus name "),
                DLT_STRING (shutdown_client_get_bus_name (client)),
@@ -571,7 +571,7 @@ nsm_consumer_service_shut_down_next_client_in_queue (NSMConsumerService *service
     }
   else
     {
-      DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
                DLT_STRING ("Skipping client "),
                DLT_STRING (shutdown_client_get_object_path (client)),
                DLT_STRING (": it is not registered for shutdown mode "),
@@ -629,7 +629,7 @@ nsm_consumer_service_lifecycle_request_finish (GObject      *object,
   else if (error_code == NSM_ERROR_STATUS_OK)
     {
       /* log the successful shutdown */
-      DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
                DLT_STRING ("Successfully shut down client: "),
                DLT_STRING ("bus name "),
                DLT_STRING (shutdown_client_get_bus_name (client)),
@@ -649,7 +649,7 @@ nsm_consumer_service_lifecycle_request_finish (GObject      *object,
   else if (error_code == NSM_ERROR_STATUS_RESPONSE_PENDING)
     {
       /* log that we are waiting for the client to finish its shutdown */
-      DLT_LOG (nsm_dummy_context, DLT_LOG_DEBUG,
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
                DLT_STRING ("Waiting for client to shut down: "),
                DLT_STRING ("request id "),
                DLT_UINT (GPOINTER_TO_UINT (client)),
