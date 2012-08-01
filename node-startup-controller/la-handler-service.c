@@ -491,7 +491,7 @@ la_handler_service_handle_consumer_lifecycle_request_finish (JobManager  *manage
   g_return_if_fail (data != NULL);
 
   /* log that we are completing a lifecycle request */
-  DLT_LOG (la_handler_context, DLT_LOG_INFO,
+  DLT_LOG (la_handler_context, DLT_LOG_DEBUG,
            DLT_STRING ("Completing a lifecycle request: request id "),
            DLT_UINT (data->request_id));
 
@@ -529,8 +529,9 @@ la_handler_service_handle_consumer_lifecycle_request_finish (JobManager  *manage
     }
   else if (error_status == NSM_ERROR_STATUS_OK)
     {
-      DLT_LOG (la_handler_context, DLT_LOG_INFO,
-               DLT_STRING ("Successfully notified NSM about completed lifecycle request: "),
+      DLT_LOG (la_handler_context, DLT_LOG_DEBUG,
+               DLT_STRING ("Successfully notified NSM about completed "
+                           "lifecycle request: "),
                DLT_STRING ("request id "), DLT_UINT (data->request_id));
     }
   else

@@ -310,7 +310,7 @@ target_startup_monitor_get_unit_finish (GObject      *object,
     }
   else
     {
-      DLT_LOG (controller_context, DLT_LOG_INFO,
+      DLT_LOG (controller_context, DLT_LOG_DEBUG,
                DLT_STRING ("Creating D-Bus proxy for unit \""), DLT_STRING (object_path),
                DLT_STRING ("\""));
 
@@ -361,7 +361,7 @@ target_startup_monitor_unit_proxy_new_finish (GObject      *object,
       state = systemd_unit_get_active_state (unit);
 
       /* log the the active state has changed */
-      DLT_LOG (controller_context, DLT_LOG_INFO,
+      DLT_LOG (controller_context, DLT_LOG_DEBUG,
                DLT_STRING ("Active state of unit \""), DLT_STRING (data->unit_name),
                DLT_STRING ("\" changed to "), DLT_STRING (state));
 

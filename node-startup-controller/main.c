@@ -149,7 +149,7 @@ main (int    argc,
   /* start the legacy app handler */
   if (!la_handler_service_start (la_handler_service, &error))
     {
-      DLT_LOG (controller_context, DLT_LOG_ERROR,
+      DLT_LOG (controller_context, DLT_LOG_FATAL,
                DLT_STRING ("Failed to start the legacy app handler service: "),
                DLT_STRING (error->message));
 

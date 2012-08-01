@@ -112,9 +112,8 @@ main (int    argc,
           && (shutdown_mode & NSM_SHUTDOWN_TYPE_FAST) == 0))
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to register legacy application: "),
-               DLT_STRING ("invalid shutdown mode \"0x%x\""),
-               DLT_UINT (shutdown_mode));
+               DLT_STRING ("Failed to register legacy application: "
+                           "invalid shutdown mode \"0x%x\""), DLT_INT (shutdown_mode));
 
       /* free command line options */
       g_free (unit);
