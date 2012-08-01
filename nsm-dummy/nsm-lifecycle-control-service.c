@@ -202,8 +202,8 @@ nsm_lifecycle_control_service_handle_set_node_state (NSMLifecycleControl        
     {
       /* log how we handled the node state */
       DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
-               DLT_STRING ("Node state "), DLT_INT (node_state_id),
-               DLT_STRING (" applied: "),
+               DLT_STRING ("Node state"), DLT_INT (node_state_id),
+               DLT_STRING ("applied:"),
                DLT_STRING (service->accept_state ? "yes" : "no"));
 
       /* alternate return value between successful(0) and fail(-1) with every handled call.
@@ -218,7 +218,7 @@ nsm_lifecycle_control_service_handle_set_node_state (NSMLifecycleControl        
     {
       /* log how we handled the node state */
       DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
-               DLT_STRING ("Received an invalid node state: "), DLT_INT (node_state_id));
+               DLT_STRING ("Received an invalid node state:"), DLT_INT (node_state_id));
 
       /* let the caller know that it sent an invalid parameter */
       error_code = NSM_ERROR_STATUS_PARAMETER;

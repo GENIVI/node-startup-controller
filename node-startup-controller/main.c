@@ -78,7 +78,7 @@ main (int    argc,
   if (connection == NULL)
     {
       DLT_LOG (controller_context, DLT_LOG_FATAL,
-               DLT_STRING ("Failed to connect to the system bus: "),
+               DLT_STRING ("Failed to connect to the system bus:"),
                DLT_STRING (error->message));
 
       /* clean up */
@@ -97,7 +97,7 @@ main (int    argc,
   if (systemd_manager == NULL)
     {
       DLT_LOG (controller_context, DLT_LOG_FATAL,
-               DLT_STRING ("Failed to connect to the systemd manager: "),
+               DLT_STRING ("Failed to connect to the systemd manager:"),
                DLT_STRING (error->message));
 
       /* clean up */
@@ -111,7 +111,7 @@ main (int    argc,
   if (!systemd_manager_call_subscribe_sync (systemd_manager, NULL, &error))
     {
       DLT_LOG (controller_context, DLT_LOG_FATAL,
-               DLT_STRING ("Failed to subscribe to the systemd manager: "),
+               DLT_STRING ("Failed to subscribe to the systemd manager:"),
                DLT_STRING (error->message));
 
       /* clean up */
@@ -128,7 +128,7 @@ main (int    argc,
   if (!node_startup_controller_service_start_up (node_startup_controller, &error))
     {
       DLT_LOG (controller_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to start the node startup controller service: "),
+               DLT_STRING ("Failed to start the node startup controller service:"),
                DLT_STRING (error->message));
 
       /* clean up */
@@ -150,7 +150,7 @@ main (int    argc,
   if (!la_handler_service_start (la_handler_service, &error))
     {
       DLT_LOG (controller_context, DLT_LOG_FATAL,
-               DLT_STRING ("Failed to start the legacy app handler service: "),
+               DLT_STRING ("Failed to start the legacy app handler service:"),
                DLT_STRING (error->message));
 
       /* clean up */

@@ -223,8 +223,8 @@ node_startup_controller_application_init (NodeStartupControllerApplication *appl
 
       /* log information about the watchdog timeout using DLT */
       DLT_LOG (controller_context, DLT_LOG_INFO,
-               DLT_STRING ("Updating the systemd watchdog timestamp every "),
-               DLT_UINT (watchdog_sec), DLT_STRING (" seconds"));
+               DLT_STRING ("Updating the systemd watchdog timestamp every"),
+               DLT_UINT (watchdog_sec), DLT_STRING ("seconds"));
     }
 }
 
@@ -324,7 +324,7 @@ node_startup_controller_application_constructed (GObject *object)
                                          application->connection, object_path, &error))
     {
       DLT_LOG (controller_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to export shutdown consumer on the bus: "),
+               DLT_STRING ("Failed to export shutdown consumer on the bus:"),
                DLT_STRING (error->message));
       g_clear_error (&error);
     }
@@ -360,7 +360,7 @@ node_startup_controller_application_handle_register_finish (GObject      *object
     {
       DLT_LOG (controller_context, DLT_LOG_ERROR,
                DLT_STRING ("Failed to register the node startup controller "
-                           "as a shutdown consumer: "), DLT_STRING (error->message));
+                           "as a shutdown consumer:"), DLT_STRING (error->message));
       g_error_free (error);
     }
   else if (error_code == NSM_ERROR_STATUS_OK)
@@ -373,8 +373,8 @@ node_startup_controller_application_handle_register_finish (GObject      *object
     {
       DLT_LOG (controller_context, DLT_LOG_ERROR,
                DLT_STRING ("Failed to register the node startup controller "
-                           "as a shutdown consumer: error status "),
-               DLT_INT (error_code));
+                           "as a shutdown consumer:"),
+               DLT_STRING ("error status"), DLT_INT (error_code));
     }
 }
 
@@ -400,7 +400,7 @@ node_startup_controller_application_handle_unregister_finish (GObject      *obje
     {
       DLT_LOG (controller_context, DLT_LOG_ERROR,
                DLT_STRING ("Failed to unregister the node startup controller "
-                           "as a shutdown consumer: "), DLT_STRING (error->message));
+                           "as a shutdown consumer:"), DLT_STRING (error->message));
       g_error_free (error);
     }
   else if (error_code == NSM_ERROR_STATUS_OK)
@@ -413,8 +413,8 @@ node_startup_controller_application_handle_unregister_finish (GObject      *obje
     {
       DLT_LOG (controller_context, DLT_LOG_ERROR,
                DLT_STRING ("Failed to unregister the node startup controller "
-                           "as a shutdown consumer: error status "),
-               DLT_INT (error_code));
+                           "as a shutdown consumer:"),
+               DLT_STRING ("error status"), DLT_INT (error_code));
     }
 
   /* quit the application */

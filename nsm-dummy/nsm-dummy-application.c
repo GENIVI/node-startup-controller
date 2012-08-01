@@ -173,8 +173,8 @@ nsm_dummy_application_init (NSMDummyApplication *application)
 
       /* log information about the watchdog timeout using DLT */
       DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
-               DLT_STRING ("Updating the systemd watchdog timestamp every "),
-               DLT_UINT (watchdog_sec), DLT_STRING (" seconds"));
+               DLT_STRING ("Updating the systemd watchdog timestamp every"),
+               DLT_UINT (watchdog_sec), DLT_STRING ("seconds"));
     }
 
   /* install the signal handler */

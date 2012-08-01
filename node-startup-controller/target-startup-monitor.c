@@ -143,7 +143,7 @@ target_startup_monitor_init (TargetStartupMonitor *monitor)
   if (error != NULL)
     {
       DLT_LOG (controller_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to connect to the NSM lifecycle control: "),
+               DLT_STRING ("Failed to connect to the NSM lifecycle control:"),
                DLT_STRING (error->message));
       g_error_free (error);
     }
@@ -299,8 +299,9 @@ target_startup_monitor_get_unit_finish (GObject      *object,
     {
       /* there was an error, log it */
       DLT_LOG (controller_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to get unit \""), DLT_STRING (data->unit_name),
-               DLT_STRING ("\" from systemd: "), DLT_STRING (error->message));
+               DLT_STRING ("Failed to get a unit from systemd:"),
+               DLT_STRING ("unit"), DLT_STRING (data->unit_name),
+               DLT_STRING ("error message"), DLT_STRING (error->message));
       g_error_free (error);
 
       /* release the get unit data */
@@ -311,8 +312,8 @@ target_startup_monitor_get_unit_finish (GObject      *object,
   else
     {
       DLT_LOG (controller_context, DLT_LOG_INFO,
-               DLT_STRING ("Creating D-Bus proxy for unit \""), DLT_STRING (object_path),
-               DLT_STRING ("\""));
+               DLT_STRING ("Creating D-Bus proxy:"),
+               DLT_STRING ("object path"), DLT_STRING (object_path));
 
       /* remember the object path */
       data->object_path = object_path;
@@ -350,9 +351,9 @@ target_startup_monitor_unit_proxy_new_finish (GObject      *object,
     {
       /* there was an error, log it */
       DLT_LOG (controller_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to create D-Bus proxy for unit \""),
-               DLT_STRING (data->object_path), DLT_STRING ("\": "),
-               DLT_STRING (error->message));
+               DLT_STRING ("Failed to create D-Bus proxy:"),
+               DLT_STRING ("object path"), DLT_STRING (data->object_path),
+               DLT_STRING ("error message"), DLT_STRING (error->message));
       g_error_free (error);
     }
   else
@@ -362,8 +363,9 @@ target_startup_monitor_unit_proxy_new_finish (GObject      *object,
 
       /* log the the active state has changed */
       DLT_LOG (controller_context, DLT_LOG_INFO,
-               DLT_STRING ("Active state of unit \""), DLT_STRING (data->unit_name),
-               DLT_STRING ("\" changed to "), DLT_STRING (state));
+               DLT_STRING ("Active state of unit changed:"),
+               DLT_STRING ("unit"), DLT_STRING (data->unit_name),
+               DLT_STRING ("state"), DLT_STRING (state));
 
       /* check if the new state is active */
       if (g_strcmp0 (state, "active") == 0)
@@ -424,15 +426,15 @@ target_startup_monitor_set_node_state_finish (GObject      *object,
                                                          &error))
     {
       DLT_LOG (controller_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to set the node state: "),
+               DLT_STRING ("Failed to set the node state:"),
                DLT_STRING (error->message));
       g_error_free (error);
     }
   else if (error_code != NSM_ERROR_STATUS_OK)
     {
       DLT_LOG (controller_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to set the node state: error code "),
-               DLT_UINT (error_code));
+               DLT_STRING ("Failed to set the node state:"),
+               DLT_STRING ("error code"), DLT_UINT (error_code));
     }
 }
 

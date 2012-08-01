@@ -82,7 +82,7 @@ main (int    argc,
     {
       /* parsing failed, exit with an error */
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to parse command line options: "),
+               DLT_STRING ("Failed to parse command line options:"),
                DLT_STRING (error->message));
 
       /* clean up */
@@ -98,7 +98,8 @@ main (int    argc,
   if (unit == NULL || *unit == '\0')
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to register legacy application: no unit specified"));
+               DLT_STRING ("Failed to register legacy application:"),
+               DLT_STRING ("no unit specified"));
 
       /* free command line options */
       g_free (unit);
@@ -113,7 +114,7 @@ main (int    argc,
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
                DLT_STRING ("Failed to register legacy application: "
-                           "invalid shutdown mode \"0x%x\""), DLT_INT (shutdown_mode));
+                           "invalid shutdown mode"), DLT_INT (shutdown_mode));
 
       /* free command line options */
       g_free (unit);
@@ -125,8 +126,8 @@ main (int    argc,
   if (timeout < 0)
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to register legacy application: "
-                           "shutdown timeout must be non-negative"));
+               DLT_STRING ("Failed to register legacy application:"),
+               DLT_STRING ("shutdown timeout must be non-negative"));
 
       /* free command line options */
       g_free (unit);
@@ -146,7 +147,7 @@ main (int    argc,
   if (error != NULL)
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to register legacy application: "),
+               DLT_STRING ("Failed to register legacy application:"),
                DLT_STRING (error->message));
 
       /* clean up */
@@ -163,7 +164,7 @@ main (int    argc,
                                       NULL, &error))
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to register legacy application: "),
+               DLT_STRING ("Failed to register legacy application:"),
                DLT_STRING (error->message));
 
       /* clean up */

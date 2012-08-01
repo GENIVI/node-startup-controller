@@ -239,8 +239,8 @@ node_startup_controller_service_handle_finish_luc_registration (NodeStartupContr
   if (!service->started_registration)
     {
       DLT_LOG (controller_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to finish the LUC registration: "
-                           "the registration sequence was not started properly"));
+               DLT_STRING ("Failed to finish the LUC registration:"),
+               DLT_STRING ("the registration sequence was not started properly"));
 
       /* notify the caller that we have handled the method call */
       g_dbus_method_invocation_return_value (invocation, NULL);
@@ -252,7 +252,7 @@ node_startup_controller_service_handle_finish_luc_registration (NodeStartupContr
   if (error != NULL)
    {
      DLT_LOG (controller_context, DLT_LOG_ERROR,
-              DLT_STRING ("Failed to finish the LUC registration: "),
+              DLT_STRING ("Failed to finish the LUC registration:"),
               DLT_STRING (error->message));
      g_error_free (error);
    }
@@ -301,8 +301,8 @@ node_startup_controller_service_handle_register_with_luc (NodeStartupController 
   if (!service->started_registration)
     {
       DLT_LOG (controller_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to register apps with the LUC: "
-                           "the registration sequence was not started properly"));
+               DLT_STRING ("Failed to register apps with the LUC:"),
+               DLT_STRING ("the registration sequence was not started properly"));
 
       /* notify the caller that we have handled the register request */
       g_dbus_method_invocation_return_value (invocation, NULL);
@@ -408,7 +408,7 @@ node_startup_controller_service_handle_register_with_luc (NodeStartupController 
   /* log the new last user context */
   debug_text = g_variant_print (service->current_user_context, TRUE);
   DLT_LOG (controller_context, DLT_LOG_INFO,
-           DLT_STRING ("Updated LUC to: "), DLT_STRING (debug_text));
+           DLT_STRING ("Updated LUC to:"), DLT_STRING (debug_text));
   g_free (debug_text);
 
   /* release the current context */

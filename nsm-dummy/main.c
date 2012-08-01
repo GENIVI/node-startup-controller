@@ -66,7 +66,7 @@ main (int    argc,
   if (connection == NULL)
     {
       DLT_LOG (nsm_dummy_context, DLT_LOG_FATAL,
-               DLT_STRING ("Failed to connect to D-Bus: "),
+               DLT_STRING ("Failed to connect to D-Bus:"),
                DLT_STRING (error->message));
 
       /* clean up */
@@ -80,7 +80,7 @@ main (int    argc,
   if (!nsm_lifecycle_control_service_start (lifecycle_control_service, &error))
     {
       DLT_LOG (nsm_dummy_context, DLT_LOG_FATAL,
-               DLT_STRING ("Failed to start the lifecycle control service: "),
+               DLT_STRING ("Failed to start the lifecycle control service:"),
                DLT_STRING (error->message));
 
       /* clean up */
@@ -96,7 +96,7 @@ main (int    argc,
   if (!nsm_consumer_service_start (consumer_service, &error))
     {
       DLT_LOG (nsm_dummy_context, DLT_LOG_FATAL,
-               DLT_STRING ("Failed to start the consumer service: "),
+               DLT_STRING ("Failed to start the consumer service:"),
                DLT_STRING (error->message));
 
       /* clean up */

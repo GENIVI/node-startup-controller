@@ -168,7 +168,7 @@ la_handler_service_constructed (GObject *object)
   if (error != NULL)
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to connect to the NSM consumer: "),
+               DLT_STRING ("Failed to connect to the NSM consumer:"),
                DLT_STRING (error->message));
       g_error_free (error);
     }
@@ -361,7 +361,7 @@ la_handler_service_handle_register (LAHandler             *interface,
       if (error != NULL)
         {
           DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-                   DLT_STRING ("Failed to export shutdown consumer on the bus: "),
+                   DLT_STRING ("Failed to export shutdown consumer on the bus:"),
                    DLT_STRING (error->message));
           g_error_free (error);
         }
@@ -412,7 +412,7 @@ la_handler_service_handle_register_finish (GObject      *object,
   if (error != NULL)
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to register a shutdown consumer: "),
+               DLT_STRING ("Failed to register a shutdown consumer:"),
                DLT_STRING (error->message));
       g_error_free (error);
     }
@@ -492,14 +492,14 @@ la_handler_service_handle_consumer_lifecycle_request_finish (JobManager  *manage
 
   /* log that we are completing a lifecycle request */
   DLT_LOG (la_handler_context, DLT_LOG_INFO,
-           DLT_STRING ("Completing a lifecycle request: request id "),
-           DLT_UINT (data->request_id));
+           DLT_STRING ("Completing a lifecycle request:"),
+           DLT_STRING ("request id"), DLT_UINT (data->request_id));
 
   /* log an error if shutting down the consumer has failed */
   if (error != NULL)
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to shut down a shutdown consumer: "),
+               DLT_STRING ("Failed to shut down a shutdown consumer:"),
                DLT_STRING (error->message));
 
       /* send an error back to the NSM */
@@ -522,24 +522,24 @@ la_handler_service_handle_consumer_lifecycle_request_finish (JobManager  *manage
                                                           &error_status, NULL, &err))
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to notify NSM about completed lifecycle request: "),
-               DLT_STRING ("request id "), DLT_UINT (data->request_id),
-               DLT_STRING (": "), DLT_STRING (error->message));
+               DLT_STRING ("Failed to notify NSM about completed lifecycle request:"),
+               DLT_STRING ("request id"), DLT_UINT (data->request_id),
+               DLT_STRING ("error message"), DLT_STRING (error->message));
       g_error_free (err);
     }
   else if (error_status == NSM_ERROR_STATUS_OK)
     {
       DLT_LOG (la_handler_context, DLT_LOG_INFO,
                DLT_STRING ("Successfully notified NSM about completed "
-                           "lifecycle request: "),
-               DLT_STRING ("request id "), DLT_UINT (data->request_id));
+                           "lifecycle request:"),
+               DLT_STRING ("request id"), DLT_UINT (data->request_id));
     }
   else
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Failed to notify NSM about completed lifecycle request: "),
-               DLT_STRING ("request id "), DLT_UINT (data->request_id),
-               DLT_STRING (", error status "), DLT_INT (error_status));
+               DLT_STRING ("Failed to notify NSM about completed lifecycle request:"),
+               DLT_STRING ("request id"), DLT_UINT (data->request_id),
+               DLT_STRING ("error status"), DLT_INT (error_status));
     }
 
   la_handler_service_data_unref (data);
@@ -652,17 +652,19 @@ la_handler_service_deregister_consumers (LAHandlerService *service)
       if (error != NULL)
         {
           DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-                   DLT_STRING ("Failed to unregister shutdown client "),
-                   DLT_STRING (object_path), DLT_STRING (" for unit "), DLT_STRING (unit),
-                   DLT_STRING (": "), DLT_STRING (error->message));
+                   DLT_STRING ("Failed to unregister shutdown client:"),
+                   DLT_STRING ("object path"), DLT_STRING (object_path),
+                   DLT_STRING ("unit"), DLT_STRING (unit),
+                   DLT_STRING ("error message"), DLT_STRING (error->message));
           g_error_free (error);
         }
       else if (error_code != NSM_ERROR_STATUS_OK)
         {
           DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-                   DLT_STRING ("Failed to unregister shutdown client "),
-                   DLT_STRING (object_path), DLT_STRING (" for unit "), DLT_STRING (unit),
-                   DLT_STRING (": error code "), DLT_INT (error_code));
+                   DLT_STRING ("Failed to unregister shutdown client:"),
+                   DLT_STRING ("object path"), DLT_STRING (object_path),
+                   DLT_STRING ("unit"), DLT_STRING (unit),
+                   DLT_STRING ("error code"), DLT_INT (error_code));
         }
     }
 }
