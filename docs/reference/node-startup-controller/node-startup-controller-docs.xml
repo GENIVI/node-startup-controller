@@ -81,29 +81,15 @@
     <sect1>
       <title>Installing</title>
     </sect1>
-    <refentry>
-      <refmeta><refentrytitle>Testing</refentrytitle></refmeta>
-      <refnamediv>
-        <refname>Testing</refname>
-        <refpurpose>
-          Instructions on how to test the Node Startup Controller
-        </refpurpose>
-      </refnamediv>
-
-      <refsection>
-        <title>Example tests</title>
-        <xi:include href="test-example.xml"/>
-      </refsection>
-      <refsection>
-        <title>Last User Context management tests</title>
-      </refsection>
-      <refsection>
-        <title>Legacy App Handling tests</title>
-      </refsection>
-      <refsection>
-        <title>Target Startup Monitoring tests</title>
-      </refsection>
-    </refentry>
+    <section>
+      <title>Testing</title>
+      <note>
+        These tests are performed against the Node State Manager Dummy. The real
+        Node State Manager behaves differently to the dummy.
+      </note>
+      <xi:include href="test-example.xml"/>
+      <xi:include href="test-tsm.xml"/>
+    </section>
   </chapter>
 
   <chapter>

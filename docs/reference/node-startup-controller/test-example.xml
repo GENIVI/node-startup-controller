@@ -3,13 +3,13 @@
                           "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
 ]>
 
-<refsection id="test-example">
+<section id="test-example">
   <title> Example test</title>
   <para>
     An example of how tests should be structured
   </para>
 
-  <refsection>
+  <section>
     <title>Test environment and setup</title>
     <para>
       Automated testing isn't possible. To make things easier, we have code snippets which 
@@ -19,9 +19,9 @@
         systemctl start boot-manager.target
       </programlisting>
     </para>
-  </refsection>
+  </section>
   
-  <refsection>
+  <section>
     <title>Test Overview</title>
     <para>
       A broad explanation of the different test cases in the scenario, i.e.
@@ -30,9 +30,9 @@
         <listitem>Tell the shutdown client to shut down</listitem>
       </itemizedlist>
     </para>
-  </refsection>
+  </section>
 
-  <refsection>
+  <section>
     <title>Test steps</title>
     <para>
     Add a shutdown client
@@ -46,6 +46,6 @@
       <listitem>Check the DLT log for appropriate output</listitem>
     </orderedlist>
     </para>
-  </refsection>
+  </section>
 
-</refsection>
+</section>
