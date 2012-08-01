@@ -30,6 +30,15 @@ DLT_DECLARE_CONTEXT (nsm_dummy_context);
 
 
 
+static void
+unregister_dlt (void)
+{
+  DLT_UNREGISTER_CONTEXT (nsm_dummy_context);
+  DLT_UNREGISTER_APP ();
+}
+
+
+
 int
 main (int    argc,
       char **argv)
@@ -45,6 +54,9 @@ main (int    argc,
   DLT_REGISTER_APP ("NSMD", "GENIVI Node State Manager Dummy");
   DLT_REGISTER_CONTEXT (nsm_dummy_context, "NSMC",
                         "Context of the node state manager dummy itself");
+
+  /* have DLT unregistered at exit */
+  atexit (unregister_dlt);
 
   /* initialize the GType type system */
   g_type_init ();
@@ -105,10 +117,6 @@ main (int    argc,
   g_object_unref (lifecycle_control_service);
   g_object_unref (consumer_service);
   g_object_unref (connection);
-
-  /* unregister the application and context with DLT */
-  DLT_UNREGISTER_CONTEXT (nsm_dummy_context);
-  DLT_UNREGISTER_APP ();
 
   return EXIT_SUCCESS;
 }
