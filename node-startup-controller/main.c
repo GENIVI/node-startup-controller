@@ -57,7 +57,6 @@ main (int    argc,
   JobManager                       *job_manager;
   GMainLoop                        *main_loop;
   GError                           *error = NULL;
-  gchar                            *msg;
 
   /* register the application and context in DLT */
   DLT_REGISTER_APP ("NSC", "GENIVI Node Startup Controller");
@@ -78,9 +77,9 @@ main (int    argc,
   connection = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
   if (connection == NULL)
     {
-      msg = g_strdup_printf ("Failed to connect to the system bus: %s", error->message);
-      DLT_LOG (controller_context, DLT_LOG_FATAL, DLT_STRING (msg));
-      g_free (msg);
+      DLT_LOG (controller_context, DLT_LOG_FATAL,
+               DLT_STRING ("Failed to connect to the system bus: "),
+               DLT_STRING (error->message));
 
       /* clean up */
       g_error_free (error);
@@ -97,10 +96,9 @@ main (int    argc,
                                             NULL, &error);
   if (systemd_manager == NULL)
     {
-      msg = g_strdup_printf ("Failed to connect to the systemd manager: %s",
-                             error->message);
-      DLT_LOG (controller_context, DLT_LOG_FATAL, DLT_STRING (msg));
-      g_free (msg);
+      DLT_LOG (controller_context, DLT_LOG_FATAL,
+               DLT_STRING ("Failed to connect to the systemd manager: "),
+               DLT_STRING (error->message));
 
       /* clean up */
       g_error_free (error);
@@ -112,10 +110,9 @@ main (int    argc,
   /* subscribe to the systemd manager */
   if (!systemd_manager_call_subscribe_sync (systemd_manager, NULL, &error))
     {
-      msg = g_strdup_printf ("Failed to subscribe to the systemd manager: %s",
-                             error->message);
-      DLT_LOG (controller_context, DLT_LOG_FATAL, DLT_STRING (msg));
-      g_free (msg);
+      DLT_LOG (controller_context, DLT_LOG_FATAL,
+               DLT_STRING ("Failed to subscribe to the systemd manager: "),
+               DLT_STRING (error->message));
 
       /* clean up */
       g_error_free (error);
@@ -130,10 +127,9 @@ main (int    argc,
   /* attempt to start the node startup controller service */
   if (!node_startup_controller_service_start_up (node_startup_controller, &error))
     {
-      msg = g_strdup_printf ("Failed to start the node startup controller service: %s",
-                             error->message);
-      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (msg));
-      g_free (msg);
+      DLT_LOG (controller_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to start the node startup controller service: "),
+               DLT_STRING (error->message));
 
       /* clean up */
       g_error_free (error);
@@ -153,10 +149,9 @@ main (int    argc,
   /* start the legacy app handler */
   if (!la_handler_service_start (la_handler_service, &error))
     {
-      msg = g_strdup_printf ("Failed to start the legacy app handler service: %s",
-                             error->message);
-      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (msg));
-      g_free (msg);
+      DLT_LOG (controller_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to start the legacy app handler service: "),
+               DLT_STRING (error->message));
 
       /* clean up */
       g_clear_error (&error);

@@ -176,7 +176,6 @@ luc_starter_constructed (GObject *object)
   LUCStarter *starter = LUC_STARTER (object);
   GError     *error = NULL;
   gchar     **types;
-  gchar      *log_text;
   guint       n;
   gint        type;
 
@@ -189,10 +188,9 @@ luc_starter_constructed (GObject *object)
                                                   NULL, &error);
   if (error != NULL)
     {
-      log_text = g_strdup_printf ("Failed to connect to the NSM lifecycle control: %s",
-                                  error->message);
-      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
+      DLT_LOG (controller_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to connect to the NSM lifecycle control: "),
+               DLT_STRING (error->message));
       g_error_free (error);
     }
 
@@ -390,7 +388,6 @@ luc_starter_start_app_finish (JobManager  *manager,
   LUCStarter *starter = LUC_STARTER (user_data);
   GPtrArray  *apps;
   gboolean    app_found = FALSE;
-  gchar      *message;
   guint       n;
   gint        group;
 
@@ -405,10 +402,9 @@ luc_starter_start_app_finish (JobManager  *manager,
   /* respond to errors */
   if (error != NULL)
     {
-      message = g_strdup_printf ("Failed to start the LUC application \"%s\": %s",
-                                 unit, error->message);
-      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (message));
-      g_free (message);
+      DLT_LOG (controller_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to start the LUC application \""),
+               DLT_STRING (unit), DLT_STRING ("\": "), DLT_STRING (error->message));
     }
 
   /* get the current start group */
@@ -483,7 +479,6 @@ luc_starter_check_luc_required_finish (GObject      *object,
   LUCStarter          *starter = LUC_STARTER (user_data);
   gboolean             luc_required = TRUE;
   GError              *error = NULL;
-  gchar               *log_text;
 
   g_return_if_fail (IS_NSM_LIFECYCLE_CONTROL (nsm_lifecycle_control));
   g_return_if_fail (G_IS_ASYNC_RESULT (res));
@@ -493,10 +488,9 @@ luc_starter_check_luc_required_finish (GObject      *object,
   if (!nsm_lifecycle_control_call_check_luc_required_finish (nsm_lifecycle_control,
                                                              &luc_required, res, &error))
     {
-      log_text = g_strdup_printf ("Failed checking whether the LUC is required: %s",
-                                  error->message);
-      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
+      DLT_LOG (controller_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to check whether the LUC is required: "),
+               DLT_STRING (error->message));
       g_clear_error (&error);
 
       DLT_LOG (controller_context, DLT_LOG_INFO,
@@ -542,7 +536,6 @@ luc_starter_start_groups_for_real (LUCStarter *starter)
   GList       *groups;
   GList       *lp;
   gchar      **apps;
-  gchar       *log_text;
   guint        n;
   gint         group;
   gint         type;
@@ -572,9 +565,9 @@ luc_starter_start_groups_for_real (LUCStarter *starter)
                                                       &error);
   if (error != NULL)
     {
-      log_text = g_strdup_printf ("Error reading last user context: %s", error->message);
-      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
+      DLT_LOG (controller_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to read the last user context: "),
+               DLT_STRING (error->message));
       g_error_free (error);
       return;
     }

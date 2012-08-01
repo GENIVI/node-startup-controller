@@ -230,7 +230,6 @@ node_startup_controller_service_handle_finish_luc_registration (NodeStartupContr
                                                                 NodeStartupControllerService *service)
 {
   GError *error = NULL;
-  gchar  *log_text;
 
   g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER (interface), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
@@ -239,10 +238,9 @@ node_startup_controller_service_handle_finish_luc_registration (NodeStartupContr
   /* check if last user context registration started */
   if (!service->started_registration)
     {
-      log_text = g_strdup_printf ("Failed to finish LUC registration: "
-                                  "the registration sequence has not been started yet");
-      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
+      DLT_LOG (controller_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to finish the LUC registration: "
+                           "the registration sequence was not started properly"));
 
       /* notify the caller that we have handled the method call */
       g_dbus_method_invocation_return_value (invocation, NULL);
@@ -253,9 +251,9 @@ node_startup_controller_service_handle_finish_luc_registration (NodeStartupContr
   node_startup_controller_service_write_luc (service, &error);
   if (error != NULL)
    {
-     log_text = g_strdup_printf ("Failed to finish LUC registration: %s", error->message);
-     DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-     g_free (log_text);
+     DLT_LOG (controller_context, DLT_LOG_ERROR,
+              DLT_STRING ("Failed to finish the LUC registration: "),
+              DLT_STRING (error->message));
      g_error_free (error);
    }
 
@@ -292,7 +290,6 @@ node_startup_controller_service_handle_register_with_luc (NodeStartupController 
   GList          *luc_types;
   gchar          *app;
   gchar          *debug_text = NULL;
-  gchar          *log_text = NULL;
   guint           n;
   gint            luc_type;
 
@@ -303,10 +300,9 @@ node_startup_controller_service_handle_register_with_luc (NodeStartupController 
   /* check if last user context registration started */
   if (!service->started_registration)
     {
-      log_text = g_strdup_printf ("Failed to register apps with the LUC: "
-                                  "The registration sequence has not been started yet");
-      DLT_LOG (controller_context, DLT_LOG_ERROR, DLT_STRING (log_text));
-      g_free (log_text);
+      DLT_LOG (controller_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to register apps with the LUC: "
+                           "the registration sequence was not started properly"));
 
       /* notify the caller that we have handled the register request */
       g_dbus_method_invocation_return_value (invocation, NULL);
@@ -411,10 +407,9 @@ node_startup_controller_service_handle_register_with_luc (NodeStartupController 
 
   /* log the new last user context */
   debug_text = g_variant_print (service->current_user_context, TRUE);
-  log_text = g_strdup_printf ("The new context is: %s", debug_text);
-  DLT_LOG (controller_context, DLT_LOG_DEBUG, DLT_STRING (log_text));
+  DLT_LOG (controller_context, DLT_LOG_DEBUG,
+           DLT_STRING ("New LUC is: "), DLT_STRING (debug_text));
   g_free (debug_text);
-  g_free (log_text);
 
   /* release the current context */
   g_variant_unref (current_context);

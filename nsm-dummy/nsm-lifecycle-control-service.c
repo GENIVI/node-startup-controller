@@ -191,8 +191,7 @@ nsm_lifecycle_control_service_handle_set_node_state (NSMLifecycleControl        
                                                      gint                        node_state_id,
                                                      NSMLifecycleControlService *service)
 {
-  gchar *message;
-  gint   error_code;
+  gint error_code;
 
   g_return_val_if_fail (IS_NSM_LIFECYCLE_CONTROL (object), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
@@ -202,10 +201,10 @@ nsm_lifecycle_control_service_handle_set_node_state (NSMLifecycleControl        
   if (node_state_id >= NSM_NODE_STATE_NOT_SET && node_state_id <= NSM_NODE_STATE_LAST)
     {
       /* log how we handled the node state */
-      message = g_strdup_printf ("Applied the node state %i: %s",
-                                 node_state_id, service->accept_state ? "yes": "no");
-      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
-      g_free (message);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
+               DLT_STRING ("Node state "), DLT_INT (node_state_id),
+               DLT_STRING (" applied: "),
+               DLT_STRING (service->accept_state ? "yes" : "no"));
 
       /* alternate return value between successful(0) and fail(-1) with every handled call.
        * We are temporarily assuming that 0 is success and -1 is failure */
@@ -218,9 +217,8 @@ nsm_lifecycle_control_service_handle_set_node_state (NSMLifecycleControl        
   else
     {
       /* log how we handled the node state */
-      message = g_strdup_printf ("Received invalid node state %i", node_state_id);
-      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
-      g_free (message);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
+               DLT_STRING ("Received an invalid node state: "), DLT_INT (node_state_id));
 
       /* let the caller know that it sent an invalid parameter */
       error_code = NSM_ERROR_STATUS_PARAMETER;

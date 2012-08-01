@@ -61,7 +61,6 @@ main (int    argc,
   GOptionContext *context;
   LAHandler      *service;
   GError         *error = NULL;
-  gchar          *msg;
 
   /* register the application and context with the DLT */
   DLT_REGISTER_APP ("NSC", "GENIVI Node Startup Controller");
@@ -82,10 +81,9 @@ main (int    argc,
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {
       /* parsing failed, exit with an error */
-      msg = g_strdup_printf ("Failed to parse command line options: %s\n",
-                             error->message);
-      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (msg));
-      g_free (msg);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to parse command line options: "),
+               DLT_STRING (error->message));
 
       /* clean up */
       g_option_context_free (context);
@@ -113,10 +111,10 @@ main (int    argc,
       || ((shutdown_mode & NSM_SHUTDOWN_TYPE_NORMAL) == 0
           && (shutdown_mode & NSM_SHUTDOWN_TYPE_FAST) == 0))
     {
-      msg = g_strdup_printf ("Failed to register legacy application: "
-                             "invalid shutdown mode \"0x%x\"", shutdown_mode);
-      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (msg));
-      g_free (msg);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to register legacy application: "),
+               DLT_STRING ("invalid shutdown mode \"0x%x\""),
+               DLT_UINT (shutdown_mode));
 
       /* free command line options */
       g_free (unit);
@@ -146,11 +144,11 @@ main (int    argc,
                                        NULL, &error);
 
   /* abort if the proxy could not be created */
-  if (service == NULL)
+  if (error != NULL)
     {
-      msg = g_strdup_printf ("Failed to register legacy application: %s", error->message);
-      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (msg));
-      g_free (msg);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to register legacy application: "),
+               DLT_STRING (error->message));
 
       /* clean up */
       g_error_free (error);
@@ -165,9 +163,9 @@ main (int    argc,
   if (!la_handler_call_register_sync (service, unit, shutdown_mode, timeout,
                                       NULL, &error))
     {
-      msg = g_strdup_printf ("Failed to register legacy application: %s", error->message);
-      DLT_LOG (la_handler_context, DLT_LOG_ERROR, DLT_STRING (msg));
-      g_free (msg);
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR,
+               DLT_STRING ("Failed to register legacy application: "),
+               DLT_STRING (error->message));
 
       /* clean up */
       g_error_free (error);

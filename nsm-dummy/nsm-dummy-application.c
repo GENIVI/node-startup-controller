@@ -154,7 +154,6 @@ nsm_dummy_application_init (NSMDummyApplication *application)
   const gchar *watchdog_str;
   guint64      watchdog_usec = 0;
   guint        watchdog_sec = 0;
-  gchar       *message;
 
   /* read the WATCHDOG_USEC environment variable and parse it
    * into an unsigned integer */
@@ -173,10 +172,9 @@ nsm_dummy_application_init (NSMDummyApplication *application)
       application->watchdog_client = watchdog_client_new (watchdog_sec);
 
       /* log information about the watchdog timeout using DLT */
-      message = g_strdup_printf ("Updating systemd's watchdog timestamp every %d seconds",
-                                 watchdog_sec);
-      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO, DLT_STRING (message));
-      g_free (message);
+      DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
+               DLT_STRING ("Updating the systemd watchdog timestamp every "),
+               DLT_UINT (watchdog_sec), DLT_STRING (" seconds"));
     }
 
   /* install the signal handler */
