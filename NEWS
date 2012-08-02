@@ -1,3 +1,19 @@
+0.9.1
+=====
+* First release candidate for 1.0.0
+* Includes a feature complete implementation including Last User
+  Context (LUC) management, legacy application handling, and target
+  startup monitoring
+* Dropped the org.genivi.BootManager1 D-Bus interface
+* Dropped the org.genivi.LUCHandler1 D-Bus interface
+* Renamed the component from Boot Manager to Node Startup Controller
+* Merged all individual service apps into a single binary/process
+* Moved updated versions of the D-Bus methods for LUC management into
+  the new org.genivi.NodeStartupController1.NodeStartupController
+  D-Bus interface
+* Added a reference manual including documentation of the public
+  interfaces and test cases
+
 0.1.0
 =====
 * Initial release for the GENIVI E-0.1 release
