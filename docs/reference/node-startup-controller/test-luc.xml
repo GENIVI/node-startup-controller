@@ -3,24 +3,30 @@
                           "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
 ]>
 
-<section id="test-luc">
-  <title>Last User Context handling</title>
-  <para>
-    Testing that the Node Startup Controller(NSC) correctly sets the Last User Context (LUC),
-    and starts the apps correctly on NSC startup.
-  </para>
+<refentry id="test-luc">
+  <refmeta>
+    <refentrytitle>Last User Context handling</refentrytitle>
+  </refmeta>
 
-  <section>
+  <refnamediv>
+    <refname>luc handling</refname>
+    <refpurpose>
+      Testing that the Node Startup Controller(NSC) correctly sets the Last User Context (LUC),
+    and starts the apps correctly on NSC startup.
+    </refpurpose>
+  </refnamediv>
+
+  <refsection>
     <title>Test environment and setup</title>
-    <section>
+    <refsection>
       <title>GDBus</title>
       <para>
         This test assumes that the <command>gdbus</command> programme is installed on the
         system. Without this programme, this test is impossible.
       </para>
-    </section>
+    </refsection>
 
-    <section>
+    <refsection>
       <title>Helpful functions</title>
       <para>
         gdbus functions will be used frequently. To avoid excessive typing, the following
@@ -55,71 +61,35 @@
           }
         </programlisting>
       </para>
-    </section>
+    </refsection>
 
-    <section>
-      <title>Setting up DLT</title>
-      <para>
-        In addition, this test uses Diagnostic Log and Trace (DLT). It can be started and
-        directed to a log file by executing the following:
-        <programlisting>
-          dlt-daemon -d
-          dlt-receive -o /tmp/dlt.log localhost &amp;
-        </programlisting>
-      </para>
-    </section>
+  </refsection>
 
-    <section>
-      <title>Reading DLT log</title>
-      <para>
-        To read this log file, execute
-        <programlisting>dlt-convert -a /tmp/dlt.log</programlisting> This will display the
-        contents of the log file in the following format:
-        <programlisting>Index Time   Timestamp Count Ecuid <emphasis role="bold">Apid Ctid</emphasis> Type Subtype Mode #Args <emphasis role="bold">Payload</emphasis></programlisting>
-        The fields we are interested in are the Apid (Application ID), Ctid (Context ID) and the Payload
-        For example:
-        <programlisting>12 2012/08/01 10:30:32.247913   17066086 006 ECU1 <emphasis role="bold">NSC- CTRL</emphasis> log info V 1 <emphasis role="bold">[Active state of unit "node-startup-controller.service" changed to active]</emphasis></programlisting>
-      </para>
-    </section>
-  </section>
-
-  <section>
+  <refsection>
     <title>Test Overview</title>
     <para>
       The following behaviours will be confirmed:
       <itemizedlist>
-        <listitem>
-          Registration of a simple dictionary
-        </listitem>
-        <listitem>
-          Registration does not happen on an isolated RegisterWithLUC() call
-        </listitem>
-        <listitem>
-          An isolated FinishLUCRegistration() call will not change the LUC
-        </listitem>
-        <listitem>
-          Registration of a complex dictionary
-        </listitem>
-        <listitem>
-          Registration can happen with a series of RegisterWithLUC() calls
-        </listitem>
-        <listitem>
-          Repeated registration of an app changes the order in the LUC
-        </listitem>
+        <listitem><para><xref linkend="test-luc-register-simple" endterm="test-luc-register-simple-title" /></para></listitem>
+        <listitem><para><xref linkend="test-luc-register-only" endterm="test-luc-register-only-title" /></para></listitem>
+        <listitem><para><xref linkend="test-luc-finish-only" endterm="test-luc-finish-only-title" /></para></listitem>
+        <listitem><para><xref linkend="test-luc-register-complex" endterm="test-luc-register-complex-title" /></para></listitem>
+        <listitem><para><xref linkend="test-luc-register-series" endterm="test-luc-register-series-title" /></para></listitem>
+        <listitem><para><xref linkend="tests-luc-register-series-reorder" endterm="tests-luc-register-series-reorder-title" /></para></listitem>
       </itemizedlist>
     </para>
-  </section>
+  </refsection>
 
-  <section>
-    <title>Test steps</title>
-    <para>
+  <refsection>
+    <title>Test cases</title>
+    <refsection>
       <orderedlist>
         <listitem><programlisting>systemctl start nsm-dummy.service</programlisting></listitem>
         <listitem><programlisting>systemctl start node-startup-controller.service</programlisting></listitem>
       </orderedlist>
-
-
-      Registration of a simple dictionary
+    </refsection>
+    <refsection id="test-luc-register-simple">
+      <title id="test-luc-register-simple-title">Registration of a simple dictionary</title>
       <orderedlist continuation="continues">
         <listitem><programlisting>begin</programlisting></listitem>
         <listitem><programlisting>register "{0: ['app1.unit']}"</programlisting></listitem>
@@ -162,9 +132,9 @@
           </tgroup></informaltable>
         </listitem>
       </orderedlist>
-
-
-      Registration does not happen on an isolated RegisterWithLUC() call
+    </refsection>
+    <refsection id="test-luc-register-only">
+      <title id="test-luc-register-only-title">Registration does not happen on an isolated RegisterWithLUC() call</title>
       <orderedlist continuation="continues">
         <listitem><programlisting>register "{1: ['app2.unit']}"</programlisting></listitem>
         <listitem>
@@ -179,9 +149,9 @@
           </tgroup></informaltable>
         </listitem>
       </orderedlist>
-
-
-      An isolated FinishLUCRegistration() call will not change the LUC
+    </refsection>
+    <refsection id="tests-luc-finish-only">
+      <title id="test-luc-finish-only-title">An isolated FinishLUCRegistration() call will not change the LUC</title>
       <orderedlist continuation="continues">
         <listitem><programlisting>end</programlisting></listitem>
         <listitem><programlisting>systemctl restart node-startup-controller.service</programlisting></listitem>
@@ -198,9 +168,46 @@
           </tgroup></informaltable>
         </listitem>
       </orderedlist>
-
-
-      Registration of a complex dictionary
+    </refsection>
+    <refsection id="test-luc-register-complex">
+      <title id="test-luc-register-complex-title">Registration of a complex dictionary</title>
+      <orderedlist continuation="continues">
+        <listitem><programlisting>begin</programlisting></listitem>
+        <listitem><programlisting>register "{0: ['app1.unit'], 1: ['app1.unit', 'app3.unit'], 2: ['app2.unit']}"</programlisting></listitem>
+        <listitem><programlisting>end</programlisting></listitem>
+        <listitem>
+          Read the DLT log and verify these entries appear:
+          <informaltable><tgroup cols="3">
+            <thead>
+              <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+            </thead>
+            <tbody>
+              <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[The new context is: "{0: ['app1.unit'], 1: ['app1.unit', 'app3.unit'], 2: ['app2.unit']}"]</entry></row>
+            </tbody>
+          </tgroup></informaltable>
+        </listitem>
+        <listitem><programlisting>systemctl restart node-startup-controller.service</programlisting></listitem>
+        <listitem>
+          Read the DLT log and verify these entries appear:
+          <informaltable><tgroup cols="3">
+            <thead>
+              <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+            </thead>
+            <tbody>
+              <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 0]</entry></row>
+              <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app1.unit']</entry></row>
+              <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 1]</entry></row>
+              <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app1.unit']</entry></row>
+              <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app3.unit']</entry></row>
+              <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 2]</entry></row>
+              <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app2.unit']</entry></row>
+            </tbody>
+          </tgroup></informaltable>
+        </listitem>
+      </orderedlist>
+    </refsection>
+    <refsection id="test-luc-register-series">
+      <title id="test-luc-register-series-title">Registration can happen with a series of RegisterWithLUC() calls</title>
       <orderedlist continuation="continues">
         <listitem><programlisting>begin</programlisting></listitem>
         <listitem><programlisting>register "{0: ['app1.unit']}"</programlisting></listitem>
@@ -228,15 +235,15 @@
             <tbody>
               <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 0]</entry></row>
               <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app1.unit']</entry></row>
-              <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 0]</entry></row>
+              <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 1]</entry></row>
               <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app3.unit']</entry></row>
             </tbody>
           </tgroup></informaltable>
         </listitem>
       </orderedlist>
-
-
-      Repeated registration of an app changes the order in the LUC
+    </refsection>
+    <refsection id="tests-luc-register-series-reorder">
+      <title id="tests-luc-register-series-reorder-title">Repeated registration of an app changes the order in the LUC</title>
       <orderedlist continuation="continues">
         <listitem><programlisting>begin</programlisting></listitem>
         <listitem><programlisting>register "{1: ['app1.unit', 'app2.unit']}"</programlisting></listitem>
@@ -269,9 +276,7 @@
             </tbody>
           </tgroup></informaltable>
         </listitem>
-
       </orderedlist>
-    </para>
-  </section>
-
-</section>
+    </refsection>
+  </refsection>
+</refentry>

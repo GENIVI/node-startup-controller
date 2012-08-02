@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+                          "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+<refentry id="test-general-setup">
+  <refmeta>
+    <refentrytitle>General Setup</refentrytitle>
+  </refmeta>
+
+  <refnamediv>
+    <refname>general setup</refname>
+    <refpurpose>
+      Setup information that applies to all tests
+    </refpurpose>
+  </refnamediv>
+
+  <note>
+    These tests are performed against the Node State Manager Dummy. The real
+    Node State Manager behaves differently from the NSM dummy in the following ways:
+    <itemizedlist>
+    <listitem>
+      When the NSM dummy receives a request to set the node state, it alternates
+      between successfully setting the node state, and failing to set the node state.
+    </listitem>
+    <listitem>
+      When the NSM dummy is queried as to whether the LUC is required, it alternates
+      between saying no and yes.
+    </listitem>
+    <listitem>
+      On receiving a SIGHUP, the NSM dummy will shut down all its fast shutdown
+      clients, then all its normal shutdown clients.
+    </listitem>
+    </itemizedlist>
+  </note>
+
+  <refsection>
+    <title>Setting up DLT</title>
+    <para>
+    All tests use Diagnostic Log and Trace (DLT). It can be started and directed to a log
+    file by executing the following:
+    <programlisting>
+      dlt-daemon -d
+      dlt-receive -o /tmp/dlt.log localhost &amp;
+    </programlisting>
+    </para>
+  </refsection>
+
+  <refsection>
+    <title>Reading DLT log</title>
+    <para>
+      To read this log file, execute
+      <programlisting>dlt-convert -a /tmp/dlt.log</programlisting> This will display the
+      contents of the log file in the following format:
+      <programlisting>Index Time   Timestamp Count Ecuid <emphasis role="bold">Apid Ctid</emphasis> Type Subtype Mode #Args <emphasis role="bold">Payload</emphasis></programlisting>
+      The fields we are interested in are the Apid (Application ID), Ctid (Context ID) and the Payload
+      For example:
+      <programlisting>12 2012/08/01 10:30:32.247913   17066086 006 ECU1 <emphasis role="bold">NSC- CTRL</emphasis> log info V 1 <emphasis role="bold">[Active state of unit "node-startup-controller.service" changed to active]</emphasis></programlisting>
+    </para>
+  </refsection>
+
+</refentry>
+
