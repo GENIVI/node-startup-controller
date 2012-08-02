@@ -3,16 +3,17 @@
                           "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
 ]>
 
-<refentry id="test-tsm">
+<refentry id="test-target-startup-monitoring">
   <refmeta>
-    <refentrytitle>Target Startup Monitor</refentrytitle>
+    <refentrytitle>Tests for target startup monitoring</refentrytitle>
   </refmeta>
 
   <refnamediv>
-    <refname>Target Startup Monitor</refname>
+    <refname>Tests for target startup monitoring</refname>
     <refpurpose>
-      Testing that the target startup monitor correctly identifies targets have started, and
-      sets the Node State Manager's state accordingly.
+      How to verify that the target startup monitoring functionality of the
+      NSC correctly identifies targets have started, and sets the node state
+      accordingly via the NSM.
     </refpurpose>
   </refnamediv>
 

@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+                          "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+
+<refentry id="test-luc-management">
+  <refmeta>
+    <refentrytitle>Tests for LUC management</refentrytitle>
+  </refmeta>
+
+  <refnamediv>
+    <refname>Tests for LUC management</refname>
+    <refpurpose>
+      How to verify that the NSC correctly sets the LUC and brings up apps in the LUC
+      correctly during start-up.
+    </refpurpose>
+  </refnamediv>
+
+  <refsect1>
+    <title>Test environment and setup</title>
+    <refsect2>
+      <title>GDBus</title>
+      <para>
+        This test assumes that the <command>gdbus</command> command line tool is installed
+        on the system. Without this application, the LUC tests described here can not be
+        performed.
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Helpful functions</title>
+      <para>
+        gdbus functions will be used frequently. To avoid excessive typing, the following
+        functions should be defined and called:
+        <programlisting>
+# function to begin registration
+begin()
+{
+  gdbus call --system \
+    -d org.genivi.NodeStartupController1 \
+    -o /org/genivi/NodeStartupController1/NodeStartupController \
+    -m org.genivi.NodeStartupController1.NodeStartupController.BeginLUCRegistration \
+}
+
+# function to make a registration call
+register()
+{
+  gdbus call --system \
+    -d org.genivi.NodeStartupController1 \
+    -o /org/genivi/NodeStartupController1/NodeStartupController \
+    -m org.genivi.NodeStartupController1.NodeStartupController.RegisterWithLUC \
+    "$1"
+}
+
+# function to finish registration
+end()
+{
+  gdbus call --system \
+    -d org.genivi.NodeStartupController1 \
+    -o /org/genivi/NodeStartupController1/NodeStartupController \
+    -m org.genivi.NodeStartupController1.NodeStartupController.FinishLUCRegistration \
+}
+        </programlisting>
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Starting the necessary services</title>
+      <para>
+        The NSM dummy and the Node Startup Controller services need to be started
+        prior to running any of the tests described here. This is done using the
+        following commands:
+      </para>
+      <programlisting>systemctl start nsm-dummy.service
+systemctl start node-startup-controller.service</programlisting>
+      <note>
+        <para>
+          Check the DLT log after starting these services. If the following messages
+          was logged to the DLT you need to restart
+          <literal>node-startup-controller.service</literal>:
+        </para>
+        <informaltable><tgroup cols="3">
+          <thead>
+            <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+          </thead>
+          <tbody>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[LUC is not required]</entry></row>
+          </tbody>
+        </tgroup></informaltable>
+        <para>
+          To restart <literal>node-startup-controller.service</literal> simply run:
+        </para>
+        <programlisting>systemd node-startup-controller.service</programlisting>
+      </note>
+    </refsect2>
+  </refsect1>
+
+  <refsect1>
+    <title>Test Cases</title>
+    <para>
+      The following test cases for LUC management are described in this document:
+      <itemizedlist>
+        <listitem><para><xref linkend="test-luc-register-simple" endterm="test-luc-register-simple-title" /></para></listitem>
+        <listitem><para><xref linkend="test-luc-register-only" endterm="test-luc-register-only-title" /></para></listitem>
+        <listitem><para><xref linkend="test-luc-finish-only" endterm="test-luc-finish-only-title" /></para></listitem>
+        <listitem><para><xref linkend="test-luc-register-complex" endterm="test-luc-register-complex-title" /></para></listitem>
+        <listitem><para><xref linkend="test-luc-register-series" endterm="test-luc-register-series-title" /></para></listitem>
+        <listitem><para><xref linkend="tests-luc-register-series-reorder" endterm="tests-luc-register-series-reorder-title" /></para></listitem>
+      </itemizedlist>
+    </para>
+    <note>
+      All of these tests need to be executed in the order they are listed here.
+    </note>
+  </refsect1>
+
+  <refsect1 id="test-luc-register-simple">
+    <title id="test-luc-register-simple-title">Registration of a simple dictionary</title>
+    <refsect2>
+      <title>Description</title>
+      <para>
+        Registers one application for a single LUC type, restarts the
+        Node Startup Controller and verifies that it attempts to start this app
+        as part of the LUC.
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Test commands</title>
+      <programlisting>begin
+register "{0: ['app1.unit']}"
+end
+
+systemctl restart node-startup-controller.service</programlisting>
+    </refsect2>
+    <refsect2>
+      <title>Desired behaviour and output</title>
+      <para>
+        The DLT log should now contain the following log messages:
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+        </thead>
+        <tbody>
+          <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[Updated LUC to: "{0: ['app1.unit']}"]</entry></row>
+          <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[Starting LUC group: 0]</entry></row>
+          <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[Starting LUC app: app1.unit]</entry></row>
+          <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[Finished starting LUC app: app1.unit]</entry></row>
+          <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[Finished starting LUC group: 0]</entry></row>
+        </tbody>
+      </tgroup></informaltable>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="test-luc-register-only">
+    <title id="test-luc-register-only-title">Registration does not happen on an isolated RegisterWithLUC() call</title>
+    <orderedlist continuation="continues">
+      <listitem><programlisting>register "{1: ['app2.unit']}"</programlisting></listitem>
+      <listitem>
+        Read the DLT log and verify this entry <emphasis>doesn't</emphasis> appear:
+        <informaltable><tgroup cols="3">
+          <thead>
+            <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+          </thead>
+          <tbody>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[The new context is: "{1: ['app2.unit']}"]</entry></row>
+          </tbody>
+        </tgroup></informaltable>
+      </listitem>
+    </orderedlist>
+  </refsect1>
+  <refsect1 id="tests-luc-finish-only">
+    <title id="test-luc-finish-only-title">An isolated FinishLUCRegistration() call will not change the LUC</title>
+    <orderedlist continuation="continues">
+      <listitem><programlisting>end</programlisting></listitem>
+      <listitem><programlisting>systemctl restart node-startup-controller.service</programlisting></listitem>
+      <listitem>
+        Read the DLT log and verify these entries appear:
+        <informaltable><tgroup cols="3">
+          <thead>
+            <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+          </thead>
+          <tbody>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 0]</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app1.unit']</entry></row>
+          </tbody>
+        </tgroup></informaltable>
+      </listitem>
+    </orderedlist>
+  </refsect1>
+  <refsect1 id="test-luc-register-complex">
+    <title id="test-luc-register-complex-title">Registration of a complex dictionary</title>
+    <orderedlist continuation="continues">
+      <listitem><programlisting>begin</programlisting></listitem>
+      <listitem><programlisting>register "{0: ['app1.unit'], 1: ['app1.unit', 'app3.unit'], 2: ['app2.unit']}"</programlisting></listitem>
+      <listitem><programlisting>end</programlisting></listitem>
+      <listitem>
+        Read the DLT log and verify these entries appear:
+        <informaltable><tgroup cols="3">
+          <thead>
+            <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+          </thead>
+          <tbody>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[The new context is: "{0: ['app1.unit'], 1: ['app1.unit', 'app3.unit'], 2: ['app2.unit']}"]</entry></row>
+          </tbody>
+        </tgroup></informaltable>
+      </listitem>
+      <listitem><programlisting>systemctl restart node-startup-controller.service</programlisting></listitem>
+      <listitem>
+        Read the DLT log and verify these entries appear:
+        <informaltable><tgroup cols="3">
+          <thead>
+            <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+          </thead>
+          <tbody>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 0]</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app1.unit']</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 1]</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app1.unit']</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app3.unit']</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 2]</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app2.unit']</entry></row>
+          </tbody>
+        </tgroup></informaltable>
+      </listitem>
+    </orderedlist>
+  </refsect1>
+  <refsect1 id="test-luc-register-series">
+    <title id="test-luc-register-series-title">Registration can happen with a series of RegisterWithLUC() calls</title>
+    <orderedlist continuation="continues">
+      <listitem><programlisting>begin</programlisting></listitem>
+      <listitem><programlisting>register "{0: ['app1.unit']}"</programlisting></listitem>
+      <listitem><programlisting>register "{1: ['app3.unit']}"</programlisting></listitem>
+      <listitem><programlisting>end</programlisting></listitem>
+      <listitem>
+        Read the DLT log and verify these entries appear:
+        <informaltable><tgroup cols="3">
+          <thead>
+            <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+          </thead>
+          <tbody>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[The new context is: "{0: ['app1.unit']}"]</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[The new context is: "{0: ['app1.unit'], 1: ['app3.unit']}"]</entry></row>
+          </tbody>
+        </tgroup></informaltable>
+      </listitem>
+      <listitem><programlisting>systemctl restart node-startup-controller.service</programlisting></listitem>
+      <listitem>
+        Read the DLT log and verify these entries appear:
+        <informaltable><tgroup cols="3">
+          <thead>
+            <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+          </thead>
+          <tbody>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 0]</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app1.unit']</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 1]</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app3.unit']</entry></row>
+          </tbody>
+        </tgroup></informaltable>
+      </listitem>
+    </orderedlist>
+  </refsect1>
+  <refsect1 id="tests-luc-register-series-reorder">
+    <title id="tests-luc-register-series-reorder-title">Repeated registration of an app changes the order in the LUC</title>
+    <orderedlist continuation="continues">
+      <listitem><programlisting>begin</programlisting></listitem>
+      <listitem><programlisting>register "{1: ['app1.unit', 'app2.unit']}"</programlisting></listitem>
+      <listitem><programlisting>register "{1: ['app1.unit']}"</programlisting></listitem>
+      <listitem><programlisting>end</programlisting></listitem>
+      <listitem>
+        Read the DLT logs and verify these entries appear:
+        <informaltable><tgroup cols="3">
+          <thead>
+            <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+          </thead>
+          <tbody>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[The new context is: "{1: ['app1.unit', 'app2.unit']}"]</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[The new context is: "{1: ['app2.unit', 'app1.unit']}"]</entry></row>
+          </tbody>
+        </tgroup></informaltable>
+      </listitem>
+      <listitem><programlisting>systemctl restart node-startup-controller.service</programlisting></listitem>
+      <listitem>
+        Read the DLT log and verify these entries appear:
+        <informaltable><tgroup cols="3">
+          <thead>
+            <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+          </thead>
+          <tbody>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start group 1]</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app2.unit']</entry></row>
+            <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[start app 'app1.unit']</entry></row>
+          </tbody>
+        </tgroup></informaltable>
+      </listitem>
+    </orderedlist>
+  </refsect1>
+</refentry>

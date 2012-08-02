@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+                          "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+<refentry id="functional-overview">
+  <refmeta>
+    <refentrytitle>Functional scope</refentrytitle>
+  </refmeta>
+
+  <refnamediv>
+    <refname>Functional scope</refname>
+    <refpurpose>An overview of the functionality provided by the Node Startup Controller</refpurpose>
+  </refnamediv>
+
+  <refsect1 id="luc-management">
+    <title>Last User Context (LUC) management</title>
+    <para>
+      TODO
+    </para>
+  </refsect1>
+
+  <refsect1 id="legacy-application-management">
+    <title>Legacy application management</title>
+    <para>
+      TODO
+    </para>
+  </refsect1>
+
+  <refsect1 id="target-startup-monitoring">
+    <title>Target startup monitoring</title>
+    <para>
+      TODO
+    </para>
+  </refsect1>
+</refentry>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+                          "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+<refentry id="public-interfaces">
+  <refmeta>
+    <refentrytitle>Public interfaces</refentrytitle>
+  </refmeta>
+
+  <refnamediv>
+    <refname>Public interfaces</refname>
+    <refpurpose>An overview of the public interfaces provided by the Node Startup Controller</refpurpose>
+  </refnamediv>
+
+  <refsect1 id="luc-interface">
+    <title>Interface for LUC management</title>
+    <para>
+      TODO
+    </para>
+  </refsect1>
+
+  <refsect1 id="legacy-app-handler-interface">
+    <title>Interface for legacy application handling</title>
+    <para>
+      TODO
+    </para>
+  </refsect1>
+</refentry>

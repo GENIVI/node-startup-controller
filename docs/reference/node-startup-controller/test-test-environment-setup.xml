@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+                          "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+<refentry id="test-environment-setup">
+  <refmeta>
+    <refentrytitle>Test environment setup</refentrytitle>
+  </refmeta>
+
+  <refnamediv>
+    <refname>Test environment setup</refname>
+    <refpurpose>Information on how to prepare the runtime environment for testing</refpurpose>
+  </refnamediv>
+
+  <refsect1>
+    <title>Setting up the Diagnostic Log and Trace (DLT) framework</title>
+    <para>
+      In order to support manual testing, the Node Startup Controller logs any useful
+      information using the Diagnostic Log and Trace (DLT) framework. The DLT runtime
+      components relevant for testing are the <literal>dlt-daemon</literal> and the
+      <literal>dlt-receive</literal> tools.
+    </para>
+    <para>
+      The <literal>dlt-daemon</literal> logging daemon is started follows:
+    </para>
+    <programlisting>dlt-daemon -d</programlisting>
+    <para>
+      Afterwards, the <literal>dlt-receive</literal> can be used to forward all
+      messages logged via the DLT to a specific file. The following command attaches
+      the <literal>dlt-receive</literal> tool to the <literal>dlt-daemon</literal>
+      running on the same machine and writes all output to
+      <literal>/tmp/dlt.log</literal>:
+    </para>
+    <programlisting>dlt-receive -o /tmp/dlt.log localhost &amp;</programlisting>
+  </refsect1>
+
+  <refsect1>
+    <title>Reading DLT log</title>
+    <para>
+      In order to check whether the Node Startup Controller behaves correctly, the
+      messages it logs to the DLT have to be investigated. The log file is not plain
+      text, so a special tool called <literal>dlt-convert</literal> needs to be used
+      to convert it into human-readable form.
+    </para>
+    <para>
+      The <literal>dlt-convert</literal> tool can be executed using the following
+      command:
+    </para>
+    <programlisting>dlt-convert -a /tmp/dlt.log</programlisting>
+    <para>
+      This will display the contents of the log file in the following format:
+    </para>
+    <programlisting>Index Time   Timestamp Count Ecuid <emphasis role="bold">Apid Ctid</emphasis> Type Subtype Mode #Args <emphasis role="bold">Payload</emphasis></programlisting>
+    <para>
+      Here is one example:
+    </para>
+    <programlisting>12 2012/08/01 10:30:32.247913   17066086 006 ECU1 <emphasis role="bold">NSC- CTRL</emphasis> log info V 1 <emphasis role="bold">[Active state of unit "node-startup-controller.service" changed to active]</emphasis></programlisting>
+    <para>
+      The fields we are interested for debugging and testing in are the Apid
+      (Application ID), Ctid (Context ID) and the Payload. The test cases described
+      in the following chapters include the exact log values for these fields needed
+      to verify the correctness of behaviour of the Node Startup Controller.
+    </para>
+  </refsect1>
+</refentry>
+
