@@ -136,6 +136,7 @@ nsm_lifecycle_control_service_finalize (GObject *object)
   g_signal_handlers_disconnect_matched (service->interface,
                                         G_SIGNAL_MATCH_DATA,
                                         0, 0, NULL, NULL, service);
+  g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (service->interface));
   g_object_unref (service->interface);
 
   (*G_OBJECT_CLASS (nsm_lifecycle_control_service_parent_class)->finalize) (object);

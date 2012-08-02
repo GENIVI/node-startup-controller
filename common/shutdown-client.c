@@ -150,7 +150,10 @@ shutdown_client_finalize (GObject *object)
 
   /* release the consumer, if we have one */
   if (client->consumer != NULL)
-    g_object_unref (client->consumer);
+    {
+      g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (client->consumer));
+      g_object_unref (client->consumer);  
+    }
 
   (*G_OBJECT_CLASS (shutdown_client_parent_class)->finalize) (object);
 }

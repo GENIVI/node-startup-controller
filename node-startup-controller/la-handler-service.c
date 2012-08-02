@@ -209,6 +209,9 @@ la_handler_service_finalize (GObject *object)
 {
   LAHandlerService *service = LA_HANDLER_SERVICE (object);
 
+  /* release the interface skeleton */
+  g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (service->interface));
+
   /* release the bus name */
   g_bus_unown_name (service->bus_name_id);
 
