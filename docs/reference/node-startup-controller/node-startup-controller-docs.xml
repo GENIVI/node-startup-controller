@@ -103,6 +103,7 @@
       </note>
       <xi:include href="test-example.xml"/>
       <xi:include href="test-tsm.xml"/>
+      <xi:include href="test-luc.xml"/>
     </section>
   </chapter>
 
