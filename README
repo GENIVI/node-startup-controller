@@ -42,6 +42,7 @@ Build Instructions
 
 In order to build the Node Startup Controller, run the following:
 
+  (test -d m4 || mkdir m4) &&
   gtkdocize &&
   autoreconf -ivf &&
   ./configure [options] &&
