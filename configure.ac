@@ -76,7 +76,7 @@ AC_ARG_VAR([GDBUS_CODEGEN], [Tool to generate C bindings from XML D-Bus interfac
 AC_PATH_PROG([GDBUS_CODEGEN], [gdbus-codegen], [no])
 if test x"$GDBUS_CODEGEN" = x"no"; then
   AC_MSG_ERROR([could not find gdbus-codegen in \$PATH. You can run
-  ./configure GDBUS_CODEGEN=/path/to/gdbus-codegen to define 
+  ./configure GDBUS_CODEGEN=/path/to/gdbus-codegen to define
   a custom location for it.])
 fi
 
@@ -86,7 +86,7 @@ dnl ***********************************
 PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.30.0])
 PKG_CHECK_MODULES([GIO], [gio-2.0 >= 2.30.0])
 PKG_CHECK_MODULES([GIO_UNIX], [gio-unix-2.0 >= 2.30.0])
-PKG_CHECK_MODULES([SYSTEMD_DAEMON], [libsystemd-daemon >= 37])
+PKG_CHECK_MODULES([SYSTEMD_DAEMON], [libsystemd-daemon >= 183])
 PKG_CHECK_MODULES([DLT], [automotive-dlt >= 2.2.0])
 
 dnl *********************************************
