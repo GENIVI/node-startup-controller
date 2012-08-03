@@ -22,32 +22,32 @@
   <refsect1>
     <title>Notes about the NSM dummy behaviour</title>
     <para>
-      We do not guarantee that our NSM dummy is functional equivalent to
-      the real NSM. The dummy does however, provide the same interfaces and
-      the behaviour of all public methods used by the Node Startup
-      Controller should be very similar to that of the real NSM.
+      The NSM dummy is not guaranteed to be functionally equivalent to the real NSM. The
+      dummy does however, provide the same interfaces and the behaviour of all public
+      methods used by the Node Startup Controller should be very similar to that of the
+      real NSM.
     </para>
     <para>
-      We implemented a few special features in the NSM dummy that make
-      testing the Node Startup Controller easier:
+      The following special features are implemented in the NSM dummy that make testing
+      the Node Startup Controller easier:
     </para>
     <itemizedlist>
       <listitem>
         <literal>com.contiautomotive.NodeStateManager.LifecycleControl.CheckLucRequired</literal>
-        will alternative between returning <literal>TRUE</literal> and
-        <literal>FALSE</literal> with every call. This way we can test how the
+        will alternate between returning <literal>TRUE</literal> and
+        <literal>FALSE</literal> with every call. This way it is possible to test how the
         Node Startup Controller behaves with and without starting the LUC simply by
         starting it twice.
       </listitem>
       <listitem>
         <literal>com.contiautomotive.NodeStateManager.LifecycleControl.SetNodeState</literal>
-        will alternative between accepting the state and not accepting the state with
-        every call. This way we can test how the Node Startup Controller handles both
-        scenarios.
+        will alternate between accepting the state and not accepting the state with
+        every call. This way it is possible to test how the Node Startup Controller
+        handles both scenarios.
       </listitem>
       <listitem>
         The NSM dummy will shut down all registered shutdown consumers upon receiving
-        <literal>SIGHUP</literal>. This allows to test the shutdown sequence by running
+        <literal>SIGHUP</literal>. It is possible to test the shutdown sequence by running
         the following command:
         <programlisting>kill -s HUP $(pidof nsm-dummy)</programlisting>
       </listitem>
