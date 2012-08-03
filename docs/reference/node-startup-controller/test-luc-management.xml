@@ -94,7 +94,7 @@ systemctl start node-startup-controller.service</programlisting>
   </refsect1>
 
   <refsect1>
-    <title>Test Cases</title>
+    <title>Test cases</title>
     <para>
       The following test cases for LUC management are described in this document:
       <itemizedlist>
@@ -159,7 +159,7 @@ systemctl restart node-startup-controller.service</programlisting>
       </para>
     </refsect2>
     <refsect2>
-      <title>Test Commands</title>
+      <title>Test commands</title>
       <programlisting>register "{1: ['app2.unit']}"
 
 systemctl restart node-startup-controller.service
@@ -194,7 +194,7 @@ systemctl restart node-startup-controller.service
       </para>
     </refsect2>
     <refsect2>
-      <title>Test Commands</title>
+      <title>Test commands</title>
       <programlisting>end
 
 systemctl restart node-startup-controller.service
@@ -229,7 +229,7 @@ systemctl restart node-startup-controller.service
       </para>
     </refsect2>
     <refsect2>
-      <title>Test Commands</title>
+      <title>Test commands</title>
       <programlisting>begin
 register "{0: ['app1.unit'], 1: ['app1.unit', 'app3.unit'], 2: ['app2.unit']}"
 end
@@ -238,7 +238,7 @@ systemctl restart node-startup-controller.service
       </programlisting>
     </refsect2>
     <refsect2>
-      <title>Desired behaviour and Output</title>
+      <title>Desired behaviour and output</title>
       <note>
         The start order of LUC groups may be different depending on the build-time
         configuration of the Node Startup Controller in the test system.
@@ -291,7 +291,7 @@ systemctl restart node-startup-controller.service
       </programlisting>
     </refsect2>
     <refsect2>
-      <title>Desired behaviour and Output</title>
+      <title>Desired behaviour and output</title>
       <para>
         The DLT log should now contain the following log messages:
       </para>
@@ -325,7 +325,7 @@ systemctl restart node-startup-controller.service
       </para>
     </refsect2>
     <refsect2>
-      <title>Test Commands</title>
+      <title>Test commands</title>
       <programlisting>begin
 register "{1: ['app1.unit', 'app2.unit']}"
 register "{1: ['app1.unit']}"
@@ -335,7 +335,7 @@ systemctl restart node-startup-controller.service
       </programlisting>
     </refsect2>
     <refsect2>
-      <title>Desired behaviour and Output</title>
+      <title>Desired behaviour and output</title>
       <para>
         The DLT log should now contain the following log messages:
       </para>

@@ -24,32 +24,34 @@
       <para>
         This testing requires the existence of focussed.target, unfocussed.target and
         lazy.target units.
-        
+
         If they do not exist, they can be created by executing the following:
-        <programlisting>
-          cp /lib/systemd/system/{graphical,focussed}.target
-          cp /lib/systemd/system/{graphical,unfocussed}.target
-          cp /lib/systemd/system/{graphical,lazy}.target
-        </programlisting>
+        <programlisting>cp /lib/systemd/system/{graphical,focussed}.target
+cp /lib/systemd/system/{graphical,unfocussed}.target
+cp /lib/systemd/system/{graphical,lazy}.target</programlisting>
       </para>
     </refsect2>
   </refsect1>
-  
+
   <refsect1>
-    <title>Test Cases</title>
+    <title>Test cases</title>
+    <note>
+      The node state is defined by the <link linkend="NSMNodeState">NSMNodeState</link>
+      enumeration. When the node state is set, the DLT log refers to it by its number.
+    </note>
     <para>
       The following test cases for Target Startup Monitoring are described in this document:
       <itemizedlist>
-        <listitem><para><xref linkend="test-tsm-start-nsc" endterm="test-tsm-start-nsc-title" /></para></listitem>
-        <listitem><para><xref linkend="test-tsm-start-focussed" endterm="test-tsm-start-focussed-title" /></para></listitem>
-        <listitem><para><xref linkend="test-tsm-start-unfocussed" endterm="test-tsm-start-unfocussed-title" /></para></listitem>
-        <listitem><para><xref linkend="test-tsm-start-lazy" endterm="test-tsm-start-lazy-title" /></para></listitem>
-        <listitem><para><xref linkend="test-tsm-stop" endterm="test-tsm-stop-title" /></para></listitem>
+        <listitem><para><xref linkend="test-tsm-start-nsc" endterm="test-tsm-start-nsc-title"/></para></listitem>
+        <listitem><para><xref linkend="test-tsm-start-focussed" endterm="test-tsm-start-focussed-title"/></para></listitem>
+        <listitem><para><xref linkend="test-tsm-start-unfocussed" endterm="test-tsm-start-unfocussed-title"/></para></listitem>
+        <listitem><para><xref linkend="test-tsm-start-lazy" endterm="test-tsm-start-lazy-title"/></para></listitem>
+        <listitem><para><xref linkend="test-tsm-stop" endterm="test-tsm-stop-title"/></para></listitem>
       </itemizedlist>
     </para>
   </refsect1>
   <refsect1 id="test-tsm-start-nsc">
-    <title id="test-tsm-start-nsc-title">1. Starting the Node Startup Controller tries to change the Node State</title>
+    <title id="test-tsm-start-nsc-title">1. Node state is set to BASE_RUNNING after Node Startup Controller is started</title>
     <refsect2>
       <title>Description</title>
       <para>
@@ -58,13 +60,12 @@
       </para>
     </refsect2>
     <refsect2>
-      <title>Test Commands</title>
+      <title>Test commands</title>
       <programlisting>systemctl start nsm-dummy.service
-systemctl start node-startup-controller.service
-      </programlisting>
+systemctl start node-startup-controller.service</programlisting>
     </refsect2>
     <refsect2>
-      <title>Desired behaviour and Output</title>
+      <title>Desired behaviour and output</title>
       <para>
         The DLT log should now contain the following log messages:
       </para>
@@ -74,13 +75,12 @@ systemctl start node-startup-controller.service
         </thead>
         <tbody>
           <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 2: yes]</entry></row>
-          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "node-startup-controller.service" changed to active]</entry></row>
         </tbody>
       </tgroup></informaltable>
     </refsect2>
   </refsect1>
   <refsect1 id="test-tsm-start-focussed">
-    <title id="test-tsm-start-focussed-title">2. Starting focussed.target tries to change the node state</title>
+    <title id="test-tsm-start-focussed-title">2. Node state is set to LUC_RUNNING after focussed.target is started</title>
     <refsect2>
       <title>Description</title>
       <para>
@@ -89,11 +89,16 @@ systemctl start node-startup-controller.service
       </para>
     </refsect2>
     <refsect2>
-      <title>Test Commands</title>
-      <programlisting>systemctl start focussed.target</programlisting>
+      <title>Test commands</title>
+      <programlisting>systemctl start focussed.target
+systemctl start focussed.target</programlisting>
     </refsect2>
+    <note>
+      <literal>systemctl start focussed.target</literal> is called twice because the NSM
+      dummy rejects every other call to set the node state.
+    </note>
     <refsect2>
-      <title>Desired behaviour and Output</title>
+      <title>Desired behaviour and output</title>
       <para>
         The DLT log should now contain the following log messages:
       </para>
@@ -102,16 +107,13 @@ systemctl start node-startup-controller.service
           <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
         </thead>
         <tbody>
-          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Creating D-Bus proxy for unit "/org/freedesktop/systemd1/unit/focussed_2etarget"]</entry></row>
-          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "focussed.target" changed to active]</entry></row>
-          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 3: no]</entry></row>
-          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Failed to set the node state: error code 2]</entry></row>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 3: yes]</entry></row>
         </tbody>
       </tgroup></informaltable>
     </refsect2>
   </refsect1>
   <refsect1 id="test-tsm-start-unfocussed">
-    <title id="test-tsm-start-unfocussed-title">3. Starting unfocussed.target tries to change the node state</title>
+    <title id="test-tsm-start-unfocussed-title">3. Node state is set to FULLY_RUNNING after unfocussed.target is started</title>
     <refsect2>
       <title>Description</title>
       <para>
@@ -120,11 +122,12 @@ systemctl start node-startup-controller.service
       </para>
     </refsect2>
     <refsect2>
-      <title>Test Commands</title>
-      <programlisting>systemctl start unfocussed.target</programlisting>
+      <title>Test commands</title>
+      <programlisting>systemctl start unfocussed.target
+systemctl start unfocussed.target</programlisting>
     </refsect2>
     <refsect2>
-      <title>Desired Behaviour and Output</title>
+      <title>Desired Behaviour and output</title>
       <para>
         The DLT log should now contain the following log messages:
       </para>
@@ -133,15 +136,13 @@ systemctl start node-startup-controller.service
           <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
         </thead>
         <tbody>
-          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Creating D-Bus proxy for unit "/org/freedesktop/systemd1/unit/unfocussed_2etarget"]</entry></row>
-          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "unfocussed.target" changed to active]</entry></row>
           <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 4: yes]</entry></row>
         </tbody>
       </tgroup></informaltable>
     </refsect2>
   </refsect1>
   <refsect1 id="test-tsm-start-lazy">
-    <title id="test-tsm-start-lazy-title">4. Starting lazy.target tries to change the node state</title>
+    <title id="test-tsm-start-lazy-title">4. Node state is set to FULLY_OPERATIONAL after lazy.target is started</title>
     <refsect2>
       <title>Description</title>
       <para>
@@ -150,11 +151,12 @@ systemctl start node-startup-controller.service
       </para>
     </refsect2>
     <refsect2>
-      <title>Test Commands</title>
-      <programlisting>systemctl start lazy.target</programlisting>
+      <title>Test commands</title>
+      <programlisting>systemctl start lazy.target
+systemctl start lazy.target</programlisting>
     </refsect2>
     <refsect2>
-      <title>Desired behaviour and Output</title>
+      <title>Desired behaviour and output</title>
       <para>
         The DLT log should now contain the following log messages:
       </para>
@@ -163,10 +165,7 @@ systemctl start node-startup-controller.service
           <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
         </thead>
         <tbody>
-          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Creating D-Bus proxy for unit "/org/freedesktop/systemd1/unit/lazy_2etarget"]</entry></row>
-          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "lazy.target" changed to active]</entry></row>
-          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 5: no]</entry></row>
-          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Failed to set the node state: error code 2]</entry></row>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 5: yes]</entry></row>
         </tbody>
       </tgroup></informaltable>
     </refsect2>
@@ -181,11 +180,11 @@ systemctl start node-startup-controller.service
       </para>
     </refsect2>
     <refsect2>
-      <title>Test Commands</title>
+      <title>Test commands</title>
       <programlisting>systemctl stop focussed.target</programlisting>
     </refsect2>
     <refsect2>
-      <title>Desired behaviour and Output</title>
+      <title>Desired behaviour and output</title>
        <para>
         The DLT log should now contain the following log messages:
       </para>
@@ -207,6 +206,17 @@ systemctl start node-startup-controller.service
         </thead>
         <tbody>
           <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 3: yes]</entry></row>
+        </tbody>
+      </tgroup></informaltable>
+      <para>
+        or
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+        </thead>
+        <tbody>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 3: no]</entry></row>
         </tbody>
       </tgroup></informaltable>
     </refsect2>
