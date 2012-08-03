@@ -17,9 +17,9 @@
     </refpurpose>
   </refnamediv>
 
-  <refsection>
+  <refsect1>
     <title>Test environment and setup</title>
-    <refsection>
+    <refsect2>
       <title>Target units</title>
       <para>
         This testing requires the existence of focussed.target, unfocussed.target and
@@ -32,13 +32,13 @@
           cp /lib/systemd/system/{graphical,lazy}.target
         </programlisting>
       </para>
-    </refsection>
-  </refsection>
+    </refsect2>
+  </refsect1>
   
-  <refsection>
-    <title>Test Overview</title>
+  <refsect1>
+    <title>Test Cases</title>
     <para>
-      The following behaviours will be confirmed:
+      The following test cases for Target Startup Monitoring are described in this document:
       <itemizedlist>
         <listitem><para><xref linkend="test-tsm-start-nsc" endterm="test-tsm-start-nsc-title" /></para></listitem>
         <listitem><para><xref linkend="test-tsm-start-focussed" endterm="test-tsm-start-focussed-title" /></para></listitem>
@@ -47,119 +47,169 @@
         <listitem><para><xref linkend="test-tsm-stop" endterm="test-tsm-stop-title" /></para></listitem>
       </itemizedlist>
     </para>
-  </refsection>
-
-  <refsection>
-    <title>Test cases</title>
-    <refsection id="test-tsm-start-nsc">
-      <title id="test-tsm-start-nsc-title">Starting the Node Startup Controller tries to change the Node State</title>
-      <orderedlist>
-        <listitem><programlisting>systemctl start nsm-dummy.service</programlisting></listitem>
-        <listitem><programlisting>systemctl start node-startup-controller.service</programlisting></listitem>
-        <listitem>
-          Read the DLT log and verify these entries appear:
-          <informaltable><tgroup cols="3">
-            <thead>
-              <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
-            </thead>
-            <tbody>
-              <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 2: yes]</entry></row>
-              <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "node-startup-controller.service" changed to active]</entry></row>
-            </tbody>
-          </tgroup></informaltable>
-        </listitem>
-      </orderedlist>
-    </refsection>
-
-    <refsection id="test-tsm-start-focussed">
-      <title id="test-tsm-start-focussed-title">Starting focussed.target tries to change the node state</title>
-      <orderedlist continuation="continues">
-        <listitem><programlisting>systemctl start focussed.target</programlisting></listitem>
-        <listitem>
-          Read the DLT log and verify these entries appear:
-          <informaltable><tgroup cols="3">
-            <thead>
-              <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
-            </thead>
-            <tbody>
-              <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Creating D-Bus proxy for unit "/org/freedesktop/systemd1/unit/focussed_2etarget"]</entry></row>
-              <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "focussed.target" changed to active]</entry></row>
-              <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 3: no]</entry></row>
-              <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Failed to set the node state: error code 2]</entry></row>
-            </tbody>
-          </tgroup></informaltable>
-        </listitem>
-      </orderedlist>
-    </refsection>
-
-    <refsection id="test-tsm-start-unfocussed">
-      <title id="test-tsm-start-unfocussed-title">Starting unfocussed.target tries to change the node state</title>
-      <orderedlist continuation="continues">
-        <listitem><programlisting>systemctl start unfocussed.target</programlisting></listitem>
-        <listitem>
-          Read the DLT log and verify these entries appear:
-          <informaltable><tgroup cols="3">
-            <thead>
-              <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
-            </thead>
-            <tbody>
-              <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Creating D-Bus proxy for unit "/org/freedesktop/systemd1/unit/unfocussed_2etarget"]</entry></row>
-              <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "unfocussed.target" changed to active]</entry></row>
-              <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 4: yes]</entry></row>
-            </tbody>
-          </tgroup></informaltable>
-        </listitem>
-      </orderedlist>
-    </refsection>
-
-    <refsection id="test-tsm-start-lazy">
-      <title id="test-tsm-start-lazy-title">Starting lazy.target tries to change the node state</title>
-      <orderedlist continuation="continues">
-        <listitem><programlisting>systemctl start lazy.target</programlisting></listitem>
-        <listitem>
-          Read the DLT log and verify these entries appear:
-          <informaltable><tgroup cols="3">
-            <thead>
-              <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
-            </thead>
-            <tbody>
-              <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Creating D-Bus proxy for unit "/org/freedesktop/systemd1/unit/lazy_2etarget"]</entry></row>
-              <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "lazy.target" changed to active]</entry></row>
-              <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 5: no]</entry></row>
-              <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Failed to set the node state: error code 2]</entry></row>
-            </tbody>
-          </tgroup></informaltable>
-        </listitem>
-      </orderedlist>
-    </refsection>
-
-    <refsection id="test-tsm-stop">
-      <title id="test-tsm-stop-title">Stopping a target unit will not try to change the node state</title>
-      <orderedlist continuation="continues">
-        <listitem><programlisting>systemctl stop focussed.target</programlisting></listitem>
-        <listitem>
-          Read the DLT log and verify that these entries appear:
-          <informaltable><tgroup cols="3">
-            <thead>
-              <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
-            </thead>
-            <tbody>
-              <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Creating D-Bus proxy for unit "/org/freedesktop/systemd1/unit/focussed_2etarget"]</entry></row>
-              <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "focussed.target" changed to inactive]</entry></row>
-            </tbody>
-          </tgroup></informaltable>
-          Verify that these entries do not appear:
-          <informaltable><tgroup cols="3">
-            <thead>
-              <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
-            </thead>
-            <tbody>
-              <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 3: yes]</entry></row>
-            </tbody>
-          </tgroup></informaltable>
-        </listitem>
-      </orderedlist>
-    </refsection>
-  </refsection>
+  </refsect1>
+  <refsect1 id="test-tsm-start-nsc">
+    <title id="test-tsm-start-nsc-title">1. Starting the Node Startup Controller tries to change the Node State</title>
+    <refsect2>
+      <title>Description</title>
+      <para>
+        Starts the NSM dummy and the Node Startup Controller and verifies that it attempts
+        to set the node state.
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Test Commands</title>
+      <programlisting>systemctl start nsm-dummy.service
+systemctl start node-startup-controller.service
+      </programlisting>
+    </refsect2>
+    <refsect2>
+      <title>Desired behaviour and Output</title>
+      <para>
+        The DLT log should now contain the following log messages:
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+        </thead>
+        <tbody>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 2: yes]</entry></row>
+          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "node-startup-controller.service" changed to active]</entry></row>
+        </tbody>
+      </tgroup></informaltable>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="test-tsm-start-focussed">
+    <title id="test-tsm-start-focussed-title">2. Starting focussed.target tries to change the node state</title>
+    <refsect2>
+      <title>Description</title>
+      <para>
+        Starts the focussed.target systemd unit and verifies that it attempts to set the
+        node state.
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Test Commands</title>
+      <programlisting>systemctl start focussed.target</programlisting>
+    </refsect2>
+    <refsect2>
+      <title>Desired behaviour and Output</title>
+      <para>
+        The DLT log should now contain the following log messages:
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+        </thead>
+        <tbody>
+          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Creating D-Bus proxy for unit "/org/freedesktop/systemd1/unit/focussed_2etarget"]</entry></row>
+          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "focussed.target" changed to active]</entry></row>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 3: no]</entry></row>
+          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Failed to set the node state: error code 2]</entry></row>
+        </tbody>
+      </tgroup></informaltable>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="test-tsm-start-unfocussed">
+    <title id="test-tsm-start-unfocussed-title">3. Starting unfocussed.target tries to change the node state</title>
+    <refsect2>
+      <title>Description</title>
+      <para>
+        Starts the unfocussed.target systemd unit and verifies that it attempts to set the
+        node state.
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Test Commands</title>
+      <programlisting>systemctl start unfocussed.target</programlisting>
+    </refsect2>
+    <refsect2>
+      <title>Desired Behaviour and Output</title>
+      <para>
+        The DLT log should now contain the following log messages:
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+        </thead>
+        <tbody>
+          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Creating D-Bus proxy for unit "/org/freedesktop/systemd1/unit/unfocussed_2etarget"]</entry></row>
+          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "unfocussed.target" changed to active]</entry></row>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 4: yes]</entry></row>
+        </tbody>
+      </tgroup></informaltable>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="test-tsm-start-lazy">
+    <title id="test-tsm-start-lazy-title">4. Starting lazy.target tries to change the node state</title>
+    <refsect2>
+      <title>Description</title>
+      <para>
+        Starts the lazy.target systemd unit and verifies that it attempts to set the
+        node state.
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Test Commands</title>
+      <programlisting>systemctl start lazy.target</programlisting>
+    </refsect2>
+    <refsect2>
+      <title>Desired behaviour and Output</title>
+      <para>
+        The DLT log should now contain the following log messages:
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+        </thead>
+        <tbody>
+          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Creating D-Bus proxy for unit "/org/freedesktop/systemd1/unit/lazy_2etarget"]</entry></row>
+          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "lazy.target" changed to active]</entry></row>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 5: no]</entry></row>
+          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Failed to set the node state: error code 2]</entry></row>
+        </tbody>
+      </tgroup></informaltable>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="test-tsm-stop">
+    <title id="test-tsm-stop-title">5. Stopping a target unit will not try to change the node state</title>
+    <refsect2>
+      <title>Description</title>
+      <para>
+        Stops a systemd unit and verifies that the Node Startup Controller doesn't try to
+        set the node state.
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Test Commands</title>
+      <programlisting>systemctl stop focussed.target</programlisting>
+    </refsect2>
+    <refsect2>
+      <title>Desired behaviour and Output</title>
+       <para>
+        The DLT log should now contain the following log messages:
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+        </thead>
+        <tbody>
+          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Creating D-Bus proxy for unit "/org/freedesktop/systemd1/unit/focussed_2etarget"]</entry></row>
+          <row> <entry>NSC-</entry> <entry>CTRL</entry> <entry>[Active state of unit "focussed.target" changed to inactive]</entry></row>
+        </tbody>
+      </tgroup></informaltable>
+      <para>
+        The DLT log should <emphasis>not</emphasis> contain the following log message:
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
+        </thead>
+        <tbody>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 3: yes]</entry></row>
+        </tbody>
+      </tgroup></informaltable>
+    </refsect2>
+  </refsect1>
 
 </refentry>
