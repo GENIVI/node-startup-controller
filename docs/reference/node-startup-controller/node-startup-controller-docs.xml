@@ -53,7 +53,7 @@
     <xi:include href="software-architecture.xml"/>
   </part>
 
-  <part id="building">
+  <part id="part-building">
     <title>Building</title>
     <xi:include href="building.xml"/>
   </part>
