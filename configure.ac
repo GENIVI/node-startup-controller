@@ -86,7 +86,7 @@ dnl ***********************************
 PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.30.0])
 PKG_CHECK_MODULES([GIO], [gio-2.0 >= 2.30.0])
 PKG_CHECK_MODULES([GIO_UNIX], [gio-unix-2.0 >= 2.30.0])
-PKG_CHECK_MODULES([SYSTEMD_DAEMON], [libsystemd-daemon >= 37])
+PKG_CHECK_MODULES([SYSTEMD_DAEMON], [libsystemd-daemon >= 183])
 PKG_CHECK_MODULES([DLT], [automotive-dlt >= 2.2.0])
 
 dnl *********************************************
