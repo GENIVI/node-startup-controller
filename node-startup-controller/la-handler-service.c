@@ -310,6 +310,17 @@ la_handler_service_handle_register (LAHandler             *interface,
   g_return_val_if_fail (unit != NULL && *unit != '\0', FALSE);
   g_return_val_if_fail (LA_HANDLER_IS_SERVICE (service), FALSE);
 
+  if (shutdown_mode != NSM_SHUTDOWN_TYPE_NORMAL
+      && shutdown_mode != NSM_SHUTDOWN_TYPE_FAST
+      && shutdown_mode != NSM_SHUTDOWN_TYPE_NORMAL | NSM_SHUTDOWN_TYPE_FAST)
+    {
+      /* the shutdown mode is invalid */
+      DLT_LOG (la_handler_context, DLT_LOG_ERROR,
+               DLT_STRING ("Register called with invalid shutdown mode"));
+      la_handler_complete_register (interface, invocation);
+      return TRUE;
+    }
+
   /* find out if we have a shutdown client for this unit already */
   client = g_hash_table_lookup (service->units_to_clients, unit);
   if (client != NULL)
