@@ -183,7 +183,7 @@ systemctl restart node-startup-controller.service
       </tgroup></informaltable>
     </refsect2>
   </refsect1>
-  <refsect1 id="tests-luc-finish-only">
+  <refsect1 id="test-luc-finish-only">
     <title id="test-luc-finish-only-title">3. An isolated FinishLUCRegistration() call will not change the LUC</title>
     <refsect2>
       <title>Description</title>
