@@ -23,7 +23,7 @@
       The intended readers of the reference manual are developers of GENIVI components
       that interact with the Node Startup Controller and people who want to contribute
       to the Node Startup Controller development. Reading this reference manual will
-      will help them to understand how the Node Startup Controller can be used and how
+      help them to understand how the Node Startup Controller can be used and how
       it is organised internally.
     </para>
   </refsect1>

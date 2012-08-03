@@ -12,8 +12,8 @@
     <refname>Tests for legacy application handling</refname>
     <refpurpose>
       How to verify that legacy app handler correctly registers the units as shutdown
-      consumers and when the shutdown process starts shutting down consumers the
-      legacy app handler correctly unregisters this shutdown consumers.
+      consumers, and that it correctly shuts them down when the Node State manager dummy
+      tells them to.
     </refpurpose>
   </refnamediv>
 
@@ -95,8 +95,8 @@ systemctl start node-startup-controller.service</programlisting>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutdown client registered: bus name org.genivi.NodeStartupController1 object path /org/genivi/nodeStartupController1/ShutdownConsumer/1 shutdown mode 1 timeout 1000]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutdown client registered: bus name org.genivi.NodeStartupController1 object path /org/genivi/nodeStartupController1/ShutdownConsumer/2 shutdown mode 2 timeout 1000]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
-          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/2 shutdown mode 2 timeout 1000: request id XXXXXXX]</entry></row>
-          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/2 shutdown mode 2]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/2 shutdown mode 2 timeout 1000: request id XXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/2 shutdown mode 2]</entry></row>
           <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id XXXXXXX]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id XXXXXXX status 1]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
@@ -108,13 +108,13 @@ systemctl start node-startup-controller.service</programlisting>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Transitioning to normal shutdown mode]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Skipping client /org/genivi/NodeStartupController1/ShutdownConsumer/2 as it is not registered for shutdown mode 1]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
-          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/0 shutdown mode 1 time out 1000: request id YYYYYYY]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/0 shutdown mode 1 time out 1000: request id YYYYYYY]</entry></row>
           <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id XXXXXXX]</entry></row>
-          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id YYYYYYY bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/0 shutdown mode 1]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id YYYYYYY bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/0 shutdown mode 1]</entry></row>
          <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id YYYYYYY]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id YYYYYYY status 1]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
-          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/0 shutdown mode 1 time out 1000: request id 3557696]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/0 shutdown mode 1 time out 1000: request id 3557696]</entry></row>
           <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id YYYYYYY]</entry></row>
           <row><entry>NSMC</entry> <entry>NSMD</entry> <entry>[Shutdown client unregistered: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShudownConsumer/1]</entry></row>        
           <row><entry>NSMC</entry> <entry>NSMD</entry> <entry>[Shutdown client unregistered: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShudownConsumer/2]</entry></row>
@@ -160,15 +160,15 @@ systemctl start node-startup-controller.service</programlisting>
         <tbody>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutdown client registered: bus name org.genivi.NodeStartupController1 object path /org/genivi/nodeStartupController1/ShutdownConsumer/1 shutdown mode 1 timeout 1000]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutdown client registered: bus name org.genivi.NodeStartupController1 object path /org/genivi/nodeStartupController1/ShutdownConsumer/2 shutdown mode 1 timeout 1000]</entry></row>
-          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/2 shutdown mode 1 timeout 1000: request id XXXXXXX]</entry></row>
-          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/2 shutdown mode 1]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/2 shutdown mode 1 timeout 1000: request id XXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/2 shutdown mode 1]</entry></row>
           <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id XXXXXXX]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id XXXXXXX status 1]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path
-          /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 1 time out 1000: request id YYYYYYY]</entry></row>
+          /org/genivi/NodeStartupController1/ShutdownConsumer/1 shutdown mode 1 time out 1000: request id YYYYYYY]</entry></row>
           <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id XXXXXXX]</entry></row>
-          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id YYYYYYY bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 1]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id YYYYYYY bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/1 shutdown mode 1]</entry></row>
           <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id YYYYYYY]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id YYYYYYY status 1]</entry></row>
           <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id YYYYYYY]</entry></row>
@@ -195,7 +195,7 @@ systemctl start node-startup-controller.service</programlisting>
       <title>Test commands</title>
       <programlisting>
       /lib/node-startup-controller1/legacy-app-handler --unit "cups.service" -m 1 -t 1500
-      /lib/node-startup-controller1/legacy-app-handler --unit "cups.service" -m 1 -t 500
+      /lib/node-startup-controller1/legacy-app-handler --unit "cups.service" -m 2 -t 500
       kill -s HUP $(pidof nsm-dummy)
       </programlisting>
     </refsect2>
@@ -212,16 +212,16 @@ systemctl start node-startup-controller.service</programlisting>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutdown client registered: bus name org.genivi.NodeStartupController1 object path /org/genivi/nodeStartupController1/ShutdownConsumer/1 shutdown mode 1 timeout 1500]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Re-registered shutdown client: bus name org.genivi.NodeStartupController1 object path
           /org/genivi/nodeStartupController1/ShutdownConsumer/1 shutdown mode 3 timeout 500]</entry></row>
-<row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 3 time out 500: request id XXXXXXXX]</entry></row>
-          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 2]</entry></row>
+<row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/1 shutdown mode 3 time out 500: request id XXXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/1 shutdown mode 2]</entry></row>
           <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id XXXXXXXX]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id XXXXXXXX status 1]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
           <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id XXXXXXXX]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Processed all items in the queue for this mode]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Transitioning to normal shutdown mode]</entry></row>
-          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 3 time out 500: request id XXXXXXXX]</entry></row>
-          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 1]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/1 shutdown mode 3 time out 500: request id XXXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/1 shutdown mode 1]</entry></row>
           <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id XXXXXXXX]</entry></row>
           <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id XXXXXXXX status 1]</entry></row>
           <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id XXXXXXXX]</entry></row>              
