@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+                          "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+<refentry id="building">
+  <refmeta>
+    <refentrytitle>Building</refentrytitle>
+  </refmeta>
+
+  <refnamediv>
+    <refname>Building</refname>
+    <refpurpose>How to build the Node Startup Controller</refpurpose>
+  </refnamediv>
+</refentry>

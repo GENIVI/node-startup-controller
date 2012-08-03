@@ -70,10 +70,16 @@ HTML_IMAGES=
 # e.g. content_files=running.sgml building.sgml changes-2.0.sgml
 content_files =								\
 	about.xml							\
+	building.xml							\
 	functional-scope.xml						\
 	legacy-app-handler.xml						\
 	public-interfaces.xml						\
 	software-architecture.xml					\
+	test-nsm-dummy.xml						\
+	test-test-environment-setup.xml					\
+	test-luc-management.xml						\
+	test-legacy-app-handling.xml					\
+	test-target-startup-monitoring.xml				\
 	version.xml
 
 # SGML files where gtk-doc abbrevations (#GtkWidget) are expanded

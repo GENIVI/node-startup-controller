@@ -55,6 +55,7 @@
 
   <part id="building">
     <title>Building</title>
+    <xi:include href="building.xml"/>
   </part>
 
   <part id="testing">
