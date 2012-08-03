@@ -4,13 +4,20 @@
 ]>
 <refentry id="test-nsm-dummy">
   <refmeta>
-    <refentrytitle>Testing against the NSM dummy</refentrytitle>
+    <refentrytitle>Testing against the Node State Manager dummy</refentrytitle>
   </refmeta>
 
   <refnamediv>
-    <refname>Testing against the NSM dummy</refname>
+    <refname>Testing against the Node State Manager dummy</refname>
     <refpurpose>Important things to know when testing against the NSM dummy implementation</refpurpose>
   </refnamediv>
+
+  <para>
+    Along with our implementation of the Node Startup Controller, this software package
+    also ships a dummy implementation of the Node State Manager (NSM). This is done in
+    order to make testing possible even though the actual NSM implementation has not
+    landed in GENIVI yet.
+  </para>
 
   <refsect1>
     <title>Notes about the NSM dummy behaviour</title>
