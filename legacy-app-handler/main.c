@@ -110,7 +110,7 @@ main (int    argc,
   /* validate the shutdown mode */
   if (shutdown_mode != NSM_SHUTDOWN_TYPE_NORMAL
       && shutdown_mode != NSM_SHUTDOWN_TYPE_FAST
-      && shutdown_mode != NSM_SHUTDOWN_TYPE_NORMAL | NSM_SHUTDOWN_TYPE_FAST)
+      && shutdown_mode != (NSM_SHUTDOWN_TYPE_NORMAL | NSM_SHUTDOWN_TYPE_FAST))
     {
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
                DLT_STRING ("Failed to register legacy application: "

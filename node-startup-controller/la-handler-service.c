@@ -312,7 +312,7 @@ la_handler_service_handle_register (LAHandler             *interface,
 
   if (shutdown_mode != NSM_SHUTDOWN_TYPE_NORMAL
       && shutdown_mode != NSM_SHUTDOWN_TYPE_FAST
-      && shutdown_mode != NSM_SHUTDOWN_TYPE_NORMAL | NSM_SHUTDOWN_TYPE_FAST)
+      && shutdown_mode != (NSM_SHUTDOWN_TYPE_NORMAL | NSM_SHUTDOWN_TYPE_FAST))
     {
       /* the shutdown mode is invalid */
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
