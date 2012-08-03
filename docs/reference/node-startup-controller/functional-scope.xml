@@ -15,21 +15,133 @@
   <refsect1 id="luc-management">
     <title>Last User Context (LUC) management</title>
     <para>
-      TODO
+      The responsibility of LUC (Last User Context) Management is to manage information
+      about applications the user is running in order to allow the same applications to
+      be restored after a reboot of the system. The LUC supports three different types
+      of applications:
+    </para>
+    <variablelist>
+      <varlistentry>
+        <term>Audible</term>
+        <listitem>
+          <para>
+            Applications that are current audible sources within the Head Unit (e.g.
+            radio or CD player).
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>Foreground</term>
+        <listitem>
+          <para>
+            Applications that are currently in the focus of the HMI (e.g., navigation
+            or web browser).
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>Background</term>
+        <listitem>
+          <para>
+            Applications that run in the background.
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+    <para>
+      The LUC allows multiple applications to be registered for each LUC type at the
+      same time. A registration with the LUC consists of two parameters:
+    </para>
+    <orderedlist>
+      <listitem>
+        A systemd unit filename (e.g.  <literal>navigation.service</literal>),</listitem>
+      <listitem>
+        The LUC type, which is one of the following: audible, foreground or background.
+      </listitem>
+    </orderedlist>
+    <para>
+      Audible, foreground and background applications are treated as start-up groups,
+      meaning that e.g. all background apps are started in parallel. The order in which
+      these three groups are started by the LUC Management can be configured at
+      build-time.
+
+      In order to reduce the amount of communication with the LUC management, multiple
+      applications can be registered and deregistered with the LUC at once.
     </para>
   </refsect1>
 
   <refsect1 id="legacy-application-management">
     <title>Legacy application management</title>
     <para>
-      TODO
+      Legacy applications are applications that provide a systemd unit file but are
+      unaware or do not make use of any GENIVI components. This also means that they
+      do not register with the NSM (Node State Manager) as a shutdown consumer, which
+      is a requirement for any application in GENIVI.
+    </para>
+    <para>
+      To solve this problem the Node Startup Controller provides a mechanism to register
+      shutdown consumers for individual legacy applications. This works as follows:
+    </para>
+    <orderedlist>
+      <listitem>
+        the Node Startup Controller provides an internal D-Bus interface for registering
+        a shutdown consumer for a given unit filename,
+      </listitem>
+      <listitem>
+        the Node Startup Controller provides a helper executable that takes a unit
+        filename and calls the above D-Bus method to register a shutdown consumer for
+        this unit file, an <literal>ExecStartPost</literal> command is added the unit
+        files of legacy applications that calls the helper script or binary.
+      </listitem>
+    </orderedlist>
+    <para>
+      Whenever the NSM decides to perform a shutdown it will ask the shutdown consumers
+      to shut down in reverse order of their creation. To the NSM it does not matter
+      whether or not the consumers are registered by applications themselves or by the
+      Node Startup Controller.
     </para>
   </refsect1>
 
   <refsect1 id="target-startup-monitoring">
     <title>Target startup monitoring</title>
     <para>
-      TODO
+      The Node Startup Controller is responsible to set certain NSM states when certain
+      systemd targets (e.g. <literal>focused.target</literal> or
+      <literal>lazy.target</literal>) have been started within or outside the
+      Node Startup Controller. For this, it needs to monitor systemd for unit start-up
+      events.
     </para>
+    <para>
+      As of systemd 183, this is possible through systemd's JobRemoved signal.
+    </para>
+    <para>
+      The Node Startup Controller
+    </para>
+    <orderedlist>
+      <listitem>
+        sets the NSM state to <literal>BASE_RUNNING</literal> during initialization,
+      </listitem>
+      <listitem>
+        subscribes to systemd in order to receive signals from systemd,
+      </listitem>
+      <listitem>
+        evaluates the received JobRemoved signals by filtering out the signals that do
+        not belong to target start-up events setting the NSM state to
+        <orderedlist>
+          <listitem>
+            <literal>LUC_RUNNING</literal> when <literal>focused.target</literal>
+            has been started,
+          </listitem>
+          <listitem>
+            <literal>FULLY_RUNNING</literal> when <literal>unfocussed.target</literal>
+            has been started,
+          </listitem>
+          <listitem>
+            <literal>FULLY_OPERATIONAL</literal> when <literal>lazy.target</literal>
+            has been started.
+          </listitem>
+        </orderedlist>
+      </listitem>
+    </orderedlist>
   </refsect1>
 </refentry>

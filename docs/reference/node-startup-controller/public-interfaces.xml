@@ -15,14 +15,23 @@
   <refsect1 id="luc-interface">
     <title>Interface for LUC management</title>
     <para>
-      TODO
+      Registration of applications with the LUC is possible through the
+      <literal>org.genivi.NodeStartupController1.NodeStartupController</literal>
+      D-Bus service interface implemented by the Node Startup Controller.
+    </para>
+    <para>
+      This interface is described in-depth on a
+      <link linkend="gdbus-org.genivi.NodeStartupController1.NodeStartupController">dedicated documentation page</link>.
     </para>
   </refsect1>
 
   <refsect1 id="legacy-app-handler-interface">
     <title>Interface for legacy application handling</title>
     <para>
-      TODO
+      Legacy applications can be registered with the GENIVI lifecycle subsystem using
+      the <literal>legacy-app-handler</literal> helper executable, which, like the
+      D-Bus interface, is described on a
+      <link linkend="legacy-app-handler">dedicated page</link>.
     </para>
   </refsect1>
 </refentry>

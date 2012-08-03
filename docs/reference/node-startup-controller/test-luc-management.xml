@@ -88,7 +88,7 @@ systemctl start node-startup-controller.service</programlisting>
         <para>
           To restart <literal>node-startup-controller.service</literal> simply run:
         </para>
-        <programlisting>systemd node-startup-controller.service</programlisting>
+        <programlisting>systemctl restart node-startup-controller.service</programlisting>
       </note>
     </refsect2>
   </refsect1>
