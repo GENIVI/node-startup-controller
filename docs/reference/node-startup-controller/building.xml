@@ -100,6 +100,7 @@
                     <literal>docs/reference/node-startup-controller/html/</literal>.
                   </para>
                 </listitem>
+              </varlistentry>
               <varlistentry>
                 <term><literal>--with-prioritised-luc-types=&lt;comma separated integers&gt;</literal></term>
                 <listitem>
