@@ -11,4 +11,29 @@
     <refname>Building</refname>
     <refpurpose>How to build the Node Startup Controller</refpurpose>
   </refnamediv>
+
+  <refsect1>
+    <title>Build dependencies</title>
+    <para>
+      The following additional libraries are required to build the
+      Node Startup Controller:
+    </para>
+    <variablelist>
+      <varlistentry>
+        <term>automotive-dlt >= 2.2.0</term>
+      </varlistentry>
+      <varlistentry>
+        <term>glib-2.0 >= 2.2.0</term>
+      </varlistentry>
+      <varlistentry>
+        <term>gio-2.0 >= 2.30.0</term>
+      </varlistentry>
+      <varlistentry>
+        <term>gobject-2.0 >= 2.30.0</term>
+      </varlistentry>
+      <varlistentry>
+        <term>libsystemd-daemon >= 183</term>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
 </refentry>
