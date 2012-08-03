@@ -35,5 +35,17 @@
         <term>libsystemd-daemon >= 183</term>
       </varlistentry>
     </variablelist>
+    <para>
+      In addition to this, and apart from the standard tools like autoconf, automake
+      and libtool, the following command-line utilities need to be available for
+      building:
+    </para>
+    <itemizedlist>
+      <listitem>gdbus-codegen</listitem>
+      <listitem>
+        gtkdocize and related GTK-Doc tools (only needed for building the
+        reference manual
+      </listitem>
+    </itemizedlist>
   </refsect1>
 </refentry>
