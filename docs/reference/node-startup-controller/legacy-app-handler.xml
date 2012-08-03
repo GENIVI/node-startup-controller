@@ -19,7 +19,7 @@
       <command>legacy-app-handler</command>
       <arg choice="plain"><option>--unit</option> <replaceable>UNIT</replaceable></arg>
       <arg choice="plain"><option>--shutdown-mode</option> <replaceable>MODE</replaceable></arg>
-      <arg><option>--timeout</option> <replaceable>TIMEOUT</replaceable></arg>
+      <arg><option>[--timeout</option> <replaceable>TIMEOUT]</replaceable></arg>
     </cmdsynopsis>
   </refsynopsisdiv>
 
@@ -51,7 +51,7 @@
           <term><option>-t</option>, <option>--timeout</option></term>
           <listitem><para>
             The amount of time in milliseconds the Node State Manager will wait until it
-            considers shutdown to have failed.
+            considers shutdown to have failed. By default its value is 1000 milliseconds.
           </para></listitem>
         </varlistentry>
       </variablelist>
