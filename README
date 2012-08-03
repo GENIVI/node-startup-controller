@@ -17,79 +17,12 @@ For licensing information, see the COPYING file distributed along with
 with this project.
 
 
-Build Dependencies
-------------------
+Build Dependencies and Instructions
+-----------------------------------
 
-The following libraries need to be installed in order to be able to
-build the Node Startup Controller:
+For a complete list of build dependencies and instructions, please
+refer to the reference manual in 
 
-  automotive-dlt >= 2.2.0
-  gio-2.0 >= 2.30.0
-  glib-2.0 >= 2.30.0
-  gobject-2.0 >= 2.30.0
-  libsystemd-daemon >= 183
+  docs/reference/node-startup-controller/html/index.html
 
-In addition to this, and apart from the standard tools like autoreconf,
-automake and libtool, the following command-line utilities need to be
-available for building:
-
-  gdbus-codegen
-  gtkdocize (and related GTK-Doc tools)
-
-
-Build Instructions
-------------------
-
-In order to build the Node Startup Controller, run the following:
-
-  (test -d m4 || mkdir m4) &&
-  gtkdocize &&
-  autoreconf -ivf &&
-  ./configure [options] &&
-  make
-
-The following configure options are available apart from the standard
-choices:
-
-  --enable-debug=<yes|no>:
-
-    Enables or disables debug builds. Enabling
-    debug will cause more compiler warnings to
-    be generated that are then treated as errors
-    and make the build fail. This is useful for
-    catching problems during development.
-
-    The default is "no".
-
-  --with-prioritised-luc-types=<comma-separated integers>:
-
-    Allows to define an ordered list of LUC types to be prioritised
-    during start-up.
-
-    The default is an empty list.
-
-For more information about all available configure options, run:
-
-  ./configure --help
-
-
-Install Instructions
---------------------
-
-To install the Node Startup Controller after having built it, run:
-
-  make install
-
-
-Testing Instructions
---------------------
-
-To run any test suites shipped with the Node Startup Controller, run:
-
-  make check
-
-There may also be some post-install tests that can only be performed
-after installing the Node Startup Controller into the system. Those
-can be executed with:
-
-  make installcheck
+once it has been built.

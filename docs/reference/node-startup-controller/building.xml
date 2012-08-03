@@ -36,7 +36,7 @@
       </varlistentry>
     </variablelist>
     <para>
-      In addition to this, and apart from the standard tools like autoconf, automake
+      In addition to this, and apart from standard tools like autoconf, automake
       and libtool, the following command-line utilities need to be available for
       building:
     </para>
@@ -44,8 +44,94 @@
       <listitem>gdbus-codegen</listitem>
       <listitem>
         gtkdocize and related GTK-Doc tools (only needed for building the
-        reference manual
+        reference manual)
       </listitem>
     </itemizedlist>
+  </refsect1>
+  <refsect1>
+    <title>Build Instructions</title>
+    <para>
+      Building and installing the Node Startup Controller is done in the following
+      3-4 steps:
+    </para>
+    <orderedlist>
+      <listitem>
+        <formalpara>
+          <title>Preparing the source tree</title>
+          <para>
+            This step is only required when building from the git repository. It will
+            prepare the tree for building the reference manual and will generate the
+            final build scripts (<literal>configure</literal> and
+            <literal>Makefile</literal> files) from the templates shipped along with the
+            source code:
+            <programlisting>(test -d m4 || mkdir m4) &amp;&amp; gtkdocize &amp;&amp; autoreconf -ivf</programlisting>
+          </para>
+        </formalpara>
+      </listitem>
+      <listitem>
+        <formalpara>
+          <title>Checking dependencies and configuring the build</title>
+          <para>
+            Checking for build-time dependencies and tweaking various build options, such as the
+            installation path etc. is done using the <literal>configure</literal> script, which
+            is called as follows in the toplevel directory of the source tree:
+            <programlisting>./configure [options]</programlisting>
+            The following custom configuration options are available:
+            <variablelist>
+              <varlistentry>
+                <term><literal>--enable-debug=&lt;yes|no&gt;</literal></term>
+                <listitem>
+                  <para>
+                    Enables or disables debug builds. Enabling debugging will cause more
+                    compiler warnings to be generated that are then treated as errors
+                    and make the build fail. This is useful for catching problems during
+                    development.
+                  </para>
+                  <para>
+                    The default value is <literal>no</literal>.
+                  </para>
+                </listitem>
+              </varlistentry>
+              <varlistentry>
+                <term><literal>--with-prioritised-luc-types=&lt;comma separated integers&gt;</literal></term>
+                <listitem>
+                  <para>
+                    Allows to define an ordered list of LUC types to be prioritised
+                    during start-up. The start groups corresponding to these LUC types
+                    will be started before any other groups.
+                  </para>
+                  <para>
+                    The default is an empty list.
+                  </para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+            For more information about all available configuration options (such as
+            installation paths), run:
+            <programlisting>./configure --help</programlisting>
+          </para>
+        </formalpara>
+      </listitem>
+      <listitem>
+        <formalpara>
+          <title>Building</title>
+          <para>
+            To actually build the Node Startup Controller and its reference manual,
+            simply run the following:
+          </para>
+          <programlisting>make</programlisting>
+        </formalpara>
+      </listitem>
+      <listitem>
+        <formalpara>
+          <title>Installing</title>
+          <para>
+            To install the Node Startup Controller into the system using the paths
+            specified as part of the build configuration, simply run:
+          </para>
+          <programlisting>make install</programlisting>
+        </formalpara>
+      </listitem>
+    </orderedlist>
   </refsect1>
 </refentry>
