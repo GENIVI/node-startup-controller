@@ -316,7 +316,8 @@ la_handler_service_handle_register (LAHandler             *interface,
     {
       /* the shutdown mode is invalid */
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
-               DLT_STRING ("Register called with invalid shutdown mode"));
+               DLT_STRING ("Failed to register legacy application: "
+                           "invalid shutdown mode"), DLT_INT (shutdown_mode));
       la_handler_complete_register (interface, invocation);
       return TRUE;
     }
