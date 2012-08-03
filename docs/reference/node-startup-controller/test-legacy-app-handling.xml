@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+                          "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+]>
+
+<refentry id="test-legacy-app-handling">
+  <refmeta>
+    <refentrytitle>Tests for Legacy App Handler</refentrytitle>
+  </refmeta>
+  
+  <refnamediv>
+    <refname>Test for legacy app handler</refname>
+    <refpurpose>
+      How to verify that legacy app handler correctly registers the units as shutdown
+      consumers and when the shutdown process start shutting down consumers the
+      legacy app handler correctly unregisters this shutdown consumers.
+    </refpurpose>
+  </refnamediv>
+
+  <refsect1>
+    <title>Test environment and setup</title>
+    <refsect2>
+      <title>Services units</title>
+      <para>
+        This test uses the "cups.service" and the "avahi-daemon.service" as units which
+        are going to be registering as shutdown consumers. This units might or might not
+        exist in the system, but this does not affect to the result of the tests.
+      </para>
+    </refsect2>
+    
+    <refsect2>
+      <title>Starting the necessary services</title>
+      <para>
+        The NSM dummy and the Node Startup Controller services need to be started
+        prior to running any of the tests described here. This is done using the
+        following commands:
+      </para>
+      <programlisting>systemctl start nsm-dummy.service
+systemctl start node-startup-controller.service</programlisting>
+    </refsect2>
+  </refsect1>
+
+  <refsect1>
+    <title>Test Cases</title>
+    <para>
+      The following test cases for LUC management are described in this document:
+      <itemizedlist>
+        <listitem><para><xref linkend="test-lah-register-fast-normal-consumers" endterm="test-lah-register-fast-normal-consumers-title" /></para></listitem>
+        <listitem><para><xref linkend="test-lah-register-two-normal-consumers" endterm="test-lah-register-two-normal-consumers-title" /></para></listitem>
+        <listitem><para><xref linkend="test-lah-reregister" endterm="test-lah-reregister-title" /></para></listitem>
+        <listitem><para><xref linkend="test-lah-register-invalid-arguments" endterm="test-lah-register-invalid-arguments-title" /></para></listitem>
+      </itemizedlist>
+    </para>
+    <note>
+      All of these tests need to be executed atomically. After run one test the system
+      and the services should be restarted.
+    </note>
+  </refsect1>
+  
+  <refsect1 id="test-lah-register-fast-normal-consumers">
+    <title id="test-lah-register-fast-normal-consumers-title">Registration of a fast and a normal shutdown consumer</title>
+    <refsect2>
+      <title>Description</title>
+      <para>
+        Node Startup Controller registers itself as a normal shutdown consumer when it
+        starts; the Legacy App Handler registers shutdown consumers within the Node state
+        Manager; during shutdown process, the consumers are shutting down first the
+        shutdown consumer registered within "fast" mode and then shutdown consumer
+        registered within "normal" mode; each shutdown consumer is only shutting down for
+        its mode; every shutdown consumer is unregistered when it has been shutting down;
+        the Node Startup Controller unregisters itself as a shutdown consumer when it has
+        been shutting down.
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Test commands</title>
+      <programlisting>
+      /lib/node-startup-controller1/legacy-app-handler --unit "cups.service" -m 1
+      /lib/node-startup-controller1/legacy-app-handler --unit "avahi-daemon.service" -m 2
+      kill -s HUP $(pidof nsm-dummy)
+      </programlisting>
+    </refsect2>
+    <refsect2>
+      <title>Desired behaviour and output</title>
+      <para>
+        The DLT log should now contain the following log messages:
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row><entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry></row>
+        </thead>
+        <tbody>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutdown client registered: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShutdownConsumer/0 sutdown mode 1 timeout 1000]</entry></row>
+          <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[Successfully registered the node startup controller as a shutdown consumer]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutdown client registered: bus name org.genivi.NodeStartupController1 object path /org/genivi/nodeStartupController1/ShutdownConsumer/1 shutdown mode 1 timeout 1000]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutdown client registered: bus name org.genivi.NodeStartupController1 object path /org/genivi/nodeStartupController1/ShutdownConsumer/2 shutdown mode 2 timeout 1000]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/2 shutdown mode 2 timeout 1000: request id XXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/2 shutdown mode 2]</entry></row>
+          <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id XXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id XXXXXXX status 1]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Skipping client /org/genivi/NodeStartupController1/ShutdownConsumer/1 as it is not registered for shutdown mode 2]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Skipping client /org/genivi/NodeStartupController1/ShutdownConsumer/0 as it is not registered for shutdown mode 2]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Processed all items in the queue for this mode]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Transitioning to normal shutdown mode]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Skipping client /org/genivi/NodeStartupController1/ShutdownConsumer/2 as it is not registered for shutdown mode 1]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/0 shutdown mode 1 time out 1000: request id YYYYYYY]</entry></row>
+          <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id XXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id YYYYYYY bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/0 shutdown mode 1]</entry></row>
+         <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id YYYYYYY]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id YYYYYYY status 1]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/0 shutdown mode 1 time out 1000: request id 3557696]</entry></row>
+          <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id YYYYYYY]</entry></row>
+          <row><entry>NSMC</entry> <entry>NSMD</entry> <entry>[Shutdown client unregistered: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShudownConsumer/1]</entry></row>        
+          <row><entry>NSMC</entry> <entry>NSMD</entry> <entry>[Shutdown client unregistered: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShudownConsumer/2]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Successfully shutdown a client: bus name org.genivi.NodeStrartupController1 object path /org/genivi/NodeStraruController1/ShutdownConsumer/0 shutdown mode 1]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Processed all items in the queue for this mode]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[All clients have been shut down]</entry></row>
+          <row><entry>NSMC</entry> <entry>NSMD</entry> <entry>[Shutdown client unregistered: bus name org.genivi.NodeStartupController1 object path
+          /org/genivi/NodeStartupController1/ShudownConsumer/0]</entry></row>
+          <row><entry>NSC-</entry> <entry>CTRL</entry> <entry>[Successfully unregistered the node startu controller as a shutdown consumer]</entry></row>
+        </tbody>
+      </tgroup></informaltable>
+    </refsect2>
+  </refsect1>
+  
+    <refsect1 id="test-lah-register-two-normal-consumers">
+    <title id="test-lah-register-two-normal-consumers-title">Registration of two normal shutdown consumers</title>
+    <refsect2>
+      <title>Description</title>
+      <para>
+        The Legacy App Handler registers two "normal" shutdown consumers within the Node
+        state Manager; during shutdown process, the consumers are shutting down in
+        reverse order of registration;
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Test commands</title>
+      <programlisting>
+      /lib/node-startup-controller1/legacy-app-handler --unit "cups.service" -m 1
+      /lib/node-startup-controller1/legacy-app-handler --unit "avahi-daemon.service" -m 1
+      kill -s HUP $(pidof nsm-dummy)
+      </programlisting>
+    </refsect2>
+     <refsect2>
+      <title>Desired behaviour and output</title>
+      <para>
+        The DLT log should now contain the following log messages:
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row><entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry></row>
+        </thead>
+        <tbody>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutdown client registered: bus name org.genivi.NodeStartupController1 object path /org/genivi/nodeStartupController1/ShutdownConsumer/1 shutdown mode 1 timeout 1000]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutdown client registered: bus name org.genivi.NodeStartupController1 object path /org/genivi/nodeStartupController1/ShutdownConsumer/2 shutdown mode 1 timeout 1000]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/2 shutdown mode 1 timeout 1000: request id XXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/2 shutdown mode 1]</entry></row>
+          <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id XXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id XXXXXXX status 1]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path
+          /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 1 time out 1000: request id YYYYYYY]</entry></row>
+          <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id XXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id YYYYYYY bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 1]</entry></row>
+          <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id YYYYYYY]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id YYYYYYY status 1]</entry></row>
+          <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id YYYYYYY]</entry></row>
+          <row><entry>NSMC</entry> <entry>NSMD</entry> <entry>[Shutdown client unregistered: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShudownConsumer/1]</entry></row>
+          <row><entry>NSMC</entry> <entry>NSMD</entry> <entry>[Shutdown client unregistered: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStartupController1/ShudownConsumer/2]</entry></row>
+        </tbody>
+      </tgroup></informaltable>
+    </refsect2>
+  </refsect1>
+  
+  <refsect1 id="test-lah-reregister">
+    <title id="test-lah-reregister-title">Registration of the same unit twice with different modes and timeouts</title>
+    <refsect2>
+      <title>Description</title>
+      <para>
+        The Legacy App Handler registers twice the same unit as a shutdown consumers
+        within the Node state Manager with different modes and timeouts. Verifies that
+        the unit is re-registered being its final mode is a combination between fast and
+        normal and its timeout corresponds to the last registration; during the process
+        of shutting down this consumer is shutting down for both modes.
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Test commands</title>
+      <programlisting>
+      /lib/node-startup-controller1/legacy-app-handler --unit "cups.service" -m 1 -t 1500
+      /lib/node-startup-controller1/legacy-app-handler --unit "cups.service" -m 1 -t 500
+      kill -s HUP $(pidof nsm-dummy)
+      </programlisting>
+    </refsect2>
+     <refsect2>
+      <title>Desired behaviour and output</title>
+      <para>
+        The DLT log should now contain the following log messages:
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row><entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry></row>
+        </thead>
+        <tbody>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutdown client registered: bus name org.genivi.NodeStartupController1 object path /org/genivi/nodeStartupController1/ShutdownConsumer/1 shutdown mode 1 timeout 1500]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Re-registered shutdown client: bus name org.genivi.NodeStartupController1 object path
+          /org/genivi/nodeStartupController1/ShutdownConsumer/1 shutdown mode 3 timeout 500]</entry></row>
+<row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 3 time out 500: request id XXXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 2]</entry></row>
+          <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id XXXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id XXXXXXXX status 1]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down next client in queue]</entry></row>
+          <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id XXXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Processed all items in the queue for this mode]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Transitioning to normal shutdown mode]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Shutting down a client: bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 3 time out 500: request id XXXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Waiting for client to shutdown: request id XXXXXXXX bus name org.genivi.NodeStartupController1 object path /org/genivi/NodeStratupeController1/ShutdownConsumer/1 shutdown mode 1]</entry></row>
+          <row><entry>NSC-</entry> <entry>LAH-</entry> <entry>[Completing a lifecycle request: request id XXXXXXXX]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMD</entry> <entry>[Finished shutting down client:request id XXXXXXXX status 1]</entry></row>
+          <row><entry>NSC-</entry>  <entry>LAH-</entry>  <entry>[Successfully notified NSM about completed lifecycle request: request id XXXXXXXX]</entry></row>              
+        </tbody>
+      </tgroup></informaltable>
+    </refsect2>
+  </refsect1>
+  
+  <refsect1 id="test-lah-register-invalid-arguments">
+    <title id="test-lah-register-invalid-arguments-title">Registration with invalid parameters</title>
+    <refsect2>
+      <title>Description</title>
+      <para>
+        The Legacy App Handler tries to regigster a shutdown consumer with invalid
+        parameters. Tries to register a shutdown consumer without unit name, other within
+        mode 0 and other with negative timeout. Verifies that the previous examples of
+        registration fail.
+      </para>
+    </refsect2>
+    <refsect2>
+      <title>Test commands</title>
+      <programlisting>
+      /lib/node-startup-controller1/legacy-app-handler --unit
+      /lib/node-startup-controller1/legacy-app-handler --unit cups.service -m 0
+      /lib/node-startup-controller1/legacy-app-handler --unit cups.service -m 1 -t -2000 
+      </programlisting>
+    </refsect2>
+     <refsect2>
+      <title>Desired behaviour and output</title>
+      <para>
+        The DLT log should now contain the following log messages:
+      </para>
+      <informaltable><tgroup cols="3">
+        <thead>
+          <row><entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry></row>
+        </thead>
+        <tbody>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Failed to parse command line options: Missing argument for --unit]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Failed to register legacy application: invalid shutdown mode 0]</entry></row>
+          <row><entry>NSMD</entry> <entry>NSMC</entry> <entry>[Failed to register legacy application: shutdown timeout must be non-negative]</entry></row>
+        </tbody>
+      </tgroup></informaltable>
+    </refsect2>
+  </refsect1>
+  
+</refentry>
