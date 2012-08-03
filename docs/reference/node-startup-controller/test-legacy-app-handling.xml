@@ -5,14 +5,14 @@
 
 <refentry id="test-legacy-app-handling">
   <refmeta>
-    <refentrytitle>Tests for Legacy App Handler</refentrytitle>
+    <refentrytitle>Tests for legacy application handling</refentrytitle>
   </refmeta>
   
   <refnamediv>
-    <refname>Test for legacy app handler</refname>
+    <refname>Tests for legacy application handling</refname>
     <refpurpose>
       How to verify that legacy app handler correctly registers the units as shutdown
-      consumers and when the shutdown process start shutting down consumers the
+      consumers and when the shutdown process starts shutting down consumers the
       legacy app handler correctly unregisters this shutdown consumers.
     </refpurpose>
   </refnamediv>
