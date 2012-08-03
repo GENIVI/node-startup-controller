@@ -93,6 +93,14 @@
                 </listitem>
               </varlistentry>
               <varlistentry>
+                <term><literal>--{enable,disable}-gtk-doc</literal></term>
+                <listitem>
+                  <para>
+                    Specifies whether or not to build the HTML reference manual in
+                    <literal>docs/reference/node-startup-controller/html/</literal>.
+                  </para>
+                </listitem>
+              <varlistentry>
                 <term><literal>--with-prioritised-luc-types=&lt;comma separated integers&gt;</literal></term>
                 <listitem>
                   <para>
