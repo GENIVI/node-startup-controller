@@ -1,6 +1,7 @@
 x.y.z
 =====
 * Use a proper error code when unable to handle unregister requests
+* Update the test documentation for legacy application handling
 
 0.9.1
 =====
