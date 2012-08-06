@@ -1,3 +1,7 @@
+x.y.z
+=====
+* Use a proper error code when unable to handle unregister requests
+
 0.9.1
 =====
 * First release candidate for 1.0.0
