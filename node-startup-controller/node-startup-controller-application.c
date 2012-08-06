@@ -52,29 +52,31 @@ enum
 
 
 
-static void node_startup_controller_application_finalize                     (GObject                          *object);
-static void node_startup_controller_application_constructed                  (GObject                          *object);
-static void node_startup_controller_application_get_property                 (GObject                          *object,
-                                                                              guint                             prop_id,
-                                                                              GValue                           *value,
-                                                                              GParamSpec                       *pspec);
-static gboolean node_startup_controller_application_handle_lifecycle_request (ShutdownConsumer                 *interface,
-                                                                              GDBusMethodInvocation            *invocation,
-                                                                              NSMShutdownType                   request,
-                                                                              guint                             request_id,
-                                                                              NodeStartupControllerApplication *application);
-static void node_startup_controller_application_handle_register_finish       (GObject                          *object,
-                                                                              GAsyncResult                     *res,
-                                                                              gpointer                          user_data);
-static void node_startup_controller_application_handle_unregister_finish     (GObject                          *object,
-                                                                              GAsyncResult                     *res,
-                                                                              gpointer                          user_data);
-static void node_startup_controller_application_set_property                 (GObject                          *object,
-                                                                              guint                             prop_id,
-                                                                              const GValue                     *value,
-                                                                              GParamSpec                       *pspec);
-static void node_startup_controller_application_luc_groups_started           (LUCStarter                       *starter,
-                                                                              NodeStartupControllerApplication *application);
+static void     node_startup_controller_application_finalize                     (GObject                          *object);
+static void     node_startup_controller_application_constructed                  (GObject                          *object);
+static void     node_startup_controller_application_get_property                 (GObject                          *object,
+                                                                                  guint                             prop_id,
+                                                                                  GValue                           *value,
+                                                                                  GParamSpec                       *pspec);
+static gboolean node_startup_controller_application_handle_lifecycle_request     (ShutdownConsumer                 *interface,
+                                                                                  GDBusMethodInvocation            *invocation,
+                                                                                  NSMShutdownType                   request,
+                                                                                  guint                             request_id,
+                                                                                  NodeStartupControllerApplication *application);
+static void     node_startup_controller_application_handle_register_finish       (GObject                          *object,
+                                                                                  GAsyncResult                     *res,
+                                                                                  gpointer                          user_data);
+static void     node_startup_controller_application_handle_unregister_finish     (GObject                          *object,
+                                                                                  GAsyncResult                     *res,
+                                                                                  gpointer                          user_data);
+static void     node_startup_controller_application_set_property                 (GObject                          *object,
+                                                                                  guint                             prop_id,
+                                                                                  const GValue                     *value,
+                                                                                  GParamSpec                       *pspec);
+static void     node_startup_controller_application_luc_groups_started           (LUCStarter                       *starter,
+                                                                                  NodeStartupControllerApplication *application);
+static gboolean node_startup_controller_application_handle_sigterm               (gpointer                          user_data);
+static void     node_startup_controller_application_unregister_shutdown_consumer (NodeStartupControllerApplication *application);
 
 
 
@@ -114,6 +116,9 @@ struct _NodeStartupControllerApplication
 
   /* shutdown client for the node startup controller itself */
   ShutdownClient               *client;
+
+  /* source ID for the SIGTERM handler */
+  guint                         sigterm_id;
 };
 
 
@@ -226,6 +231,12 @@ node_startup_controller_application_init (NodeStartupControllerApplication *appl
                DLT_STRING ("Updating the systemd watchdog timestamp every"),
                DLT_UINT (watchdog_sec), DLT_STRING ("seconds"));
     }
+
+  /* release all registered shutdown consumers upon receiving SIGTERM */
+  application->sigterm_id =
+    g_unix_signal_add (SIGTERM,
+                       node_startup_controller_application_handle_sigterm,
+                       application);
 }
 
 
@@ -269,6 +280,10 @@ node_startup_controller_application_finalize (GObject *object)
 
   /* release the main loop */
   g_main_loop_unref (application->main_loop);
+
+  /* remove the SIGTERM handler source */
+  if (application->sigterm_id > 0)
+    g_source_remove (application->sigterm_id);
 
   (*G_OBJECT_CLASS (node_startup_controller_application_parent_class)->finalize) (object);
 }
@@ -430,11 +445,6 @@ node_startup_controller_application_handle_lifecycle_request (ShutdownConsumer  
                                                               guint                             request_id,
                                                               NodeStartupControllerApplication *application)
 {
-  NSMConsumer *nsm_consumer;
-  const gchar *bus_name;
-  const gchar *object_path;
-  gint         shutdown_mode;
-
   g_return_val_if_fail (IS_SHUTDOWN_CONSUMER (consumer), FALSE);
   g_return_val_if_fail (G_IS_DBUS_METHOD_INVOCATION (invocation), FALSE);
   g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_APPLICATION (application), FALSE);
@@ -445,19 +455,13 @@ node_startup_controller_application_handle_lifecycle_request (ShutdownConsumer  
   /* deregister the shutdown consumers */
   la_handler_service_deregister_consumers (application->la_handler);
 
+  /* deregister the shutdown consumer of the application itself */
+  node_startup_controller_application_unregister_shutdown_consumer (application);
+
   /* let the NSM know that we have handled the lifecycle request */
   shutdown_consumer_complete_lifecycle_request (consumer, invocation,
                                                 NSM_ERROR_STATUS_OK);
 
-  /* deregister the node startup controller as a shutdown client itself */
-  nsm_consumer = la_handler_service_get_nsm_consumer (application->la_handler);
-  bus_name = shutdown_client_get_bus_name (application->client);
-  object_path = shutdown_client_get_object_path (application->client);
-  shutdown_mode = shutdown_client_get_shutdown_mode (application->client);
-  nsm_consumer_call_un_register_shutdown_client (nsm_consumer, bus_name,
-                                                 object_path, shutdown_mode, NULL,
-                                                 node_startup_controller_application_handle_unregister_finish,
-                                                 application);
   return TRUE;
 }
 
@@ -542,6 +546,53 @@ node_startup_controller_application_luc_groups_started (LUCStarter              
    * that it can take over control to start unfocused.target,
    * lazy.target etc. */
   sd_notify (0, "READY=1");
+}
+
+
+
+static gboolean
+node_startup_controller_application_handle_sigterm (gpointer user_data)
+{
+  NodeStartupControllerApplication *application = NODE_STARTUP_CONTROLLER_APPLICATION (user_data);
+
+  g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_APPLICATION (application), FALSE);
+
+  /* deregister the shutdown consumers of legacy applications */
+  la_handler_service_deregister_consumers (application->la_handler);
+
+  /* unregister the shutdown client for the app itself */
+  node_startup_controller_application_unregister_shutdown_consumer (application);
+
+  /* quit the application */
+  g_main_loop_quit (application->main_loop);
+
+  /* reset the source ID */
+  application->sigterm_id = 0;
+
+  return FALSE;
+}
+
+
+
+static void
+node_startup_controller_application_unregister_shutdown_consumer (NodeStartupControllerApplication *application)
+{
+  NSMConsumer *nsm_consumer;
+  const gchar *bus_name;
+  const gchar *object_path;
+  gint         shutdown_mode;
+
+  g_return_if_fail (IS_NODE_STARTUP_CONTROLLER_APPLICATION (application));
+
+  /* deregister the node startup controller as a shutdown client itself */
+  nsm_consumer = la_handler_service_get_nsm_consumer (application->la_handler);
+  bus_name = shutdown_client_get_bus_name (application->client);
+  object_path = shutdown_client_get_object_path (application->client);
+  shutdown_mode = shutdown_client_get_shutdown_mode (application->client);
+  nsm_consumer_call_un_register_shutdown_client (nsm_consumer, bus_name,
+                                                 object_path, shutdown_mode, NULL,
+                                                 node_startup_controller_application_handle_unregister_finish,
+                                                 application);
 }
 
 
