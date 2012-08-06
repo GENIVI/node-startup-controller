@@ -100,7 +100,6 @@ struct _LAHandlerService
 
   const gchar     *prefix;
   guint            index;
-  guint            bus_name_id;
 
   /* connection to the NSM consumer interface */
   NSMConsumer     *nsm_consumer;
@@ -211,9 +210,6 @@ la_handler_service_finalize (GObject *object)
 
   /* release the interface skeleton */
   g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (service->interface));
-
-  /* release the bus name */
-  g_bus_unown_name (service->bus_name_id);
 
   /* release the NSM consumer service object, if there is one */
   if (service->nsm_consumer != NULL)
