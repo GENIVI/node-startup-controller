@@ -17,7 +17,7 @@ DOC_MAIN_SGML_FILE=$(DOC_MODULE)-docs.xml
 # for inline comments documenting functions and macros.
 # e.g. DOC_SOURCE_DIR=$(top_srcdir)/gtk $(top_srcdir)/gdk
 DOC_SOURCE_DIR =							\
-	$(top_srcdir)/node-startup-controller					\
+	$(top_srcdir)/node-startup-controller				\
 	$(top_srcdir)/common						\
 	$(top_srcdir)/legacy-app-handler
 
@@ -47,10 +47,10 @@ FIXXREF_OPTIONS=
 # e.g. HFILE_GLOB=$(top_srcdir)/gtk/*.h
 # e.g. CFILE_GLOB=$(top_srcdir)/gtk/*.c
 HFILE_GLOB =								\
-	$(top_srcdir)/node-startup-controller/*.h					\
+	$(top_srcdir)/node-startup-controller/*.h			\
 	$(top_srcdir)/common/*.h
 CFILE_GLOB =								\
-	$(top_srcdir)/node-startup-controller/*.c					\
+	$(top_srcdir)/node-startup-controller/*.c			\
 	$(top_srcdir)/common/*.c					\
 	$(top_srcdir)/legacy-app-handler/*.c
 
@@ -117,6 +117,7 @@ include $(top_srcdir)/gtk-doc.make
 # Other files to distribute
 # e.g. EXTRA_DIST += version.xml.in
 EXTRA_DIST +=								\
+	node-startup-controller.types					\
 	version.xml.in
 
 # Files not to distribute
