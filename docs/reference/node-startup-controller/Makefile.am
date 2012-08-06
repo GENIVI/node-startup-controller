@@ -92,8 +92,24 @@ expand_content_files=
 # signals and properties.
 # e.g. GTKDOC_CFLAGS=-I$(top_srcdir) -I$(top_builddir) $(GTK_DEBUG_FLAGS)
 # e.g. GTKDOC_LIBS=$(top_builddir)/gtk/$(gtktargetlib)
-GTKDOC_CFLAGS=
-GTKDOC_LIBS=
+GTKDOC_CFLAGS =								\
+	-I$(top_srcdir)							\
+	-I$(top_builddir)						\
+	$(DLT_CFLAGS)							\
+	$(GIO_CFLAGS)							\
+	$(GIO_UNIX_CFLAGS)						\
+	$(GLIB_CFLAGS)							\
+	$(PLATFORM_CFLAGS)						\
+	$(PLATFORM_CPPFLAGS)						\
+	$(SYSTEMD_DAEMON_CFLAGS)
+
+GTKDOC_LIBS =								\
+	$(DLT_LIBS)							\
+	$(GIO_LIBS)							\
+	$(GIO_UNIX_LIBS)						\
+	$(GLIB_LIBS)							\
+	$(SYSTEMD_DAEMON_LIBS)						\
+	$(top_builddir)/common/libcommon.la
 
 # This includes the standard gtk-doc make rules, copied by gtkdocize.
 include $(top_srcdir)/gtk-doc.make
