@@ -19,6 +19,19 @@
 
 
 
+/**
+ * SECTION: job-manager 
+ * @title: JobManager
+ * @short_description: Manages systemd jobs.
+ * @stability: Internal
+ * 
+ * The Job Manager simplifies starting and stopping systemd units by handling all the
+ * JobRemoved signals internally, so units can be started and stopped using
+ * job_manager_start() and job_manager_stop().
+ */
+
+
+
 typedef struct _JobManagerJob JobManagerJob;
 
 
@@ -424,6 +437,14 @@ job_manager_new (GDBusConnection *connection,
 
 
 
+/**
+ * job_manager_start:
+ * @unit: The name of the systemd unit to start.
+ * @callback: a #JobManagerCallback that is called after the job is started.
+ * @user_data: userdata that is available in the #JobManagerCallback.
+ * 
+ * Asynchronously starts @unit, and calls @callback with @user_data when it is finished.
+ */
 void
 job_manager_start (JobManager        *manager,
                    const gchar       *unit,
@@ -448,6 +469,14 @@ job_manager_start (JobManager        *manager,
 
 
 
+/**
+ * job_manager_stop:
+ * @unit: The name of the systemd unit to stop.
+ * @callback: a #JobManagerCallback that is called after the job is stopped.
+ * @user_data: userdata that is available in the #JobManagerCallback.
+ * 
+ * Asynchronously stops @unit, and calls @callback with @user_data when it is finished.
+ */
 void
 job_manager_stop (JobManager        *manager,
                   const gchar       *unit,
