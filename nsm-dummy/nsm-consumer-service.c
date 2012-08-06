@@ -412,7 +412,8 @@ nsm_consumer_service_handle_unregister_shutdown_client (NSMConsumer           *o
   else
     {
       /* notify the caller that we could not handle the unregister request properly */
-      nsm_consumer_complete_un_register_shutdown_client (object, invocation, -1);
+      nsm_consumer_complete_un_register_shutdown_client (object, invocation,
+                                                         NSM_ERROR_STATUS_ERROR);
     }
 
   return TRUE;
