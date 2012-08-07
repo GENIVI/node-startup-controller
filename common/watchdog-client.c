@@ -20,6 +20,21 @@
 
 
 
+/**
+ * SECTION: watchdog-client
+ * @title: Watchdog Client
+ * @short_description: Notifies the systemd watchdog over a set period.
+ * @stability: Internal
+ * 
+ * The watchdog client notifies systemd's watchdog regularly over a period of seconds
+ * defined in watchdog_client_new(). If the appropriate service file has %WatchdogSec set
+ * then systemd will restart the service if it has not replied during that period (e.g. it
+ * has crashed or is stuck in an infinite loop).
+ * 
+ */
+
+
+
 /* property identifiers */
 enum
 {
@@ -176,6 +191,14 @@ watchdog_client_timeout (gpointer user_data)
 
 
 
+/**
+ * watchdog_client_new:
+ * @timeout: The amount of time to wait in between notifications to systemd's watchdog.
+ * 
+ * Creates a new watchdog and starts notifying systemd's watchdog every @timeout seconds.
+ * 
+ * Returns: A new instance of #WatchdogClient.
+ */
 WatchdogClient *
 watchdog_client_new (guint timeout)
 {

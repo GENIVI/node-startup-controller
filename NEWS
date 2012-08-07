@@ -8,6 +8,7 @@ x.y.z
 * Add documentation for the JobManager class
 * Add documentation for the LAHandlerService class
 * Add documentation for the TargetStartupMonitor class
+* Add documentation for the WatchdogClient class
 
 0.9.1
 =====
