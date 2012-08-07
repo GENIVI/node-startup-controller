@@ -80,6 +80,22 @@ static void     node_startup_controller_application_unregister_shutdown_consumer
 
 
 
+/**
+ * SECTION: node-startup-controller-application
+ * @title: NodeStartupControllerApplication
+ * @short_description: the main class that integrates all other components
+ * @stability: Internal
+ *
+ * The #NodeStartupControllerApplication is the main class, it is the place where all
+ * internal components of the Node Startup Controller are integrated.
+ * It manages the life time of the main loop. When it starts, it restores the LUC if this
+ * is required. When it shuts down or receives a SIGTERM signal, it cancels the LUC
+ * startup and deregisters the shutdown consumers. Notice that it registers/unregisters
+ * itself as a shutdown consumer within Node State Manager.
+ */
+
+
+
 struct _NodeStartupControllerApplicationClass
 {
   GObjectClass __parent__;
@@ -594,6 +610,21 @@ node_startup_controller_application_unregister_shutdown_consumer (NodeStartupCon
                                                  node_startup_controller_application_handle_unregister_finish,
                                                  application);
 }
+
+
+
+/**
+ * node_startup_controller_application_new:
+ * @main_loop: The application's main loop.
+ * @connection: A connection to the system bus.
+ * @job_manager: A #JobManager object.
+ * @la_handler: A #LAHandlerService object.
+ * @node_startup_controller: A #NodeStartupControllerService object.
+ *
+ * Creates a new #NodeStartupControllerApplication object.
+ *
+ * Returns: A new instance of the #NodeStartupControllerApplication.
+ */
 
 
 
