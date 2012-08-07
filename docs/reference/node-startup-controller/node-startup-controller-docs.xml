@@ -13,6 +13,14 @@
       <year>2012</year>
       <holder>GENIVI</holder>
     </copyright>
+    <legalnotice id="legalnotice">
+      <para>
+        This reference manual is released under
+        <ulink type="http" url="http://creativecommons.org/publicdomain/zero/1.0/">Creative Commons CC0 1.0 Universal (CC0 1.0)</ulink>.
+        For more information and the legal code of this license, please see the
+        <ulink type="http" url="http://creativecommons.org/publicdomain/zero/1.0/">license website</ulink>.
+      </para>
+    </legalnotice>
     <authorgroup>
       <author>
         <firstname>Ben</firstname>
