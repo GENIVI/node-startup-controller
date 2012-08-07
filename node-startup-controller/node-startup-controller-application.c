@@ -625,9 +625,6 @@ node_startup_controller_application_unregister_shutdown_consumer (NodeStartupCon
  *
  * Returns: A new instance of the #NodeStartupControllerApplication.
  */
-
-
-
 NodeStartupControllerApplication *
 node_startup_controller_application_new (GMainLoop                    *main_loop,
                                          GDBusConnection              *connection,
