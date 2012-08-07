@@ -27,6 +27,31 @@
 
 
 
+/**
+ * SECTION: la-handler-service
+ * @title: Legacy App Handler Service
+ * @short_description: Handles registration of legacy apps with the Node State Manager
+ * @stability: Internal
+ * 
+ * The la-handler service provides an internal D-Bus interface for the #legacy-app-handler
+ * helper binary to interface with.
+ * From this, it communicates with the Node State Manager to register shutdown clients
+ * with the Node State Manager, and shuts down those shutdown clients when the Node State
+ * Manager tells it to.
+ * 
+ * It handles signals from two interfaces: 
+ * 
+ * 1. The #LAHandler interface which provides the %handle-register signal.
+ *    On receiving this signal it registers that systemd unit as a shutdown client with
+ *    the Node State manager.
+ * 
+ * 2. The #ShutdownConsumer interface which provides the %handle-lifecycle-request signal.
+ *    On receiving this signal it shuts down the unit corresponding to that shutdown
+ *    client.
+ */
+
+
+
 DLT_IMPORT_CONTEXT (la_handler_context);
 
 
@@ -591,7 +616,15 @@ la_handler_service_data_unref (LAHandlerServiceData *data)
 }
 
 
-
+/**
+ * la_handler_service_new:
+ * @connection: A connection to the system bus.
+ * @job_manager: A reference to the #JobManager object.
+ * 
+ * Creates a new #LAHandlerService object.
+ * 
+ * Returns: A new instance of the #LAHandlerService.
+ */
 LAHandlerService *
 la_handler_service_new (GDBusConnection *connection,
                         JobManager      *job_manager)
@@ -606,6 +639,17 @@ la_handler_service_new (GDBusConnection *connection,
 }
 
 
+
+/**
+ * la_handler_service_start:
+ * @error: Return location for error or %NULL
+ * 
+ * Makes @service export its #LAHandler interface so that it is available to the
+ * #legacy-app-handler helper binary.
+ * 
+ * Returns: %TRUE if the interface was exported successfully, otherwise %FALSE with @error
+ * set.
+ */
 gboolean
 la_handler_service_start (LAHandlerService *service,
                            GError         **error)
@@ -622,6 +666,11 @@ la_handler_service_start (LAHandlerService *service,
 
 
 
+/**
+ * la_handler_service_get_nsm_consumer:
+ * 
+ * Returns: A proxy of the Node State Manager's #NSMConsumer interface.
+ */
 NSMConsumer *
 la_handler_service_get_nsm_consumer (LAHandlerService *service)
 {
@@ -632,6 +681,12 @@ la_handler_service_get_nsm_consumer (LAHandlerService *service)
 
 
 
+/**
+ * la_handler_service_deregister_consumers:
+ * 
+ * Unregisters every #ShutdownClient from the Node State Manager.
+ * This method is typically used when the #LAHandlerService is about to shut down.
+ */
 void
 la_handler_service_deregister_consumers (LAHandlerService *service)
 {
