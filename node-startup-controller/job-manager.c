@@ -26,8 +26,8 @@
  * @stability: Internal
  * 
  * The Job Manager simplifies starting and stopping systemd units by handling all the
- * JobRemoved signals internally, so units can be started and stopped using
- * job_manager_start() and job_manager_stop().
+ * D-Bus communication with the systemd manager internally. Units can be started and
+ * stopped using job_manager_start() and job_manager_stop().
  */
 
 

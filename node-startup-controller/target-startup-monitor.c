@@ -30,11 +30,12 @@
  * @short_description: Listens to JobRemoved signals and sets the node state.
  * @stability: Internal
  * 
- * The TargetStartupMonitor is responsible for setting the state of the Node State
- * Manager using states from #NSMNodeState. It sets the node state under the following
- * circumstances:
+ * The #TargetStartupMonitor class is responsible for setting the state of the
+ * Node State Manager using states from #NSMNodeState. It sets the node state
+ * under the following * circumstances:
  * 
- * The TargetStartupMonitor has started up - set the state to
+ * The Node Startup Controller is starting up. In the GENIVI lifecycle subsystem,
+ * this means that all mandatory applications have been started - set the state to
  * %NSM_NODE_STATE_BASE_RUNNING.
  * 
  * The systemd unit %focussed.target has started - set the state to

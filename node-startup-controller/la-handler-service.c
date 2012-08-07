@@ -33,8 +33,8 @@
  * @short_description: Handles registration of legacy apps with the Node State Manager
  * @stability: Internal
  * 
- * The la-handler service provides an internal D-Bus interface for the #legacy-app-handler
- * helper binary to interface with.
+ * The #LAHandlerService class provides an internal D-Bus interface for the
+ * #legacy-app-handler helper binary to interface with.
  * From this, it communicates with the Node State Manager to register shutdown clients
  * with the Node State Manager, and shuts down those shutdown clients when the Node State
  * Manager tells it to.
