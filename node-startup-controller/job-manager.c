@@ -421,7 +421,16 @@ job_manager_forget_job (JobManager  *manager,
 }
 
 
-
+/**
+ * job_manager_new:
+ * @connection: A connection to the system bus. 
+ * @systemd_manager: An interface to the systemd manager created with 
+ * systemd_manager_proxy_new_for_bus_sync()
+ * 
+ * Creates a new JobManager object.
+ * 
+ * Returns: A new instance of the #JobManager.
+ */
 JobManager *
 job_manager_new (GDBusConnection *connection,
                  SystemdManager  *systemd_manager)
