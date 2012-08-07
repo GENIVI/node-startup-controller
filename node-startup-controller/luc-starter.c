@@ -81,6 +81,21 @@ static void luc_starter_start_groups_for_real     (LUCStarter   *starter);
 
 
 
+/**
+ * SECTION: luc-starter
+ * @title: LUCStarter
+ * @short_description: Starts the applications registered with the Last User Context
+ * @stability: Internal
+ *
+ * The #LUCStarter starts the Last User Context (LUC) applications. The LUC applications
+ * are started asynchronously and in groups (one group per LUC type).
+ * The #LUCStarter checks with Node State Manager (NSM) if starting the LUC applications
+ * is required. If it is required, the #LUCStarter will start the LUC applications.
+ * Notice that it is possible to cancel the start of the LUC applications.
+ */
+
+
+
 struct _LUCStarterClass
 {
   GObjectClass __parent__;
@@ -611,6 +626,15 @@ luc_starter_start_groups_for_real (LUCStarter *starter)
 
 
 
+/**
+ * luc_starter_new:
+ * @job_manager: A #JobManager object.
+ * @node_startup_controller: A #NodeStartupControllerService object.
+ *
+ * Creates a new #LUCStarter object.
+ *
+ * Returns: A new instance of the #LUCStarter.
+ */
 LUCStarter *
 luc_starter_new (JobManager                   *job_manager,
                  NodeStartupControllerService *node_startup_controller)
@@ -626,6 +650,13 @@ luc_starter_new (JobManager                   *job_manager,
 
 
 
+/**
+ * luc_starter_start_groups:
+ * @starter: A #LUCStarter object.
+ *
+ * Checks with the NSM whether to start the LUC applications or not. If it is required to
+ * start the LUC or the NSM is unavailable, it will start the LUC.
+ */
 void
 luc_starter_start_groups (LUCStarter *starter)
 {
@@ -634,7 +665,7 @@ luc_starter_start_groups (LUCStarter *starter)
   /* check whether the NSMLifecycleProxy is available or not */
   if (starter->nsm_lifecycle_control != NULL)
     {
-      /* check with NSM whether to load the LUC */
+      /* check with NSM whether to start the LUC */
       nsm_lifecycle_control_call_check_luc_required (starter->nsm_lifecycle_control, NULL,
                                                      luc_starter_check_luc_required_finish,
                                                      starter);
@@ -651,6 +682,13 @@ luc_starter_start_groups (LUCStarter *starter)
 
 
 
+/**
+ * luc_starter_cancel:
+ * @starter: A #LUCStarter object.
+ *
+ * Cancel the start of the LUC.
+ *
+ */
 void
 luc_starter_cancel (LUCStarter *starter)
 {

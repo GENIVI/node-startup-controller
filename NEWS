@@ -7,10 +7,11 @@ x.y.z
   GLib)
 * Add documentation for the JobManager class
 * Add documentation for the LAHandlerService class
+* Add documentation for the LUCStarter class
+* Add documentation for the NodeStartupControllerApplication class
 * Add documentation for the ShutdownClient class
 * Add documentation for the TargetStartupMonitor class
 * Add documentation for the WatchdogClient class
-* Add documentation for the NodeStartupControllerApplication class
 * License the reference manual under Creative Commons CC0 1.0
   Universal (CC0 1.0)
 
