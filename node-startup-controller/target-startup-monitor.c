@@ -24,6 +24,31 @@
 
 
 
+/**
+ * SECTION: target-startup-monitor
+ * @title: TargetStartupMonitor
+ * @short_description: Listens to JobRemoved signals and sets the node state.
+ * @stability: Internal
+ * 
+ * The TargetStartupMonitor is responsible for setting the state of the Node State
+ * Manager using states from #NSMNodeState. It sets the node state under the following
+ * circumstances:
+ * 
+ * The TargetStartupMonitor has started up - set the state to
+ * %NSM_NODE_STATE_BASE_RUNNING.
+ * 
+ * The systemd unit %focussed.target has started - set the state to
+ * %NSM_NODE_STATE_LUC_RUNNING.
+ * 
+ * The systemd unit %unfocussed.target has started - set the state to
+ * %NSM_NODE_STATE_FULLY_RUNNING.
+ * 
+ * The systemd unit %lazy.target has started - set the state to
+ * %NSM_NODE_STATE_FULLY_OPERATIONAL.
+ */
+
+
+
 DLT_IMPORT_CONTEXT (controller_context);
 
 
@@ -440,6 +465,16 @@ target_startup_monitor_set_node_state_finish (GObject      *object,
 
 
 
+/**
+ * target_startup_monitor_new:
+ * @systemd_manager: An interface to the systemd manager created with
+ * systemd_manager_proxy_new_for_bus_sync()
+ * 
+ * Creates a new target startup monitor and begins listening to %JobRemoved signals from
+ * systemd.
+ * 
+ * Returns: A new instance of the #TargetStartupMonitor.
+ */
 TargetStartupMonitor *
 target_startup_monitor_new (SystemdManager *systemd_manager)
 {
