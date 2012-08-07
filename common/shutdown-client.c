@@ -20,6 +20,25 @@
 
 
 
+/**
+ * SECTION: shutdown-client
+ * @title: ShutdownClient
+ * @short_description: A class to bundle information about a #ShutdownConsumer.
+ * @stability: Internal
+ * 
+ * The #ShutdownClient is a container for a #ShutdownConsumerSkeleton if it is being used
+ * by the #LAHandlerService in the Node Startup Controller, and a #ShutdownConsumerProxy 
+ * if it is being used by the #NSMConsumerService in the Node State Manager Dummy.
+ * 
+ * The #LAHandlerService uses it to identify which #ShutdownConsumer was told to shut
+ * down, which it will then use to stop the associated systemd unit.
+ * 
+ * The #NSMConsumerService uses it to locate the #ShutdownConsumer, shut it down with the
+ * appropriate mode, and wait for an appropriate length of time when expecting a response.
+ */
+
+
+
 /* property identifiers */
 enum
 {
@@ -78,6 +97,12 @@ shutdown_client_class_init (ShutdownClientClass *klass)
   gobject_class->get_property = shutdown_client_get_property;
   gobject_class->set_property = shutdown_client_set_property;
 
+  /**
+   * ShutdownClient:bus-name:
+   * 
+   * The bus name which this shutdown consumer is registered with.
+   * e.g. org.genivi.NodeStartupController1.
+   */
   g_object_class_install_property (gobject_class,
                                    PROP_BUS_NAME,
                                    g_param_spec_string ("bus-name",
@@ -88,6 +113,12 @@ shutdown_client_class_init (ShutdownClientClass *klass)
                                                         G_PARAM_CONSTRUCT_ONLY |
                                                         G_PARAM_STATIC_STRINGS));
 
+  /**
+   * ShutdownClient:object-path:
+   * 
+   * The D-Bus object path this shutdown consumer uses.
+   * e.g. /org/genivi/NodeStartupController1/ShutdownConsumer/1
+   */
   g_object_class_install_property (gobject_class,
                                    PROP_OBJECT_PATH,
                                    g_param_spec_string ("object-path",
@@ -98,6 +129,12 @@ shutdown_client_class_init (ShutdownClientClass *klass)
                                                         G_PARAM_CONSTRUCT_ONLY |
                                                         G_PARAM_STATIC_STRINGS));
 
+  /**
+   * ShutdownClient:shutdown-mode:
+   * 
+   * The shutdown mode of this shutdown client.
+   * For a full list of shutdown modes, see #NSMShutdownType.
+   */
   g_object_class_install_property (gobject_class,
                                    PROP_SHUTDOWN_MODE,
                                    g_param_spec_flags ("shutdown-mode",
@@ -109,6 +146,12 @@ shutdown_client_class_init (ShutdownClientClass *klass)
                                                        G_PARAM_CONSTRUCT_ONLY |
                                                        G_PARAM_STATIC_STRINGS));
 
+  /**
+   * ShutdownClient:timeout:
+   * 
+   * The amount of time the Node State Manager will wait before deciding that the
+   * shutdown client is not responding.
+   */
   g_object_class_install_property (gobject_class,
                                    PROP_TIMEOUT,
                                    g_param_spec_uint ("timeout",
@@ -119,6 +162,11 @@ shutdown_client_class_init (ShutdownClientClass *klass)
                                                       G_PARAM_CONSTRUCT_ONLY |
                                                       G_PARAM_STATIC_STRINGS));
 
+  /**
+   * ShutdownClient:consumer:
+   * 
+   * The #ShutdownConsumerSkeleton or #ShutdownConsumerProxy for this shutdown client.
+   */
   g_object_class_install_property (gobject_class,
                                    PROP_CONSUMER,
                                    g_param_spec_object ("consumer",
@@ -227,6 +275,21 @@ shutdown_client_set_property (GObject      *object,
 
 
 
+/**
+ * shutdown_client_new:
+ * @bus_name:      The bus name which this shutdown consumer is registered with.
+ *                 e.g. org.genivi.NodeStartupController1.
+ * @object_path:   The D-Bus object path this shutdown consumer uses.
+ *                 e.g. /org/genivi/NodeStartupController1/ShutdownConsumer/1
+ * @shutdown_mode: The shutdown mode of this shutdown client.
+ *                 For a full list of shutdown modes, see #NSMShutdownType.
+ * @timeout:       The amount of time the Node State Manager will wait before deciding
+ *                 that the shutdown client is not responding.
+ * 
+ * Creates a new shutdown client.
+ * 
+ * Returns: A new #ShutdownClient object.
+ */
 ShutdownClient *
 shutdown_client_new (const gchar    *bus_name,
                      const gchar    *object_path,
@@ -243,6 +306,14 @@ shutdown_client_new (const gchar    *bus_name,
 
 
 
+/**
+ * shutdown_client_get_bus_name:
+ * @client: The #ShutdownClient.
+ * 
+ * Retrieves the bus name of a #ShutdownClient.
+ * 
+ * Returns: The bus name for this #ShutdownClient.
+ */
 const gchar *
 shutdown_client_get_bus_name (ShutdownClient *client)
 {
@@ -252,6 +323,14 @@ shutdown_client_get_bus_name (ShutdownClient *client)
 
 
 
+/**
+ * shutdown_client_get_object_path:
+ * @client: The #ShutdownClient.
+ * 
+ * Retrieves the object path of a #ShutdownClient.
+ * 
+ * Returns: The object path for this #ShutdownClient.
+ */
 const gchar *
 shutdown_client_get_object_path (ShutdownClient *client)
 {
@@ -261,6 +340,14 @@ shutdown_client_get_object_path (ShutdownClient *client)
 
 
 
+/**
+ * shutdown_client_get_shutdown_mode:
+ * @client: The #ShutdownClient.
+ * 
+ * Retrieves the %shutdown_mode of a #ShutdownClient.
+ * 
+ * Returns: The %shutdown_mode for this #ShutdownClient.
+ */
 NSMShutdownType
 shutdown_client_get_shutdown_mode (ShutdownClient *client)
 {
@@ -269,7 +356,13 @@ shutdown_client_get_shutdown_mode (ShutdownClient *client)
 }
 
 
-
+/**
+ * shutdown_client_set_shutdown_mode:
+ * @client:        The #ShutdownClient.
+ * @shutdown_mode: The #NSMShutdownType for the @client.
+ * 
+ * Sets the shutdown_mode of @client.
+ */
 void
 shutdown_client_set_shutdown_mode (ShutdownClient *client,
                                    NSMShutdownType shutdown_mode)
@@ -288,7 +381,14 @@ shutdown_client_set_shutdown_mode (ShutdownClient *client,
 }
 
 
-
+/**
+ * shutdown_client_get_timeout:
+ * @client: The #ShutdownClient.
+ * 
+ * Retrieves the %timeout of a #ShutdownClient.
+ * 
+ * Returns: The %timeout for this #ShutdownClient.
+ */
 guint
 shutdown_client_get_timeout (ShutdownClient *client)
 {
@@ -297,7 +397,13 @@ shutdown_client_get_timeout (ShutdownClient *client)
 }
 
 
-
+/**
+ * shutdown_client_set_timeout:
+ * @client: The #ShutdownClient.
+ * @timeout: The timeout for @client.
+ * 
+ * Sets the timeout of @client.
+ */
 void
 shutdown_client_set_timeout (ShutdownClient *client,
                              guint           timeout)
@@ -316,7 +422,17 @@ shutdown_client_set_timeout (ShutdownClient *client,
 }
 
 
-
+/**
+ * shutdown_client_get_consumer:
+ * @client: The #ShutdownClient
+ * 
+ * Retrieves the %consumer of a #ShutdownClient.
+ * 
+ *Note: Ownership of the #ShutdownConsumer is not transferred. The object returned by this
+ * function should not be released.
+ * 
+ * Returns: The #ShutdownConsumer for this #ShutdownClient.
+ */
 ShutdownConsumer *
 shutdown_client_get_consumer (ShutdownClient *client)
 {
@@ -325,7 +441,13 @@ shutdown_client_get_consumer (ShutdownClient *client)
 }
 
 
-
+/**
+ * shutdown_client_set_consumer:
+ * @client:   The #ShutdownClient.
+ * @consumer: The #ShutdownConsumer for @client.
+ * 
+ * Sets the consumer of @client.
+ */
 void
 shutdown_client_set_consumer (ShutdownClient   *client,
                               ShutdownConsumer *consumer)
