@@ -6,7 +6,7 @@ x.y.z
   issues (the previously implementation was based on code from
   GLib)
 * Add documentation for the JobManager class
-* Add documentation for the LegacyAppHandlerService class
+* Add documentation for the LAHandlerService class
 
 0.9.1
 =====

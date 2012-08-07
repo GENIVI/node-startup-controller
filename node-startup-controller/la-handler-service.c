@@ -29,7 +29,7 @@
 
 /**
  * SECTION: la-handler-service
- * @title: Legacy App Handler Service
+ * @title: LAHandlerService
  * @short_description: Handles registration of legacy apps with the Node State Manager
  * @stability: Internal
  * 
