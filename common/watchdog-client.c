@@ -22,15 +22,19 @@
 
 /**
  * SECTION: watchdog-client
- * @title: Watchdog Client
- * @short_description: Notifies the systemd watchdog over a set period.
+ * @title: WatchdogClient
+ * @short_description: Notifies the systemd watchdog in regular intervals.
  * @stability: Internal
  * 
- * The watchdog client notifies systemd's watchdog regularly over a period of seconds
- * defined in watchdog_client_new(). If the appropriate service file has %WatchdogSec set
- * then systemd will restart the service if it has not replied during that period (e.g. it
+ * The #WatchdogClient notifies systemd's watchdog in a regular interval that
+ * is specified upon construction. If the unit file associated with the
+ * application has %WatchdogSec set then systemd will restart the application
+ * if it does not update the watchdog timestamp in this interval (e.g. if it
  * has crashed or is stuck in an infinite loop).
- * 
+ *
+ * In order to avoid problems with delays it is recommended to notify the
+ * systemd watchdog twice in the %WatchdogSec interval, so usually the
+ * value passed to #watchdog_client_new will be half of %WatchdogSec.
  */
 
 
