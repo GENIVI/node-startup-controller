@@ -24,6 +24,18 @@ G_BEGIN_DECLS
 typedef struct _JobManagerClass JobManagerClass;
 typedef struct _JobManager      JobManager;
 
+/**
+ * JobManagerCallback:
+ * @manager:   The #JobManager object.
+ * @unit:      The name of the systemd unit to be started or stopped.
+ * @result:    The result of trying to start or stop the unit. Usually %success or %failed.
+ * @error:     The error (if any) raised by the start or stop method. %NULL if none 
+ *             occurred.
+ * @user_data: The user_data passed into the start or stop methods.
+ * 
+ * The JobManagerCallback is called when job_manager_start() or job_manager_stop()
+ * finishes. 
+ */
 typedef void (*JobManagerCallback) (JobManager  *manager,
                                     const gchar *unit,
                                     const gchar *result,
