@@ -2,6 +2,9 @@ x.y.z
 =====
 * Use a proper error code when unable to handle unregister requests
 * Update the test documentation for legacy application handling
+* Simplify g_variant_lookup_value_with_int_key() to avoid license
+  issues (the previously implementation was based on code from
+  GLib)
 
 0.9.1
 =====

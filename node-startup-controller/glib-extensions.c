@@ -23,53 +23,29 @@ g_variant_lookup_value_with_int_key (GVariant           *dictionary,
                                      const GVariantType *expected_type)
 {
   GVariantIter iter;
-  GVariant    *entry;
-  GVariant    *entry_key;
-  GVariant    *tmp;
-  GVariant    *value;
-  gboolean     matches;
+  GVariant    *value = NULL;
+  gint32       current_key;
 
-  g_return_val_if_fail (g_variant_is_of_type (dictionary, G_VARIANT_TYPE ("a{i*}")),
-                        NULL);
 
-  g_variant_iter_init (&iter, dictionary);
-
-  while ((entry = g_variant_iter_next_value (&iter)))
-    {
-      entry_key = g_variant_get_child_value (entry, 0);
-      matches = (g_variant_get_int32(entry_key) == key);
-      g_variant_unref (entry_key);
-
-      if (matches)
-        break;
-
-      g_variant_unref (entry);
-    }
-
-  if (entry == NULL)
+  g_return_val_if_fail (dictionary != NULL, NULL);
+  g_return_val_if_fail (expected_type != NULL, NULL);
+  
+  if (!g_variant_is_of_type (dictionary, G_VARIANT_TYPE ("a{ias}")))
     return NULL;
 
-  value = g_variant_get_child_value (entry, 1);
-  g_variant_unref (entry);
-
-  if (g_variant_is_of_type (value, G_VARIANT_TYPE_VARIANT))
+  g_variant_iter_init (&iter, dictionary);
+  while (g_variant_iter_loop (&iter, "{i@as}", &current_key, &value))
     {
-      tmp = g_variant_get_variant (value);
-      g_variant_unref (value);
-
-      if (expected_type && !g_variant_is_of_type (tmp, expected_type))
+      if (current_key == key)
         {
-          g_variant_unref (tmp);
-          tmp = NULL;
+          if (value != NULL && g_variant_is_of_type (value, expected_type))
+            return value;
+          else
+            return NULL;
         }
-
-      value = tmp;
     }
 
-  g_return_val_if_fail (expected_type == NULL || value == NULL ||
-                        g_variant_is_of_type (value, expected_type), NULL);
-
-  return value;
+  return NULL;
 }
 
 
