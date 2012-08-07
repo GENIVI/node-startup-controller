@@ -23,6 +23,30 @@
 
 
 
+/**
+ * SECTION: node-startup-controller-service
+ * @title: NodeStartupControllerService
+ * @short_description: Implements the <link linkend="gdbus-org.genivi.NodeStartupController1.NodeStartupController">public D-Bus interface</link>
+ *                     of the Node Startup Controller.
+ * @stability: Internal
+ *
+ * The #NodeStartupControllerService implements the methods of the
+ * org.genivi.NodeStartupController1.NodeStartupController D-Bus interface which is
+ * represented by the #NodeStartupControllerSkeleton class. It does this by implementing
+ * handlers for the signals:
+ *
+ *  * "handle-register-with-luc"
+ *
+ *  * "handle-begin-lucregistration"
+ *
+ *  * "handle-finish-lucregistration"
+ *
+ * The specification for the D-Bus interface can be found at
+ * #gdbus-org.genivi.NodeStartupController1.NodeStartupController
+ */
+
+
+
 DLT_IMPORT_CONTEXT (controller_context);
 
 
@@ -423,6 +447,14 @@ node_startup_controller_service_handle_register_with_luc (NodeStartupController 
 
 
 
+/**
+ * node_startup_controller_service_new:
+ * @connection: A connection to the system bus.
+ * 
+ * Creates a new #NodeStartupControllerService object.
+ * 
+ * Returns: A new #NodeStartupControllerService.
+ */
 NodeStartupControllerService *
 node_startup_controller_service_new (GDBusConnection *connection)
 {
@@ -435,6 +467,18 @@ node_startup_controller_service_new (GDBusConnection *connection)
 
 
 
+/**
+ * node_startup_controller_service_start_up:
+ * @service: A #NodeStartupControllerService.
+ * @error: The location of an error (if raised), %NULL otherwise.
+ * 
+ * Exports the #NodeStartupController interface skeleton on the system bus, which makes
+ * the %BeginLUCRegistration, %FinishLUCRegistration and %RegisterWithLUC methods
+ * available.
+ * 
+ * Returns: %TRUE if it successfully started up and exported its interface skeleton,
+ * %FALSE otherwise.
+ */
 gboolean
 node_startup_controller_service_start_up (NodeStartupControllerService *service,
                                           GError                      **error)
@@ -451,6 +495,17 @@ node_startup_controller_service_start_up (NodeStartupControllerService *service,
 
 
 
+/**
+ * node_startup_controller_service_read_luc:
+ * @service: A #NodeStartupControllerService.
+ * @error: The location of the error raised, or %NULL.
+ * 
+ * Reads the Last User Context from the file whose location is defined by the environment
+ * variable %LUC_PATH, or if not, the build-time definition of %LUC_PATH.
+ * 
+ * Returns: A #GVariant of the form "a{ias}" which contains the Last User Context if
+ * successfully read. In case of failure, %NULL is returned and the error is set.
+ */
 GVariant *
 node_startup_controller_service_read_luc (NodeStartupControllerService *service,
                                           GError                      **error)
@@ -491,6 +546,15 @@ node_startup_controller_service_read_luc (NodeStartupControllerService *service,
 
 
 
+/**
+ * node_startup_controller_service_write_luc:
+ * @service: A #NodeStartupControllerService.
+ * @error: The location of the error raised, or %NULL.
+ * 
+ * Atomically writes the Last User Context stored in @service to the file whose location
+ * is defined by the environment variable %LUC_PATH, or if not, the build-time definition
+ * of %LUC_PATH.
+ */
 void
 node_startup_controller_service_write_luc (NodeStartupControllerService *service,
                                            GError                      **error)
