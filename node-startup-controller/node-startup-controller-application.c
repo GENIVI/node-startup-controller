@@ -77,6 +77,12 @@ static void     node_startup_controller_application_luc_groups_started          
                                                                                   NodeStartupControllerApplication *application);
 static gboolean node_startup_controller_application_handle_sigterm               (gpointer                          user_data);
 static void     node_startup_controller_application_unregister_shutdown_consumer (NodeStartupControllerApplication *application);
+static void     node_startup_controller_application_bus_name_acquired            (GDBusConnection                  *connection,
+                                                                                  const gchar                      *name,
+                                                                                  gpointer                          user_data);
+static void     node_startup_controller_application_bus_name_lost                (GDBusConnection                  *connection,
+                                                                                  const gchar                      *name,
+                                                                                  gpointer                          user_data);
 
 
 
@@ -355,7 +361,10 @@ node_startup_controller_application_constructed (GObject *object)
   /* get a bus name on the given connection */
   application->bus_name_id =
     g_bus_own_name_on_connection (application->connection, "org.genivi.NodeStartupController1",
-                                  G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
+                                  G_BUS_NAME_OWNER_FLAGS_NONE,
+                                  node_startup_controller_application_bus_name_acquired,
+                                  node_startup_controller_application_bus_name_lost, NULL,
+                                  NULL);
 
   /* create a shutdown client for the node startup controller itself */
   object_path = "/org/genivi/NodeStartupController1/ShutdownConsumer/0";
@@ -630,6 +639,30 @@ node_startup_controller_application_unregister_shutdown_consumer (NodeStartupCon
                                                  object_path, shutdown_mode, NULL,
                                                  node_startup_controller_application_handle_unregister_finish,
                                                  application);
+}
+
+
+
+static void
+node_startup_controller_application_bus_name_acquired (GDBusConnection *connection,
+                                                       const gchar     *name,
+                                                       gpointer         user_data)
+{
+  DLT_LOG (controller_context, DLT_LOG_INFO,
+           DLT_STRING ("Successfully acquired bus name:"),
+           DLT_STRING (name));
+}
+
+
+
+static void
+node_startup_controller_application_bus_name_lost (GDBusConnection *connection,
+                                                   const gchar     *name,
+                                                   gpointer         user_data)
+{
+  DLT_LOG (controller_context, DLT_LOG_INFO,
+           DLT_STRING ("Lost bus name:"),
+           DLT_STRING (name));
 }
 
 

@@ -45,18 +45,23 @@ enum
 
 
 
-static void     nsm_dummy_application_constructed   (GObject      *object);
-static void     nsm_dummy_application_finalize      (GObject      *object);
-static void     nsm_dummy_application_get_property  (GObject      *object,
-                                                     guint         prop_id,
-                                                     GValue       *value,
-                                                     GParamSpec   *pspec);
-static void     nsm_dummy_application_set_property  (GObject      *object,
-                                                     guint         prop_id,
-                                                     const GValue *value,
-                                                     GParamSpec   *pspec);
-static gboolean nsm_dummy_application_handle_sighup (gpointer      user_data);
-
+static void     nsm_dummy_application_constructed       (GObject         *object);
+static void     nsm_dummy_application_finalize          (GObject         *object);
+static void     nsm_dummy_application_get_property      (GObject         *object,
+                                                         guint            prop_id,
+                                                         GValue          *value,
+                                                         GParamSpec      *pspec);
+static void     nsm_dummy_application_set_property      (GObject         *object,
+                                                         guint            prop_id,
+                                                         const GValue    *value,
+                                                         GParamSpec      *pspec);
+static gboolean nsm_dummy_application_handle_sighup     (gpointer         user_data);
+static void     nsm_dummy_application_bus_name_acquired (GDBusConnection *connection,
+                                                         const gchar     *name,
+                                                         gpointer         user_data);
+static void     nsm_dummy_application_bus_name_lost     (GDBusConnection *connection,
+                                                         const gchar     *name,
+                                                         gpointer         user_data);
 
 
 struct _NSMDummyApplicationClass
@@ -227,7 +232,9 @@ nsm_dummy_application_constructed (GObject *object)
   application->bus_name_id =
     g_bus_own_name_on_connection (application->connection,
                                   "com.contiautomotive.NodeStateManager",
-                                  G_BUS_NAME_OWNER_FLAGS_NONE, NULL, NULL, NULL, NULL);
+                                  G_BUS_NAME_OWNER_FLAGS_NONE,
+                                  nsm_dummy_application_bus_name_acquired,
+                                  nsm_dummy_application_bus_name_lost, NULL, NULL);
 
   /* inform systemd that this process has started */
   sd_notify (0, "READY=1");
@@ -304,6 +311,30 @@ nsm_dummy_application_handle_sighup (gpointer user_data)
   nsm_consumer_service_shutdown_consumers (application->consumer_service);
 
   return TRUE;
+}
+
+
+
+static void
+nsm_dummy_application_bus_name_acquired (GDBusConnection *connection,
+                                         const gchar     *name,
+                                         gpointer         user_data)
+{
+  DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
+           DLT_STRING ("Successfully acquired bus name:"),
+           DLT_STRING (name));
+}
+
+
+
+static void
+nsm_dummy_application_bus_name_lost (GDBusConnection *connection,
+                                     const gchar     *name,
+                                     gpointer         user_data)
+{
+  DLT_LOG (nsm_dummy_context, DLT_LOG_INFO,
+           DLT_STRING ("Lost bus name:"),
+           DLT_STRING (name));
 }
 
 
