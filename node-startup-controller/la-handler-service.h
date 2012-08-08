@@ -34,12 +34,6 @@ LAHandlerService *la_handler_service_new                  (GDBusConnection    *c
                                                            JobManager         *job_manager) G_GNUC_MALLOC G_GNUC_WARN_UNUSED_RESULT;
 gboolean          la_handler_service_start                (LAHandlerService   *service,
                                                            GError            **error);
-void              la_handler_service_register             (LAHandlerService   *service,
-                                                           const gchar        *unit,
-                                                           const gchar        *mode,
-                                                           guint               timeout,
-                                                           GAsyncReadyCallback callback,
-                                                           gpointer            user_data);
 NSMConsumer      *la_handler_service_get_nsm_consumer     (LAHandlerService   *service);
 void              la_handler_service_deregister_consumers (LAHandlerService   *service);
 

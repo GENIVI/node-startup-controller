@@ -41,13 +41,13 @@
  * 
  * It handles signals from two interfaces: 
  * 
- * 1. The #LAHandler interface which provides the %handle-register signal.
+ * 1. The #LAHandler interface which provides the "handle-register" signal.
  *    On receiving this signal it registers that systemd unit as a shutdown client with
  *    the Node State manager.
  * 
- * 2. The #ShutdownConsumer interface which provides the %handle-lifecycle-request signal.
- *    On receiving this signal it shuts down the unit corresponding to that shutdown
- *    client.
+ * 2. The #ShutdownConsumer interface which provides the "handle-lifecycle-request"
+ *    signal. On receiving this signal it shuts down the unit corresponding to that
+ *    shutdown client.
  */
 
 
@@ -616,6 +616,7 @@ la_handler_service_data_unref (LAHandlerServiceData *data)
 }
 
 
+
 /**
  * la_handler_service_new:
  * @connection: A connection to the system bus.
@@ -642,7 +643,8 @@ la_handler_service_new (GDBusConnection *connection,
 
 /**
  * la_handler_service_start:
- * @error: Return location for error or %NULL
+ * @service: A #LAHandlerService.
+ * @error:   Return location for error or %NULL.
  * 
  * Makes @service export its #LAHandler interface so that it is available to the
  * #legacy-app-handler helper binary.
@@ -668,6 +670,9 @@ la_handler_service_start (LAHandlerService *service,
 
 /**
  * la_handler_service_get_nsm_consumer:
+ * @service: A #LAHandlerService.
+ * 
+ * Retrieves the #NSMConsumer stored in @service.
  * 
  * Returns: A proxy of the Node State Manager's #NSMConsumer interface.
  */
@@ -683,6 +688,7 @@ la_handler_service_get_nsm_consumer (LAHandlerService *service)
 
 /**
  * la_handler_service_deregister_consumers:
+ * @service: A #LAHandlerService.
  * 
  * Unregisters every #ShutdownClient from the Node State Manager.
  * This method is typically used when the #LAHandlerService is about to shut down.
