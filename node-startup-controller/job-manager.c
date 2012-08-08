@@ -25,9 +25,20 @@
  * @short_description: Manages systemd jobs.
  * @stability: Internal
  * 
- * The Job Manager simplifies starting and stopping systemd units by handling all the
+ * The #JobManager simplifies starting and stopping systemd units by handling all the
  * D-Bus communication with the systemd manager internally. Units can be started and
- * stopped using job_manager_start() and job_manager_stop().
+ * stopped using job_manager_start() and job_manager_stop() and will call the @callback
+ * passed to the function when the unit is started or stopped.
+ * 
+ * The #JobManager contains an internal table which associates systemd job names with the
+ * necessary information about that job, e.g. the unit name.
+ * 
+ * When the #JobManager is told to start or stop a unit, it creates a job in systemd to
+ * start or stop that unit, stores the name of that job and waits until that job has
+ * finished before calling the @callback.
+ * 
+ * The #JobManager finds out that a job has finished by listening to "JobRemoved" signals
+ * from systemd and looking for that job by its job name.
  */
 
 
