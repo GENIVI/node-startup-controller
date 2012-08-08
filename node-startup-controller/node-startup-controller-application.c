@@ -573,14 +573,14 @@ node_startup_controller_application_handle_sigterm (gpointer user_data)
 
   g_return_val_if_fail (IS_NODE_STARTUP_CONTROLLER_APPLICATION (application), FALSE);
 
+  /* cancel the LUC startup */
+  luc_starter_cancel (application->luc_starter);
+
   /* deregister the shutdown consumers of legacy applications */
   la_handler_service_deregister_consumers (application->la_handler);
 
   /* unregister the shutdown client for the app itself */
   node_startup_controller_application_unregister_shutdown_consumer (application);
-
-  /* quit the application */
-  g_main_loop_quit (application->main_loop);
 
   /* reset the source ID */
   application->sigterm_id = 0;

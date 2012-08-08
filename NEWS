@@ -17,6 +17,8 @@ x.y.z
 * Add documentation for the WatchdogClient class
 * License the reference manual under Creative Commons CC0 1.0
   Universal (CC0 1.0)
+* Fixed NodeStartupControllerApplication's SIGINT handler redundantly
+  quitting the application and not cancelling the LUCStarter.
 
 0.9.1
 =====
