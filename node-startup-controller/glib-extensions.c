@@ -17,6 +17,32 @@
 
 
 
+/**
+ * SECTION: glib-extensions
+ * @title: GLib extensions
+ * @short_description: Auxiliary functions which are not provided by GLib.
+ * @stability: Internal
+ *
+ * Auxiliary functions related to the GLib library but not provided by GLib.
+ */
+
+
+
+/**
+ * g_variant_lookup_value_with_int_key:
+ * @dictionary: A dictionary #GVariant.
+ * @key: The key to lookup in the @dictionary.
+ * @expected_type: A #GVariantType to check that the value corresponding to the @key has
+ * the correct type. 
+ *
+ * Looks up a value in a dictionary #GVariant using an integer @key.
+ * This function only works with dictionaries of the type a{ias}.
+ * In the event that dictionary has the type a{ias}, the @key is found and the value
+ * belonging to this @key has the correct #GVariantType, then the value is returned.
+ * Otherwise the returned value is %NULL.
+ *
+ * Returns: The value associated with the the dictionary key, or %NULL.
+ */
 GVariant *
 g_variant_lookup_value_with_int_key (GVariant           *dictionary,
                                      const gint          key,
@@ -50,6 +76,15 @@ g_variant_lookup_value_with_int_key (GVariant           *dictionary,
 
 
 
+/**
+ * g_variant_string_array_has_string:
+ * @array: A #GVariant holding an array of strings.
+ * @str: A string to check for in @array.
+ *
+ * Checks if @array includes the string @str.
+ *
+ * Returns: TRUE if @array includes the string @str, otherwise FALSE.
+ */
 gboolean
 g_variant_string_array_has_string (GVariant    *array,
                                    const gchar *str)
@@ -69,6 +104,19 @@ g_variant_string_array_has_string (GVariant    *array,
 }
 
 
+
+/**
+ * g_int_pointer_compare:
+ * @a: A #gconstpointer.
+ * @b: Another #gconstpointer.
+ *
+ * Compares @a and @b, assuming that they are integers represented as pointers. Returns
+ * a negative value if @a is less than @b, zero if they are equal and a positive value if
+ * @b is greater than @a.
+ *
+ * Returns: A negative value if @a is lesser, a positive value if @a is greater, and zero
+ * if @a is equal to @b.
+ */
 gint
 g_int_pointer_compare (gconstpointer a, gconstpointer b)
 {
