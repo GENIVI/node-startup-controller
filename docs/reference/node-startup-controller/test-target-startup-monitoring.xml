@@ -107,7 +107,7 @@ systemctl start focussed.target</programlisting>
           <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
         </thead>
         <tbody>
-          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 3: yes]</entry></row>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Node state 3 applied: yes]</entry></row>
         </tbody>
       </tgroup></informaltable>
     </refsect2>
@@ -136,7 +136,7 @@ systemctl start unfocussed.target</programlisting>
           <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
         </thead>
         <tbody>
-          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 4: yes]</entry></row>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Node state 4 applied: yes]</entry></row>
         </tbody>
       </tgroup></informaltable>
     </refsect2>
@@ -165,7 +165,7 @@ systemctl start lazy.target</programlisting>
           <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
         </thead>
         <tbody>
-          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 5: yes]</entry></row>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Node state 5 applied: yes]</entry></row>
         </tbody>
       </tgroup></informaltable>
     </refsect2>
@@ -205,7 +205,7 @@ systemctl start lazy.target</programlisting>
           <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
         </thead>
         <tbody>
-          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 3: yes]</entry></row>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Node state 3 applied: yes]</entry></row>
         </tbody>
       </tgroup></informaltable>
       <para>
@@ -216,7 +216,7 @@ systemctl start lazy.target</programlisting>
           <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
         </thead>
         <tbody>
-          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 3: no]</entry></row>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Node state 3 applied: no]</entry></row>
         </tbody>
       </tgroup></informaltable>
     </refsect2>
