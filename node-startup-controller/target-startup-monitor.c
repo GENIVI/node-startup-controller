@@ -215,7 +215,9 @@ target_startup_monitor_finalize (GObject *object)
                                             0, 0, NULL, NULL, monitor);
       g_object_unref (lp->data);
     }
-  g_list_free (lp->data);
+
+  /* release the list of systemd units */
+  g_list_free (monitor->units);
 
   /* release the mapping of systemd targets to node states */
   g_hash_table_destroy (monitor->targets_to_states);

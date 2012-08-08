@@ -5,6 +5,8 @@ x.y.z
 * Simplify g_variant_lookup_value_with_int_key() to avoid license
   issues (the previously implementation was based on code from
   GLib)
+* Fix segmentation fault in TargetStartupMonitor.
+* Fix segmentation fault in LAHandlerService.
 * Add documentation for the GLib extension functions.
 * Add documentation for the JobManager class
 * Add documentation for the LAHandlerService class

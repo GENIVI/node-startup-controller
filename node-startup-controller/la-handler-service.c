@@ -351,7 +351,6 @@ la_handler_service_handle_register (LAHandler             *interface,
        * re-register its client with the new shutdown mode and timeout */
 
       /* extract information from the client */
-      consumer = shutdown_client_get_consumer (client);
       existing_bus_name = shutdown_client_get_bus_name (client);
       existing_object_path = shutdown_client_get_object_path (client);
 
@@ -560,7 +559,7 @@ la_handler_service_handle_consumer_lifecycle_request_finish (JobManager  *manage
       DLT_LOG (la_handler_context, DLT_LOG_ERROR,
                DLT_STRING ("Failed to notify NSM about completed lifecycle request:"),
                DLT_STRING ("request id"), DLT_UINT (data->request_id),
-               DLT_STRING ("error message"), DLT_STRING (error->message));
+               DLT_STRING ("error message"), DLT_STRING (err->message));
       g_error_free (err);
     }
   else if (error_status == NSM_ERROR_STATUS_OK)
