@@ -83,15 +83,36 @@ static void     node_startup_controller_application_unregister_shutdown_consumer
 /**
  * SECTION: node-startup-controller-application
  * @title: NodeStartupControllerApplication
- * @short_description: the main class that integrates all other components
+ * @short_description: The main class that integrates all other components.
  * @stability: Internal
  *
  * The #NodeStartupControllerApplication is the main class, it is the place where all
  * internal components of the Node Startup Controller are integrated.
- * It manages the life time of the main loop. When it starts, it restores the LUC if this
- * is required. When it shuts down or receives a SIGTERM signal, it cancels the LUC
- * startup and deregisters the shutdown consumers. Notice that it registers/unregisters
- * itself as a shutdown consumer within Node State Manager.
+ * These components include:
+ * 
+ * * The #JobManager.
+ * 
+ * * The #LAHandlerService.
+ * 
+ * * The #NodeStartupControllerService.
+ * 
+ * * The #LUCStarter.
+ * 
+ * * A #WatchdogClient.
+ * 
+ * * Also, it owns its own #ShutdownClient which it registers with the Node State
+ *   Manager and deregisters when it shuts down.
+ * 
+ * When its systemd service is stopped, it receives a %SIGTERM signal or the Node State 
+ * Manager tells it to shut down, the application will do the following in order:
+ * 
+ * 1. Tell the #LUCStarter to cancel all starts.
+ * 
+ * 2. Tell the #LAHandlerService to deregister all shutdown consumers.
+ * 
+ * 3. Deregister its own #ShutdownClient from the Node State Manager.
+ * 
+ * 4. Finishing deregistration will cause the application to quit.
  */
 
 
