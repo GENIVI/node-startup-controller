@@ -20,9 +20,7 @@ with this project.
 Build Dependencies and Instructions
 -----------------------------------
 
-For a complete list of build dependencies and instructions, please
-refer to the reference manual in 
+For a complete list of build dependencies and build instructions, please
+refer to the sources of the reference manual in the following file:
 
-  docs/reference/node-startup-controller/html/index.html
-
-once it has been built.
+  docs/reference/node-startup-controller/building.xml
