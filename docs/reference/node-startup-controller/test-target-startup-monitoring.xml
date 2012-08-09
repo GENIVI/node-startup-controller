@@ -74,7 +74,7 @@ systemctl start node-startup-controller.service</programlisting>
           <row> <entry>APID</entry> <entry>CTID</entry> <entry>Payload</entry> </row>
         </thead>
         <tbody>
-          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Applied the node state 2: yes]</entry></row>
+          <row> <entry>NSMD</entry> <entry>NSMC</entry> <entry>[Node state 2 applied: yes]</entry></row>
         </tbody>
       </tgroup></informaltable>
     </refsect2>
