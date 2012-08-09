@@ -35,14 +35,32 @@
  * represented by the #NodeStartupControllerSkeleton class. It does this by implementing
  * handlers for the signals:
  *
- *  * "handle-register-with-luc"
+ *  * "handle-register-with-luc" which represents the %RegisterWithLUC method.
  *
- *  * "handle-begin-lucregistration"
+ *  * "handle-begin-lucregistration" which represents the %BeginLUCRegistration method.
  *
- *  * "handle-finish-lucregistration"
+ *  * "handle-finish-lucregistration" which represents the %FinishLUCRegistration method.
  *
  * The specification for the D-Bus interface can be found at
- * #gdbus-org.genivi.NodeStartupController1.NodeStartupController
+ * #gdbus-org.genivi.NodeStartupController1.NodeStartupController.
+ *
+ * When the #NodeStartupControllerService receives a "handle-begin-luc-registration"
+ * signal, it creates an empty #GVariant (of type "a{ias}", a dictionary of LUC types as
+ * integers to groups of units as string arrays) which it uses to contain the new
+ * candidate for the Last User Context, and allows other methods to be called
+ * successfully.
+ *
+ * When it receives a "handle-register-with-luc" signal and it has already handled
+ * "handle-begin-lucregistration", it adds the #GVariant that it received with the signal
+ * to the new candidate. If a new LUC type is specified, it will add the whole group,
+ * and if new units are added to an existing group, they get added at the end. If a unit
+ * exists in both the received #GVariant and in the new candidate then the unit will be
+ * added at the end.
+ *
+ * When it receives a "handle-finish-lucregistration" and it has already handled
+ * "handle-begin-lucregistration", it writes the new candidate by calling
+ * node_startup_controller_service_write_luc(), then deletes the candidate so that
+ * "handle-begin-lucregistration" can be called again.
  */
 
 
