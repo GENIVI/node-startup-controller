@@ -110,9 +110,6 @@ struct _TargetStartupMonitor
 
   NSMLifecycleControl *nsm_lifecycle_control;
 
-  /* list of systemd units for the targets we are interested in */
-  GList               *units;
-
   /* map of systemd target names to corresponding node states */
   GHashTable          *targets_to_states;
 };
@@ -206,18 +203,6 @@ static void
 target_startup_monitor_finalize (GObject *object)
 {
   TargetStartupMonitor *monitor = TARGET_STARTUP_MONITOR (object);
-  GList                *lp;
-
-  /* disconnect from all the unit proxies and release them */
-  for (lp = monitor->units; lp != NULL; lp = lp->next)
-    {
-      g_signal_handlers_disconnect_matched (lp->data, G_SIGNAL_MATCH_DATA,
-                                            0, 0, NULL, NULL, monitor);
-      g_object_unref (lp->data);
-    }
-
-  /* release the list of systemd units */
-  g_list_free (monitor->units);
 
   /* release the mapping of systemd targets to node states */
   g_hash_table_destroy (monitor->targets_to_states);
@@ -294,16 +279,18 @@ target_startup_monitor_job_removed (SystemdManager       *manager,
   g_return_if_fail (result != NULL && *result != '\0');
   g_return_if_fail (IS_TARGET_STARTUP_MONITOR (monitor));
 
-  /* create a temporary struct to bundle information about the unit */
-  data = g_slice_new0 (GetUnitData);
-  data->monitor = g_object_ref (monitor);
-  data->unit_name = g_strdup (unit);
+  /* check if the unit corresponds to one which has to be monitored */
+  if (g_hash_table_lookup_extended (monitor->targets_to_states, unit, NULL, NULL))
+    {
+      /* create a temporary struct to bundle information about the unit */
+      data = g_slice_new0 (GetUnitData);
+      data->monitor = g_object_ref (monitor);
+      data->unit_name = g_strdup (unit);
 
-  /* ask systemd to return the object path for this unit */
-  systemd_manager_call_get_unit (monitor->systemd_manager, unit, NULL,
-                                 target_startup_monitor_get_unit_finish, data);
-
-
+      /* ask systemd to return the object path for this unit */
+      systemd_manager_call_get_unit (monitor->systemd_manager, unit, NULL,
+                                     target_startup_monitor_get_unit_finish, data);
+    }
 }
 
 

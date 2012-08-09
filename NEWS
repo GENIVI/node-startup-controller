@@ -19,6 +19,8 @@ x.y.z
   Universal (CC0 1.0)
 * Fixed NodeStartupControllerApplication's SIGINT handler redundantly
   quitting the application and not cancelling the LUCStarter.
+* The TargetStartupMonitor now only monitors its targets, not every
+  unit whose state changes.
 
 0.9.1
 =====
