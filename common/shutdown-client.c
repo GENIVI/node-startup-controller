@@ -30,9 +30,21 @@
  * by the #LAHandlerService in the Node Startup Controller, and a #ShutdownConsumerProxy 
  * if it is being used by the #NSMConsumerService in the Node State Manager Dummy.
  * 
+ * In addition, it contains the following information:
+ *
+ * * The bus name, the name that the controlling process owns on the system bus.
+ *
+ * * The object path, a unique D-Bus object path which, together with the bus name,
+ *   is used by the Node State Manager to identify the #ShutdownConsumer.
+ *
+ * * The shutdown mode, an #NSMShutdownType.
+ *
+ * * The timeout, the amount of time the Node State Manager will wait before deciding
+ *                that this #ShutdownClient is not responding.
+ *
  * The #LAHandlerService uses it to identify which #ShutdownConsumer was told to shut
  * down, which it will then use to stop the associated systemd unit.
- * 
+ *
  * The #NSMConsumerService uses it to locate the #ShutdownConsumer, shut it down with the
  * appropriate mode, and wait for an appropriate length of time when expecting a response.
  */
