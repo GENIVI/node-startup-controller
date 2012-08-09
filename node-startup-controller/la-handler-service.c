@@ -30,24 +30,50 @@
 /**
  * SECTION: la-handler-service
  * @title: LAHandlerService
- * @short_description: Handles registration of legacy apps with the Node State Manager
+ * @short_description: Handles registration of legacy apps with the Node State Manager.
  * @stability: Internal
  * 
- * The #LAHandlerService class provides an internal D-Bus interface for the
- * #legacy-app-handler helper binary to interface with.
- * From this, it communicates with the Node State Manager to register shutdown clients
- * with the Node State Manager, and shuts down those shutdown clients when the Node State
- * Manager tells it to.
- * 
- * It handles signals from two interfaces: 
- * 
- * 1. The #LAHandler interface which provides the "handle-register" signal.
- *    On receiving this signal it registers that systemd unit as a shutdown client with
- *    the Node State manager.
- * 
- * 2. The #ShutdownConsumer interface which provides the "handle-lifecycle-request"
- *    signal. On receiving this signal it shuts down the unit corresponding to that
- *    shutdown client.
+ * The #LAHandlerService contains two hash tables to map the shutdown clients it
+ * registers with the Node State Manager and vice versa.
+ *
+ * The #LAHandlerService class provides an internal D-Bus interface which contains a
+ * %Register method for the #legacy-app-handler helper binary to communicate with.
+ *
+ * When it receives a %Register method call (which specifies a unit name, shutdown mode
+ * and timeout), it handles the "handle-register" signal by doing the following:
+ *
+ * 1. Looks for a pre-existing #ShutdownClient by its unit name. If it already exists,
+ *    it adds the shutdown mode to whatever shutdown modes are already registered and
+ *    sets the timeout to the new value.
+ *
+ * 2. Create a #ShutdownClient with unit name, bus name, object path, shutdown mode,
+ *    timeout and a #ShutdownConsumerSkeleton, where the bus name is the Node
+ *    Startup Controller's bus name, and the object path is unique and decided by the
+ *    #LAHandlerService.
+ *
+ * 3. Register the "handle-lifecycle-request" signal handler to the
+ *    #ShutdownConsumerSkeleton's %LifecycleRequest method, taking the #ShutdownClient as
+ *    userdata.
+ *
+ * 4. Export the shutdown client's #ShutdownConsumerSkeleton using the client's object
+ *    path.
+ *
+ * 5. Register the #ShutdownClient with the Node State Manager.
+ *
+ * When it receives a %LifecycleRequest method call, it does the following:
+ *
+ * 1. Looks up the unit name of the #ShutdownClient passed as userdata. If it is not
+ *    found then it returns an error to the Node State Manager.
+ *
+ * 2. Tells the Job Manager to stop the #ShutdownClient's systemd unit.
+ *
+ * 3. Returns the #NSMErrorStatus NSM_ERROR_STATUS_PENDING to the Node State Manger,
+ *    which tells The Node State Manager to wait %timeout seconds for a replying method
+ *    call to the Node State Manager with the %LifecycleRequestComplete method.
+ *
+ * 4. After the #JobManager has stopped the unit, it checks if the #JobManager failed to
+ *    stop the unit and calls the Node State Manager with %LifecycleRequestComplete to
+ *    inform it about the success or failure of stopping the unit.
  */
 
 
