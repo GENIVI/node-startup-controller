@@ -51,8 +51,8 @@ nsm_dummy_LDADD =							\
 dbus_servicedir = $(datadir)/dbus-1/system-services
 
 dbus_service_in_files =							\
-	com.contiautomotive.NodeStateManager.Consumer.service.in	\
-	com.contiautomotive.NodeStateManager.LifecycleControl.service.in
+	org.genivi.NodeStateManager.Consumer.service.in	\
+	org.genivi.NodeStateManager.LifecycleControl.service.in
 
 dbus_service_DATA = $(dbus_service_in_files:.service.in=.service)
 

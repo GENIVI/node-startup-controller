@@ -231,7 +231,7 @@ nsm_dummy_application_constructed (GObject *object)
   /* get a bus name on the given connection */
   application->bus_name_id =
     g_bus_own_name_on_connection (application->connection,
-                                  "com.contiautomotive.NodeStateManager",
+                                  "org.genivi.NodeStateManager",
                                   G_BUS_NAME_OWNER_FLAGS_NONE,
                                   nsm_dummy_application_bus_name_acquired,
                                   nsm_dummy_application_bus_name_lost, NULL, NULL);

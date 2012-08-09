@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <node>
   <!--
-    com.contiautomotive.NodeStateManager.Consumer:
+    org.genivi.NodeStateManager.Consumer:
     @short_description: Interface for testing the interaction between the
                         Node Startup Controller and the Node State Manager.
                         It is an excerpt of
-                        "com.contiautomotive.NodeStateManager.LifecycleControl"
+                        "org.genivi.NodeStateManager.LifecycleControl"
                         using only the methods needed to test the NSC.
   -->
-  <interface name="com.contiautomotive.NodeStateManager.Consumer">
+  <interface name="org.genivi.NodeStateManager.Consumer">
     <!--
       RegisterShutdownClient:
       @BusName: Bus name of remote application.

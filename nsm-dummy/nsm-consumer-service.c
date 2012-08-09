@@ -779,7 +779,7 @@ nsm_consumer_service_start (NSMConsumerService *service,
   /* announce the Consumer service on the bus */
   return g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (service->interface),
                                            service->connection,
-                                           "/com/contiautomotive/NodeStateManager/Consumer",
+                                           "/org/genivi/NodeStateManager/Consumer",
                                            error);
 }
 

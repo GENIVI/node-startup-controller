@@ -33,14 +33,14 @@
     </para>
     <itemizedlist>
       <listitem>
-        <literal>com.contiautomotive.NodeStateManager.LifecycleControl.CheckLucRequired</literal>
+        <literal>org.genivi.NodeStateManager.LifecycleControl.CheckLucRequired</literal>
         will alternate between returning <literal>TRUE</literal> and
         <literal>FALSE</literal> with every call. This way it is possible to test how the
         Node Startup Controller behaves with and without starting the LUC simply by
         starting it twice.
       </listitem>
       <listitem>
-        <literal>com.contiautomotive.NodeStateManager.LifecycleControl.SetNodeState</literal>
+        <literal>org.genivi.NodeStateManager.LifecycleControl.SetNodeState</literal>
         will alternate between accepting the state and not accepting the state with
         every call. This way it is possible to test how the Node Startup Controller
         handles both scenarios.

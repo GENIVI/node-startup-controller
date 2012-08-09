@@ -1,4 +1,4 @@
 [D-BUS Service]
-Name=com.contiautomotive.NodeStateManager
+Name=org.genivi.NodeStateManager
 SystemdService = nsm-dummy.service
 Exec=@libdir@/node-startup-controller-@NODE_STARTUP_CONTROLLER_VERSION_API@/nsm-dummy

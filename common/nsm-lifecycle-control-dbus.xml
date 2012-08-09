@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <node>
   <!--
-    com.contiautomotive.NodeStateManager.LifecycleControl:
+    org.genivi.NodeStateManager.LifecycleControl:
     @short_description: Interface for testing the interaction between the
                         Node Startup Controller and the Node State Manager.
                         It is an excerpt of
-                        "com.conti.NodeStateManager.LifecycleControl"
+                        "org.genivi.NodeStateManager.LifecycleControl"
                         using only the methods needed to test the NSC.
   -->
-  <interface name="com.contiautomotive.NodeStateManager.LifecycleControl">
+  <interface name="org.genivi.NodeStateManager.LifecycleControl">
     <!--
       SetNodeState:
       @NodeStateId: The passed value will be based upon the enum

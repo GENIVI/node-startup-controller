@@ -222,8 +222,8 @@ luc_starter_constructed (GObject *object)
   starter->nsm_lifecycle_control =
     nsm_lifecycle_control_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
                                                   G_DBUS_PROXY_FLAGS_NONE,
-                                                  "com.contiautomotive.NodeStateManager",
-                                                  "/com/contiautomotive/NodeStateManager/LifecycleControl",
+                                                  "org.genivi.NodeStateManager",
+                                                  "/org/genivi/NodeStateManager/LifecycleControl",
                                                   NULL, &error);
   if (error != NULL)
     {

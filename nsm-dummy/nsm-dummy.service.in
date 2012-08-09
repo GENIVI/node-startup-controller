@@ -1,5 +1,5 @@
 [Service]
 Type = dbus
-BusName = com.contiautomotive.NodeStateManager
+BusName = org.genivi.NodeStateManager
 ExecStart = @libdir@/node-startup-controller-@NODE_STARTUP_CONTROLLER_VERSION_API@/nsm-dummy
 WatchdogSec = 5

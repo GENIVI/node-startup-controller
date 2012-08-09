@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <node>
   <!--
-    com.contiautomotive.NodeStateManager.LifeCycleConsumer:
+    org.genivi.NodeStateManager.LifeCycleConsumer:
     @short_description: Interface for receiving LifecycleRequest commands from the NSM
 
     Lifecycle Consumers are D-Bus object which are created to shut down apps
@@ -9,7 +9,7 @@
     with the Node State Manager (NSM) instead of the apps and respond to any 
     LifecycleRequest() in the app's place.
   -->
-  <interface name="com.contiautomotive.NodeStateManager.LifeCycleConsumer">
+  <interface name="org.genivi.NodeStateManager.LifeCycleConsumer">
     <!--
       Shutdown:
       @Request: The code for this request, either normal, fast or runup.

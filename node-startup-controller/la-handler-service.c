@@ -212,8 +212,8 @@ la_handler_service_constructed (GObject *object)
   /* connect to the node state manager */
   service->nsm_consumer =
     nsm_consumer_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE,
-                                         "com.contiautomotive.NodeStateManager",
-                                         "/com/contiautomotive/NodeStateManager/Consumer",
+                                         "org.genivi.NodeStateManager",
+                                         "/org/genivi/NodeStateManager/Consumer",
                                           NULL, &error);
   if (error != NULL)
     {
