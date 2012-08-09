@@ -28,6 +28,45 @@
 
 
 
+/**
+ * SECTION: luc-starter
+ * @title: LUCStarter
+ * @short_description: Starts the applications registered with the Last User Context.
+ * @stability: Internal
+ *
+ * The #LUCStarter is a component of the #NodeStartupControllerApplication which manages 
+ * the start of the Last User Context (LUC) applications.
+ * 
+ * When the #NodeStartupControllerApplication starts, it asks the #LUCStarter to start
+ * the LUC applications. To start the LUC applications, the #LUCStarter will do the
+ * following in order:
+ *
+ * 1. Checks with the Node State Manager (NSM) if starting the LUC applications
+ *    is required. If it is not required, it notifies the groups of current applications
+ *    that the start of the LUC has been processed, which never happens because starting
+ *    the LUC is not required.
+ *
+ * If starting the LUC is required:
+ *
+ * 2. Removes the current user context.
+ *
+ * 3. Reads the LUC using the node_startup_controller_service_read_luc().
+ *
+ * 4. Starts the LUC applications asynchronously and in prioritised groups. The group of
+ *    applications, which belong to the most prioritised LUC type, start first and then
+ *    the next group of applications are started in the order of the prioritized types
+ *    set at build-time, then in numerical order.
+ *    When an application is started, the #LUCStarter keeps it in a table, associates
+ *    this application with its #GCancellable (so it is possible to cancel each
+ *    respective application if the start of the LUC is cancelled), and start the service
+ *    calling the start method to #JobManager and passing its #GCancellable.
+ *
+ * 5. Notifies the groups of applications that the start of the LUC has been processed.
+ *    
+ */
+
+
+
 DLT_IMPORT_CONTEXT (controller_context);
 
 
@@ -78,21 +117,6 @@ static void luc_starter_check_luc_required_finish (GObject      *object,
                                                    GAsyncResult *res,
                                                    gpointer      user_data);
 static void luc_starter_start_groups_for_real     (LUCStarter   *starter);
-
-
-
-/**
- * SECTION: luc-starter
- * @title: LUCStarter
- * @short_description: Starts the applications registered with the Last User Context
- * @stability: Internal
- *
- * The #LUCStarter starts the Last User Context (LUC) applications. The LUC applications
- * are started asynchronously and in groups (one group per LUC type).
- * The #LUCStarter checks with Node State Manager (NSM) if starting the LUC applications
- * is required. If it is required, the #LUCStarter will start the LUC applications.
- * Notice that it is possible to cancel the start of the LUC applications.
- */
 
 
 
