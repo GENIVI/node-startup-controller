@@ -1,5 +1,5 @@
 [Service]
-Type = dbus
+Type = notify
 BusName = org.genivi.NodeStartupController1
 ExecStart = @libdir@/node-startup-controller-@NODE_STARTUP_CONTROLLER_VERSION_API@/node-startup-controller
 WatchdogSec = 5
