@@ -1,4 +1,4 @@
-x.y.z
+1.0.1
 =====
 * Make systemd respond to "READY" notifications from the NSC (GT-2212)
 
