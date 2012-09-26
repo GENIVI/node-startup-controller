@@ -4,7 +4,7 @@ dnl ***************************
 m4_define([node_startup_controller_version_api_major], [1])
 m4_define([node_startup_controller_version_major], [1])
 m4_define([node_startup_controller_version_minor], [0])
-m4_define([node_startup_controller_version_micro], [0])
+m4_define([node_startup_controller_version_micro], [1])
 m4_define([node_startup_controller_version], [node_startup_controller_version_major().node_startup_controller_version_minor().node_startup_controller_version_micro()])
 
 dnl ***************************
