@@ -609,6 +609,12 @@ luc_starter_start_groups_for_real (LUCStarter *starter)
                DLT_STRING ("Failed to read the last user context:"),
                DLT_STRING (error->message));
       g_error_free (error);
+
+      /* notify others that we are finished starting the groups, even if
+       * that failed */
+      g_signal_emit (starter, luc_starter_signals[SIGNAL_LUC_GROUPS_STARTED],
+                     0, NULL);
+
       return;
     }
 

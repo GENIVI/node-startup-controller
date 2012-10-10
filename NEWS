@@ -2,6 +2,7 @@ x.y.z
 =====
 * Make systemd respond to "READY" notifications from the NSC (GT-2212)
 * Adjust D-Bus interface definitions to match the Node State Manager.
+* Fix starting through systemd if the LUC cannot be read from disk.
 
 1.0.0
 =====
