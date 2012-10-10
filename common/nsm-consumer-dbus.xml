@@ -30,7 +30,7 @@
     <method name="RegisterShutdownClient">
       <arg name="BusName" direction="in" type="s"/>
       <arg name="ObjName" direction="in" type="s"/>
-      <arg name="ShutdownMode" direction="in" type="i"/>
+      <arg name="ShutdownMode" direction="in" type="u"/>
       <arg name="TimeoutMs" direction="in" type="u"/>
       <arg name="ErrorCode" direction="out" type="i"/>
     </method>
@@ -51,7 +51,7 @@
     <method name="UnRegisterShutdownClient">
       <arg name="BusName" direction="in" type="s"/>
       <arg name="ObjName" direction="in" type="s"/>
-      <arg name="ShutdownMode" direction="in" type="i"/>
+      <arg name="ShutdownMode" direction="in" type="u"/>
       <arg name="ErrorCode" direction="out" type="i"/>
     </method>
 

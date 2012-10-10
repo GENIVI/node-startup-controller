@@ -1,6 +1,7 @@
-1.0.1
+x.y.z
 =====
 * Make systemd respond to "READY" notifications from the NSC (GT-2212)
+* Adjust D-Bus interface definitions to match the Node State Manager.
 
 1.0.0
 =====
