@@ -1,4 +1,4 @@
-x.y.z
+1.0.2
 =====
 * Adjust D-Bus interface definitions to match the Node State Manager.
 * Fix starting through systemd if the LUC cannot be read from disk.
