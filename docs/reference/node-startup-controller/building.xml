@@ -64,7 +64,7 @@
             final build scripts (<literal>configure</literal> and
             <literal>Makefile</literal> files) from the templates shipped along with the
             source code:
-            <programlisting>(test -d m4 || mkdir m4) &amp;&amp; gtkdocize &amp;&amp; autoreconf -ivf</programlisting>
+            <programlisting>./autogen.sh</programlisting>
           </para>
         </formalpara>
       </listitem>
