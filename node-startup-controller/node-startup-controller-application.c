@@ -531,6 +531,7 @@ node_startup_controller_application_get_property (GObject    *object,
       break;
     case PROP_NODE_STARTUP_CONTROLLER:
       g_value_set_object (value, application->node_startup_controller);
+      break;
     case PROP_LA_HANDLER:
       g_value_set_object (value, application->la_handler);
       break;
