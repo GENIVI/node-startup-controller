@@ -11,14 +11,48 @@
     <refname>Functional scope</refname>
     <refpurpose>An overview of the functionality provided by the Node Startup Controller</refpurpose>
   </refnamediv>
+  <refsect1 id="introduction">
+    <title>Introduction</title>
+    <para>
+      The Node Startup Controller (NSC) was introduced into the lifecycle package for
+      GENIVI in order to handle some startup and shutdown functionality. It essentially
+      "extends" systemd to implement some IVI requirements that are not done by systemd
+      itself because they are not generally applicable for all Linux systems (as
+      determined through discussion with the systemd community). However, similar
+      functionality might be desired in non-automotive systems so we hope this can be
+      useful and/or develop into something shared across domains.
+    </para>
+    <para>
+      The main areas of responsibility for the NSC are:
+    </para>
+    <itemizedlist>
+      <listitem>
+        <para>
+          Last User Context (LUC) Management
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          Legacy Application Management
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          Target Startup Monitoring
+        </para>
+      </listitem>
+    </itemizedlist>
+  </refsect1>
 
   <refsect1 id="luc-management">
     <title>Last User Context (LUC) management</title>
     <para>
-      The responsibility of LUC (Last User Context) Management is to manage information
-      about applications the user is running in order to allow the same applications to
-      be restored after a reboot of the system. The LUC supports three different types
-      of applications:
+      The Last User Context (LUC) management holds information about what applications
+      the user was using in the last lifecycle, in order to allow the same applications
+      to be restored automatically, or prioritized over other applications the next
+      time the system boots up. Applications are stored in the LUC groups whose start
+      order is defined at build time. The choice is fully flexible, but for a typical
+      Automotive IVI system, these groups could be:
     </para>
     <variablelist>
       <varlistentry>
@@ -56,27 +90,39 @@
       <listitem>
         A systemd unit filename (e.g.  <literal>navigation.service</literal>),</listitem>
       <listitem>
-        The LUC type, which is one of the following: audible, foreground or background.
+        The LUC type, which is a number that represents the group, e.g. 0 for audible,
+        1 for foreground, 2 for background.
       </listitem>
     </orderedlist>
     <para>
-      Audible, foreground and background applications are treated as start-up groups,
-      meaning that e.g. all background apps are started in parallel. The order in which
-      these three groups are started by the LUC Management can be configured at
-      build-time.
-
+      The LUC management simply stores the systemd unit name (e.g.
+      navigation.service) for each LUC-managed application and communicates with
+      systemd to start up these applications shortly after boot. Systemd D-Bus
+      interfaces are used instead of simply a stored systemd target file on disk.
+      This is to allow the behavior to be flexible according to system policy and
+      because the behavior might also be dynamic as described in the next section.
+    </para>
+    <para>
+      Units in a start-up group are all started in parallel. The order in which each
+      group is started can be configured at build-time.
+    </para>
+    <para>
       In order to reduce the amount of communication with the LUC management, multiple
-      applications can be registered and deregistered with the LUC at once.
+      applications can be registered and deregistered with a single D-Bus call.
     </para>
   </refsect1>
 
   <refsect1 id="legacy-application-management">
     <title>Legacy application management</title>
     <para>
-      Legacy applications are applications that provide a systemd unit file but are
-      unaware or do not make use of any GENIVI components. This also means that they
-      do not register with the NSM (Node State Manager) as a shutdown consumer, which
-      is a requirement for any application in GENIVI.
+      In this context "Legacy applications" means applications that do provide a
+      systemd unit file but are otherwise unaware of, or do not make use of other
+      GENIVI/Lifecycle components. This means that the applications will not actively
+      register themselves as a shutdown consumer in the Node State Manager (NSM).
+      (That is the normal way for the NSM to know what applications are active and can
+      be controlled in order to sleep/shutdown.) To solve the "legacy applications"
+      problem, the NSC provides a mechanism to separately register such applications
+      as shutdown consumers.
     </para>
     <para>
       To solve this problem the Node Startup Controller provides a mechanism to register
@@ -99,6 +145,12 @@
       to shut down in reverse order of their creation. To the NSM it does not matter
       whether or not the consumers are registered by applications themselves or by the
       Node Startup Controller.
+    </para>
+    <para>
+      There is some other behavior also during shut-down which should be mentioned
+      here fore completeness, although it is controlled by the Node State Manager (NSM)
+      as opposed to NSC. Specifically it is the requirement to implement "cancelled
+      shutdown" which is not typically present in non-IVI Linux systems.
     </para>
   </refsect1>
 
