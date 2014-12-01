@@ -4,9 +4,12 @@ SUBDIRS =								\
 	common								\
 	legacy-app-handler						\
 	node-startup-controller						\
-	nsm-dummy							\
 	docs								\
 	tests
+
+if ENABLE_NSM_DUMMY
+SUBDIRS += nsm-dummy
+endif
 
 .PHONY: ChangeLog
 

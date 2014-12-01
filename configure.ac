@@ -135,6 +135,17 @@ AC_DEFINE_UNQUOTED([PRIORITISED_LUC_TYPES],
                    ["$with_prioritised_luc_types"],
                    [Prioritised LUC types])
 
+dnl ************************
+dnl *** Enable NSM dummy ***
+dnl ************************
+
+AC_ARG_ENABLE([nsm-dummy],
+              [AC_HELP_STRING([--enable-nsm-dummy],
+                              [Enable the Node State Manager dummy application])],
+              [enable_nsm_dummy=yes],
+              [])
+AM_CONDITIONAL(ENABLE_NSM_DUMMY, test "x$enable_nsm_dummy" = "xyes")
+
 AC_OUTPUT([
 Makefile
 node-startup-controller/busconf/Makefile
