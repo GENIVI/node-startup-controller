@@ -590,7 +590,7 @@ node_startup_controller_application_luc_groups_started (LUCStarter              
   g_return_if_fail (IS_NODE_STARTUP_CONTROLLER_APPLICATION (application));
 
   /* notify systemd that we have finished starting the LUC and
-   * that it can take over control to start unfocused.target,
+   * that it can take over control to start unfocussed.target,
    * lazy.target etc. */
   sd_notify (0, "READY=1");
 }

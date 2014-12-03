@@ -158,7 +158,7 @@
     <title>Target startup monitoring</title>
     <para>
       The Node Startup Controller is responsible to set certain NSM states when certain
-      systemd targets (e.g. <literal>focused.target</literal> or
+      systemd targets (e.g. <literal>focussed.target</literal> or
       <literal>lazy.target</literal>) have been started within or outside the
       Node Startup Controller. For this, it needs to monitor systemd for unit start-up
       events.
@@ -181,7 +181,7 @@
         not belong to target start-up events setting the NSM state to
         <orderedlist>
           <listitem>
-            <literal>LUC_RUNNING</literal> when <literal>focused.target</literal>
+            <literal>LUC_RUNNING</literal> when <literal>focussed.target</literal>
             has been started,
           </listitem>
           <listitem>
