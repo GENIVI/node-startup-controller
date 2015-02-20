@@ -4,11 +4,8 @@ GENIVI Node Startup Controller README
 This is the official source repository of the GENIVI Node Startup
 Controller.
 
-At present, all relevant documentation for this project is available
-in the GENIVI wiki on
-
-  https://collab.genivi.org/wiki/display/genivi/SysInfraEGLifecycleExecPrjctBootManager
-
+Documentation for this project may be built with gtk-doc (see the docs/
+subdirectory)
 
 License
 -------
