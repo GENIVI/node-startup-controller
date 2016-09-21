@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 SPDX license identifier: MPL-2.0
 Copyright (C) 2012, GENIVI
@@ -16,7 +17,6 @@ List of changes:
 2015-04-30, Jonathan Maw, List of changes started
 
 -->
-<?xml version="1.0" encoding="UTF-8"?>
 <node>
   <!--
     org.genivi.NodeStateManager.LifeCycleConsumer:

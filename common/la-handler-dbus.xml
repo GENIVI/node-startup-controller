@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 SPDX license identifier: MPL-2.0
 Copyright (C) 2012, GENIVI
@@ -18,7 +19,6 @@ List of changes:
 
 -->
 
-<?xml version="1.0" encoding="UTF-8"?>
 <node name="/org/genivi/NodeStartupController1/LegacyAppHandler">
   <!--
     org.genivi.LegacyAppHandler1:
