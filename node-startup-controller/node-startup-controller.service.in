@@ -2,3 +2,6 @@
 Type = notify
 ExecStart = @libdir@/node-startup-controller-@NODE_STARTUP_CONTROLLER_VERSION_API@/node-startup-controller
 WatchdogSec = 5
+
+[Install]
+WantedBy=focussed.target
