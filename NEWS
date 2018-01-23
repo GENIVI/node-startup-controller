@@ -1,4 +1,13 @@
-x.y.z
+1.0.3
+=====
+* Add autogen script
+* Fix bug in node_startup_controller_application_get_property()
+* Improve documentation
+* Fix error in systemd service
+* License updates, and added SPDX license identifiers
+* Added [Install] section to systemd service
+
+1.0.2
 =====
 * Adjust D-Bus interface definitions to match the Node State Manager.
 * Fix starting through systemd if the LUC cannot be read from disk.
