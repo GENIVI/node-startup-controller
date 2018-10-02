@@ -20,4 +20,4 @@ Build Dependencies and Instructions
 For a complete list of build dependencies and build instructions, please
 refer to the sources of the reference manual in the following file:
 
-  docs/reference/node-startup-controller/building.xml
+`docs/reference/node-startup-controller/building.xml`
