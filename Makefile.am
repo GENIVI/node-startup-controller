@@ -23,3 +23,5 @@ dist-hook: ChangeLog
 DISTCHECK_CONFIGURE_FLAGS =						\
 	--enable-gtk-doc						\
 	--enable-debug=no
+
+AUTOMAKE_OPTIONS = foreign
